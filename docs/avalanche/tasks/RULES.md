@@ -31,6 +31,17 @@
 - `FIREBREAK_CHAIN=off` par défaut : avec ce réglage, aucun module réseau (`web3`) n'est importé et le comportement de l'API est strictement identique à `main`.
 - Aucun appel réseau dans les tests. La vraie L1 n'est touchée que par les scripts `scripts/chain_*.py` lancés à la main.
 
+## Machine Windows de Mika (`mika/pc1`)
+
+Constaté le 11/10 à 01 h : sans ces réglages, des tests échouent sur Windows alors qu'ils passent sous Linux.
+
+- `uv` est dans `~/.local/bin` : commencer chaque commande par `export PATH="$HOME/.local/bin:$PATH"`.
+- Le venv du projet est `finswag/.venv` en **Python 3.12** (sans précision, uv choisit 3.15). En cas de recréation : `uv sync --python 3.12`.
+- **`PYTHONUTF8=1`** obligatoire : sinon `scripts/bench.py` plante sur la console cp1252.
+- **`tzdata`** manque sous Windows (`ZoneInfo("Europe/Paris")` introuvable). Il est installé à la main dans le venv : lancer les tests avec `uv run --no-sync`, car un `uv sync` le supprime. Correction propre proposée : dépendance `tzdata; sys_platform == "win32"` dans `pyproject.toml` (à valider avec Yann, ça touche le lock de toute l'équipe).
+- Commande de test sur cette machine : `PYTHONUTF8=1 uv run --no-sync pytest -q` → 213 verts au 11/10 01 h.
+- `py-evm` ne publie que des versions bêta (`0.12.1b1`) et `eth-tester` en dépend : exception admise à la règle « versions stables », pour le groupe dev uniquement. Préférer la dernière version **non bêta** d'`eth-tester` qui résout.
+
 ## Fin de tâche
 
 1. `uv run pytest -q` vert (colle le résumé dans ton rapport).
