@@ -235,10 +235,11 @@ def _build_web3_chain(config: ChainConfig) -> Web3Chain:
     from web3 import Web3
 
     from ..federation import Federation
-    from .accounts import derive_accounts
+    from .accounts import TEST_MNEMONIC, derive_accounts
     from .config import COMPANIES
 
-    accounts = derive_accounts(config.mnemonic)
+    mnemonic = config.mnemonic or (TEST_MNEMONIC if config.mode == "tester" else "")
+    accounts = derive_accounts(mnemonic)
     pubkeys = Federation(list(COMPANIES)).public_keys
     if config.mode == "tester":
         from web3 import EthereumTesterProvider
@@ -252,14 +253,14 @@ def _build_web3_chain(config: ChainConfig) -> Web3Chain:
     import json
     from pathlib import Path
 
-    from .artifact import load_artifact
+    from .deployer import connect, registry_contract
 
-    w3 = Web3(Web3.HTTPProvider(config.rpc_url, request_kwargs={"timeout": 5}))
+    w3 = connect(config.rpc_url, timeout=5)
     if not w3.is_connected():
         raise ConnectionError("RPC injoignable")
     if w3.eth.chain_id != config.chain_id:
         raise ConnectionError(
             f"chainId {w3.eth.chain_id} différent de {config.chain_id}")
     dep = json.loads(Path(config.deployment_path).read_text(encoding="utf-8"))
-    contract = w3.eth.contract(address=dep["address"], abi=load_artifact()["abi"])
+    contract = registry_contract(w3, dep["address"])
     return Web3Chain(config, w3, contract, accounts)

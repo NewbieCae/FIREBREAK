@@ -50,6 +50,24 @@ def test_mode_off_donne_null_chain():
     assert isinstance(get_chain_client(ChainConfig(mode="off")), NullChain)
 
 
+def test_tester_sans_mnemonique_est_connecte():
+    chain = get_chain_client(ChainConfig(mode="tester"))
+    assert chain.status()["connected"] is True
+
+
+def test_tester_ancrage_de_bout_en_bout():
+    chain = get_chain_client(ChainConfig(mode="tester"))
+    sim = build_simulation()
+    anchorer = Anchorer(chain)
+    anchorer.on_new_simulation(sim)
+    sim.declare_compromise("fournisseur", datetime(2026, 1, 1))
+    anchorer.after_action(sim, "compromise")
+    chain.flush(10)
+    recs = chain.anchors()
+    assert recs and all(r.status == "confirmed" for r in recs), \
+        [(r.kind, r.status, r.error) for r in recs]
+
+
 def test_l1_injoignable_ne_leve_pas():
     cfg = ChainConfig(mode="l1", rpc_url="http://127.0.0.1:1", chain_id=1,
                       mnemonic="test test test test test test test test test "
