@@ -17,7 +17,7 @@ une démo de 3 minutes qui montre qu'en cas de compromission d'un partenaire, on
 | Membre | GitHub | Session | Rôle |
 |---|---|---|---|
 | Yann | Sc4rville | `sessions/yann.md` | Produit : moteur, API, IA |
-| Céline | NewbieCae | `sessions/celine.md` | à préciser |
+| Céline | NewbieCae | `sessions/celine.md` | Banc d'essai : preuve chiffrée de l'efficacité (`synth.py`, `scripts/bench.py`) |
 | Maria | magraku | `sessions/maria.md` | à préciser |
 | Mika | mncodol | `sessions/mika.md` | à préciser |
 
@@ -34,7 +34,7 @@ L'interface finale est faite par une collègue de l'équipe, à partir de `docs/
 | 5 | IA : Bedrock et lecture de documents | Fait | `434abde` |
 | 6 | Prêt pour la démo | En cours | lancé le 10/10 à 23 h 50, gel à 10 h |
 
-Tests : 147 verts (`uv run pytest -q`), état au 10 octobre à 23 h 45.
+Tests : 183 verts (`uv run pytest -q`), état au 10 octobre à 23 h 59.
 
 Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérations bloquées sur 145, 4 actions irréversibles bloquées, 5 210 € de paiement frauduleux bloqué, 80 402 € de paiements qui continuent.
 
@@ -48,15 +48,15 @@ Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérat
 
 ## Décisions
 
+- 10/10 : banc d'essai — vérité terrain = descendants par toutes les vraies dépendances des records émis par l'entreprise compromise après `since`, `verified` exclus (même sémantique que le moteur).
+
 - 10/10 : on construit FIREBREAK, pensé pour le Track 3, au lieu des pistes du Track 1 du brief initial.
 - 10/10 : stack Python 3.12 + uv + FastAPI + networkx ; IA simulée par défaut, Bedrock en option.
 - 10/10 : le blocage est décidé par des règles sur le graphe, jamais par l'IA.
 
 ## Blocages
 
-- À confirmer : le passage officiel du Track 1 au Track 3 auprès des organisateurs (date limite annoncée : 10/10 à 18 h 30). Le README parle encore du Track 1.
-
-- [ ] Banc d'essai : générateur à graine + 3 politiques + CSV (Céline)
+- [x] Banc d'essai : générateur à graine + 3 politiques + CSV (Céline) — `docs/bench-results.md` : sur 500 mondes, Firebreak bloque 4,3× moins d'opérations saines que « bloquer le fournisseur + partenaires » (11,4 contre 49,5), rappel 100 % à p=0, 91,6 % à p=0,3 de dépendances cachées. Reproduire : `uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3`
 - [ ] Clés de signature et PAIR_SECRET de federation.py : ne plus les dériver du nom / ne plus les écrire en dur
 - [ ] Retirer adresses e-mail et détails de boîte mail de AGENTS.md et docs/brief.md, puis décider du sort de l'historique
 - [ ] README : mettre Track 3 ; confirmer le passage officiel Track 1 → Track 3 auprès des organisateurs

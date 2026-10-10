@@ -121,16 +121,31 @@ def write_markdown(rows: list[dict], path: Path, seeds: int, ps: list[float],
     sizes = [r for r in rows if r["policy"] == "A" and r["p_hidden"] == ps[0]]
     mc, hc, _ = mean_ci([r["contaminated"] for r in sizes])
     mt, _, _ = mean_ci([r["records"] for r in sizes])
+
+    def avg(p: float, policy: str, metric: str) -> float:
+        return mean_ci([r[metric] for r in rows
+                        if r["p_hidden"] == p and r["policy"] == policy])[0]
+
     lines += [
         "## Lecture",
         "",
         f"- Un monde compte en moyenne {mt:.0f} records, dont {mc:.1f} ± {hc:.1f} "
         "réellement contaminés.",
+    ]
+    for p in ps:
+        cb, cc = avg(p, "B", "collateral"), avg(p, "C", "collateral")
+        ratio = f"{cb / cc:.1f} fois moins" if cc else "aucune"
+        lines.append(
+            f"- p = {p:g} : Firebreak bloque {ratio} d'opérations saines que le "
+            f"blocage des partenaires ({cc:.1f} contre {cb:.1f}), pour un rappel de "
+            f"{avg(p, 'C', 'recall'):.1%} contre {avg(p, 'B', 'recall'):.1%}.")
+    lines += [
         "- **A** laisse passer toute la contamination (rappel 0) : c'est le coût de "
         "« prévenir sans agir ».",
-        "- **B** arrête une grande partie de la contamination proche, mais bloque "
-        "une grosse part d'activité saine chez les partenaires et laisse fuir ce "
-        "qui a déjà dépassé le premier rang.",
+        "- **B** arrête presque toute la contamination dans ces mondes (elle "
+        "dépasse rarement le premier rang de clients), mais au prix d'une grosse "
+        "part d'activité saine bloquée chez le fournisseur et ses partenaires. "
+        "Son rappel ne dépend pas de p : B n'utilise aucune dépendance enregistrée.",
         "- **C** suit la contamination sur tout le graphe : à p = 0, rappel de 100 %. "
         "Ses faux positifs viennent de la règle d'origine du moteur : toute donnée "
         "reçue de l'entreprise compromise après `since` est mise en quarantaine, "
