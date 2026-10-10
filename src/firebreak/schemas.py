@@ -66,7 +66,7 @@ class CountersBlock(BaseModel):
 AlertType = Literal["taint", "release"]
 AuditEvent = Literal[
     "declaration", "declaration_withdrawn", "alert_sent", "alert_received",
-    "quarantine", "remediation", "release",
+    "quarantine", "remediation", "release", "document_confirmed",
 ]
 
 
@@ -104,11 +104,45 @@ class RemediationOption(BaseModel):
     rationale: str
 
 
+AISource = Literal["mock", "bedrock"]
+
+
 class ExplainOut(BaseModel):
     record: RecordOut
     path: list[RecordOut] = Field(description="Records du taint_path, dans l'ordre.")
     explanation: str
     remediation_plan: list[RemediationOption]
+    source: AISource = Field(
+        description="IA qui a produit l'explication : « bedrock », ou « mock » (gabarit "
+                    "déterministe, aussi utilisé en repli si Bedrock échoue)."
+    )
+
+
+DocumentKind = Literal["purchase_order", "asn", "invoice", "bank_details_change"]
+
+
+class ProposedRecordOut(BaseModel):
+    id: str = Field(description="Identifiant que portera le record une fois confirmé.")
+    company: str = Field(description="Registre destinataire (paramètre « company »).")
+    origin: str | None = Field(description="Émetteur détecté ; null si non reconnu.")
+    kind: DocumentKind | None = Field(description="Type de document ; null si non reconnu.")
+    ts: str = Field(description="Heure de réception (heure de Paris, sans fuseau).")
+    label: str
+    inputs: list[str]
+    gate: bool
+    payload: dict = Field(
+        description="amount, rib, previous_rib, bank_details_change, references, dates "
+                    "(seuls les champs trouvés sont présents, sauf references et dates)."
+    )
+
+
+class ProposalOut(BaseModel):
+    id: str = Field(description="Identifiant de la proposition, ex. « doc-01 ».")
+    status: Literal["pending", "confirmed"]
+    source: AISource = Field(description="Extraction par « bedrock » ou « mock » (regex).")
+    confidence: float = Field(ge=0, le=1, description="Confiance de l'extraction (0 à 1).")
+    missing: list[str] = Field(description="Champs attendus pour ce type mais non trouvés.")
+    record: ProposedRecordOut
 
 
 class AuditEntryOut(BaseModel):

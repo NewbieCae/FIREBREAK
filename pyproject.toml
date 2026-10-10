@@ -4,9 +4,11 @@ version = "0.1.0"
 description = "Firebreak — confinement ciblé des compromissions dans les supply chains"
 requires-python = ">=3.12"
 dependencies = [
+    "boto3>=1.43.111",
     "cryptography>=50.0.2",
     "fastapi>=0.143.0",
     "networkx>=3.7",
+    "pypdf>=6.20.0",
     "uvicorn>=0.54.0",
 ]
 

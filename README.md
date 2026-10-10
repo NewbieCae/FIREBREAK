@@ -22,6 +22,7 @@ uv run pytest -q                                         # lance les tests
 - Dashboard de debug : http://localhost:8000
 - Documentation interactive de l'API : http://localhost:8000/docs
 - Contrat détaillé : [docs/api.md](docs/api.md)
+- IA : simulée par défaut ; `FIREBREAK_AI=bedrock` + `AWS_REGION` + identifiants AWS pour Bedrock ([détails](docs/api.md#ia--bedrock-et-repli-mock)).
 
 ## Organisation
 
