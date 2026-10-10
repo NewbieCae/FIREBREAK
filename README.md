@@ -1,6 +1,10 @@
 # finswag — FIREBREAK
 
+<<<<<<< ours
 Dépôt privé du projet finswag, Team 14 au hackathon Secure Horizons.
+=======
+Dépôt privé du projet finswag, Team 14 au hackathon Secure Horizons, Track 3 « Uncharted Frontiers » (projet FIREBREAK, pare-feu des supply chains).
+>>>>>>> theirs
 
 ## Le pitch en 3 lignes
 
@@ -35,7 +39,15 @@ uv run pytest -q            # tests
 uv run python -m firebreak.demo_figures   # les chiffres du pitch (reproductible)
 ```
 
+<<<<<<< ours
 Dashboard : http://localhost:8000 — API interactive : http://localhost:8000/docs.
+=======
+- Dashboard de debug : http://localhost:8000
+- Documentation interactive de l'API : http://localhost:8000/docs
+- Contrat détaillé : [docs/api.md](docs/api.md)
+- Secrets : voir `.env.example` (jamais de vraie clé dans le dépôt). Sans configuration, les clés de signature et les jetons de la fédération sont aléatoires à chaque lancement.
+- IA : simulée par défaut ; `FIREBREAK_AI=bedrock` + `AWS_REGION` + identifiants AWS pour Bedrock ([détails](docs/api.md#ia--bedrock-et-repli-mock)).
+>>>>>>> theirs
 
 Variables : `FIREBREAK_DEMO=1` (scénario figé, IA mock, cadence de rejeu) ;
 `FIREBREAK_AI=bedrock` + `AWS_REGION` + identifiants AWS pour l'explainer
@@ -43,7 +55,11 @@ Bedrock ([détails](docs/api.md#ia--bedrock-et-repli-mock)).
 
 ## Coordination d'équipe
 
+<<<<<<< ours
 - [goal.md](goal.md) (objectif et avancement partagés),
   [sessions/](sessions/) (une session par membre), protocole dans
   [AGENTS.md](AGENTS.md).
 - [Page Notion — brief et coordination](https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e)
+=======
+Le brief prévoit AWS Bedrock et Avalanche Fuji. Le produit retenu est FIREBREAK (voir `goal.md`).
+>>>>>>> theirs

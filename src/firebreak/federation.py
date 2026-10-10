@@ -1,7 +1,7 @@
 """Fédération Firebreak : jetons opaques et alertes signées Ed25519.
 
 - Quand A envoie une donnée à B, le record reçu côté B porte un
-  `token = sha256("{A}:{B}:{record_id_A}:{pair_secret}")`. B ne connaît
+  `token = HMAC-SHA256(pair_secret, "{A}:{B}:{record_id_A}")`. B ne connaît
   jamais l'identifiant du record de A ; A ne voit jamais les records
   dérivés de B.
 - Quand un record sortant de A devient contaminé, A émet UNE alerte par
@@ -19,7 +19,10 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
+import os
+import secrets
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
@@ -34,15 +37,33 @@ from cryptography.hazmat.primitives.serialization import (
 if TYPE_CHECKING:
     from .engine import Ledger
 
-PAIR_SECRET = "firebreak-demo-pair-secret"
+# Secrets de processus. Aucun secret n'est écrit dans le code : sans variable
+# d'environnement, un secret aléatoire est tiré une fois par processus (stable
+# pendant toute la durée du processus, différent à chaque lancement). Pour un
+# comportement reproductible (démo, tests), définir FIREBREAK_PAIR_SECRET et
+# FIREBREAK_KEY_SEED dans `.env.local` (ignoré par Git), jamais dans le dépôt.
+_PROCESS_SECRETS: dict[str, bytes] = {}
+
+
+def _secret(name: str) -> bytes:
+    value = _PROCESS_SECRETS.get(name)
+    if value is None:
+        env = os.environ.get(name)
+        value = env.encode() if env else secrets.token_bytes(32)
+        _PROCESS_SECRETS[name] = value
+    return value
+
 
 AlertType = Literal["taint", "release"]
 REASONS = {"taint": "source compromise", "release": "donnée de nouveau saine"}
 
 
 def make_token(sender: str, recipient: str, record_id: str) -> str:
-    return hashlib.sha256(
-        f"{sender}:{recipient}:{record_id}:{PAIR_SECRET}".encode()
+    """Jeton opaque : HMAC-SHA256 avec un secret que le code ne contient pas."""
+    return hmac.new(
+        _secret("FIREBREAK_PAIR_SECRET"),
+        f"{sender}:{recipient}:{record_id}".encode(),
+        hashlib.sha256,
     ).hexdigest()
 
 
@@ -88,7 +109,10 @@ class Federation:
         self._priv: dict[str, Ed25519PrivateKey] = {}
         self.public_keys: dict[str, bytes] = {}
         for cid in company_ids:
-            seed = hashlib.sha256(f"firebreak-key-{cid}".encode()).digest()
+            # Clé dérivée d'un secret de processus, jamais du seul nom de l'entreprise.
+            seed = hmac.new(
+                _secret("FIREBREAK_KEY_SEED"), f"ed25519:{cid}".encode(), hashlib.sha256
+            ).digest()
             priv = Ed25519PrivateKey.from_private_bytes(seed)
             self._priv[cid] = priv
             self.public_keys[cid] = priv.public_key().public_bytes(

@@ -6,8 +6,7 @@ Page Notion : https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e
 
 # Projet et sources
 - **Dépôt GitHub privé :** [Sc4rville/finswag](https://github.com/Sc4rville/finswag)
-- **Dossier local :** `/home/yann/projects/finswag`
-- **Source principale :** mail « \[CODEX\] brief hackathon Secure Horizons - Track 1 Guardians of Value (Avalanche + AWS) », reçu dans `[adresse retirée]` le 2026-10-10 à 12:26 (Europe/Paris).
+- **Source principale :** mail « \[CODEX\] brief hackathon Secure Horizons - Track 1 Guardians of Value (Avalanche + AWS) », reçu le 2026-10-10 à 12:26 (Europe/Paris).
 - **Nom du projet :** le mail mentionnait « secureswag » ; le dépôt et cette page utilisent « finswag », conformément à la demande actuelle de Yann.
 - Les informations événementielles et techniques ci-dessous sont reprises du mail. Le [Candidate Guide](https://app.notion.com/p/Candidate-Guide-Track-Guidance-EN-3f400920c77e81beb3b4fad01fc5eeda) n’est pas accessible avec la connexion Notion actuelle ; ses indications sont rapportées depuis le brief.
 
@@ -48,7 +47,7 @@ Le brief prévoit Avalanche pour la partie on-chain, avec une utilité démontra
 - [Builder Hub — inscription](https://build.avax.network/signup?ref=HGURW)
 - [Faucet](https://build.avax.network/console/primary-network/faucet)
 - Le lien [Chainlist 43113](https://chainlist.org/chain/43113) fourni par les organisateurs décrit le réseau. L’endpoint candidat `https://api.avax-test.network/ext/bc/C/rpc` reste **à tester** ; le brief ne le présente pas comme confirmé par les organisateurs.
-- Si le faucet ne suffit pas : contacter Yassir à `[adresse retirée]` avec l’adresse EVM publique du wallet.
+- Si le faucet ne suffit pas : contacter Yassir à l'adresse indiquée dans le mail des organisateurs avec l’adresse EVM publique du wallet.
 - Utiliser un wallet dédié au hackathon. Consigner les adresses des contrats déployés dans GitHub.
 
 ## AWS / Bedrock
@@ -91,13 +90,7 @@ Discuter d’une combinaison **B + C** : détection et réponse sur contrats, av
 5. **Rendu :** README, adresses des contrats, vidéo enregistrée et pitch. Caler les jalons sur les horaires officiels et le format de soumission.
 
 # Équipe et accès
-Adresses fournies par Yann pour un accès en modification :
-- [adresse retirée]
-- [adresse retirée]
-- [adresse retirée]
-
-**Statut Notion :** invitations non envoyées ; le connecteur actuel ne fournit pas d’outil de partage. La liste ci-dessus ne donne pas accès à la page. La page est actuellement privée.
-**GitHub :** le contexte local indique des invitations déjà envoyées à NewbieCae, mncodol et magraku avec accès en écriture ; acceptation à vérifier.
+Les accès (Notion, GitHub) sont gérés hors de ce dépôt ; les adresses personnelles n'y figurent pas.
 
 # Actions et questions ouvertes
 - [x] Retrouver et intégrer le brief transmis à Codex.

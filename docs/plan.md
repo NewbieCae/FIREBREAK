@@ -40,7 +40,7 @@ Un premier socle existe déjà dans le dépôt, il n'a pas encore été relu :
 ## Handoff 1 — Consolider le socle et figer le contrat API
 
 ```text
-Projet : FIREBREAK, dépôt /home/yann/projects/finswag (hackathon, fin dimanche 17 h).
+Projet : FIREBREAK, dépôt finswag (hackathon, gel du dépôt dimanche 12 h).
 Lis docs/firebreak.md, docs/benchmark-firebreak.md et docs/plan.md avant de commencer.
 
 Contexte : un premier socle existe (src/firebreak/, web/index.html, tests/, 26 tests verts),
@@ -78,7 +78,7 @@ Rapport : bugs trouvés et corrigés, sortie de pytest, compteurs après comprom
 ## Handoff 2 — Fédération complète et journal d'audit
 
 ```text
-Projet : FIREBREAK, /home/yann/projects/finswag. Lis docs/firebreak.md, docs/plan.md et docs/api.md.
+Projet : FIREBREAK, dépôt finswag. Lis docs/firebreak.md, docs/plan.md et docs/api.md.
 Le socle (étape 1) est relu et le contrat API est figé : ne casse pas les endpoints existants,
 ajoute des champs ou des endpoints si besoin et mets docs/api.md à jour.
 
@@ -114,7 +114,7 @@ Fini quand : pytest vert, docs/api.md à jour, dashboard de debug toujours fonct
 ## Handoff 3 — Scénarios réalistes et import EPCIS
 
 ```text
-Projet : FIREBREAK, /home/yann/projects/finswag. Lis docs/firebreak.md, docs/plan.md, docs/api.md.
+Projet : FIREBREAK, dépôt finswag. Lis docs/firebreak.md, docs/plan.md, docs/api.md.
 
 Objectif : montrer que FIREBREAK marche sur des supply chains physiques et s'appuie sur un
 standard que l'industrie connaît (GS1 EPCIS 2.0), au lieu d'un format maison.
@@ -144,7 +144,7 @@ EPCIS sur l'exemple. Fini quand : pytest vert, les trois scénarios visibles dan
 ## Handoff 4 — Timeline et événements live
 
 ```text
-Projet : FIREBREAK, /home/yann/projects/finswag. Lis docs/plan.md et docs/api.md.
+Projet : FIREBREAK, dépôt finswag. Lis docs/plan.md et docs/api.md.
 
 Objectif : la démo doit montrer la contamination se propager pas à pas, d'une entreprise à
 l'autre, et non un graphe qui devient rouge d'un coup. La collègue qui fait l'UI a besoin d'un
@@ -173,7 +173,7 @@ Fini quand : pytest vert, rejeu visible dans le dashboard. Commit + push.
 ## Handoff 5 — IA : Bedrock et lecture de documents (en parallèle de 2 à 4)
 
 ```text
-Projet : FIREBREAK, /home/yann/projects/finswag. Lis docs/firebreak.md, docs/plan.md, docs/api.md.
+Projet : FIREBREAK, dépôt finswag. Lis docs/firebreak.md, docs/plan.md, docs/api.md.
 Ne modifie que src/firebreak/ai.py, src/firebreak/ingest/documents.py (nouveau), leurs tests et
 le minimum de câblage dans api.py : d'autres étapes travaillent en parallèle sur le moteur.
 
@@ -205,7 +205,7 @@ Fini quand : pytest vert, docs/api.md à jour (section IA + variables d'environn
 ## Handoff 6 — Prêt pour la démo
 
 ```text
-Projet : FIREBREAK, /home/yann/projects/finswag. Lis docs/firebreak.md, docs/benchmark-firebreak.md,
+Projet : FIREBREAK, dépôt finswag. Lis docs/firebreak.md, docs/benchmark-firebreak.md,
 docs/plan.md, docs/api.md. Les étapes 1 à 5 sont livrées.
 
 Objectif : une démo de 3 minutes qui ne peut pas planter, et les chiffres du pitch.
