@@ -162,10 +162,20 @@ class Ledger:
         gates_blocked = sum(
             1 for r in self.records.values() if r.status == "quarantined" and r.gate
         )
+        amount_blocked = sum(
+            r.payload.get("amount", 0)
+            for r in self.records.values() if r.status == "quarantined"
+        )
+        amount_flowing = sum(
+            r.payload.get("amount", 0)
+            for r in self.records.values() if r.status != "quarantined"
+        )
         return {
             "total": total,
             "quarantined": quarantined,
             "ok": total - quarantined - released,
             "released": released,
             "gates_blocked": gates_blocked,
+            "amount_blocked": amount_blocked,
+            "amount_flowing": amount_flowing,
         }

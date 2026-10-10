@@ -56,6 +56,10 @@ class CountersOut(BaseModel):
     ok: int
     released: int
     gates_blocked: int = Field(description="Actions irréversibles en quarantaine.")
+    amount_blocked: float = Field(
+        default=0, description="Montant cumulé (€) des opérations en quarantaine.")
+    amount_flowing: float = Field(
+        default=0, description="Montant cumulé (€) des opérations qui continuent.")
 
 
 class CountersBlock(BaseModel):
@@ -114,6 +118,47 @@ class StateOut(BaseModel):
     alerts: list[AlertOut]
     declarations: list[DeclarationOut]
     scenario: ScenarioOut = Field(description="Scénario chargé par le dernier reset.")
+
+
+StepType = Literal[
+    "declaration", "withdrawal", "seed", "quarantine", "gate_blocked",
+    "release", "remediation", "alert_sent", "alert_received",
+    "document_confirmed", "epcis_import",
+]
+
+
+class StepCountersOut(BaseModel):
+    quarantined: int = Field(description="Opérations en quarantaine à cette étape.")
+    gates_blocked: int = Field(description="Actions irréversibles bloquées à cette étape.")
+    amount_blocked: float = Field(description="Montant bloqué cumulé (€) à cette étape.")
+    amount_flowing: float = Field(description="Montant qui continue de circuler (€) à cette étape.")
+
+
+class StepOut(BaseModel):
+    n: int = Field(description="Numéro d'étape, à partir de 1.")
+    ts: str = Field(description="Horodatage simulé de l'étape (heure du scénario).")
+    type: StepType
+    company: str = Field(description="Registre concerné par l'étape.")
+    record: str | None = Field(default=None, description="Record concerné, s'il y en a un.")
+    parent: str | None = Field(
+        default=None, description="Record parent dont dépend la contamination.")
+    gate: bool = False
+    label: str | None = None
+    rule: str | None = Field(
+        default=None,
+        description="Règle déclencheuse : source_compromise, alerte_verifiee, dependance.")
+    alert: dict | None = Field(
+        default=None,
+        description="Alerte concernée : from, to, tokens_count, verified, "
+                    "links = paires [record émis, record reçu] pour animer les arêtes.")
+    counters: StepCountersOut = Field(description="Compteurs d'impact cumulés à cette étape.")
+    text: str = Field(description="Phrase française prête à afficher pour la démo.")
+
+
+class TimelineOut(BaseModel):
+    steps: list[StepOut] = Field(
+        description="Étapes ordonnées de la dernière action "
+                    "(compromise, withdraw, remédiation, ingestion).")
 
 
 class EpcisIgnoredOut(BaseModel):

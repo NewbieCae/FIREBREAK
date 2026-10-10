@@ -53,6 +53,7 @@ class Simulation:
         self.ledgers = ledgers
         self.federation = federation
         self.clock = datetime(2026, 10, 10, 15, 0, 0)  # heure du scénario
+        self.timeline: list[dict] = []  # étapes de la dernière action
 
     # -- propagation ------------------------------------------------------
 
@@ -131,6 +132,7 @@ class Simulation:
         directs la déclarent aussi. Redéclarer la même source garde l'heure
         la plus ancienne."""
         since = to_scenario_time(since)
+        marks = self.audit_marks()
         for cid in self._declaring_ledgers(company):
             ledger = self.ledgers[cid]
             decl = ledger.declare_compromised(company, since)
@@ -140,11 +142,13 @@ class Simulation:
                 "effective_since": decl.since.isoformat(),
             })
         self.run()
+        self.timeline = self.collect_timeline(marks)
 
     def withdraw_compromise(self, company: str) -> None:
         """Retire la déclaration (fausse alerte) partout où elle est
         enregistrée, puis recalcule : les levées partent en cascade."""
         withdrawn = False
+        marks = self.audit_marks()
         for cid, ledger in self.ledgers.items():
             decl = ledger.withdraw_declaration(company)
             if decl is None:
@@ -157,6 +161,7 @@ class Simulation:
         if not withdrawn:
             raise ValueError(f"aucune déclaration active pour {company}")
         self.run()
+        self.timeline = self.collect_timeline(marks)
 
     def remediate(self, record_id: str, action: str, actor: Actor = "humain") -> Record:
         if action not in REMEDIATION_ACTIONS:
@@ -166,6 +171,7 @@ class Simulation:
             raise KeyError(record_id)
         if record.status != "quarantined":
             raise ValueError("record non mis en quarantaine")
+        marks = self.audit_marks()
         record.status = "released"
         self.ledgers[record.company].audit.append(self.clock, "remediation", actor, {
             "record": record_id,
@@ -174,7 +180,178 @@ class Simulation:
         })
         self.run()  # recompute complet : libère les descendants qui ne
         # dépendaient que de ce record, puis levées signées vers l'aval
+        self.timeline = self.collect_timeline(marks)
         return record
+
+    # -- timeline (rejeu pas à pas) ----------------------------------------
+
+    def audit_marks(self) -> dict[str, int]:
+        """Position de chaque journal d'audit, pour mesurer une action."""
+        return {cid: len(led.audit) for cid, led in self.ledgers.items()}
+
+    def _record(self, rid: str) -> Record | None:
+        return self.find_record(rid)
+
+    def _amount(self, rid: str) -> float:
+        r = self._record(rid)
+        amount = (r.payload.get("amount") if r else 0) or 0
+        return amount if isinstance(amount, (int, float)) else 0
+
+    def collect_timeline(self, marks: dict[str, int] | None = None) -> list[dict]:
+        """Convertit les entrées d'audit ajoutées depuis `marks` (toutes si
+        None) en étapes ordonnées de rejeu, avec compteurs d'impact cumulés.
+
+        Ordre : ts simulé, puis entreprise, puis index — et, à instant et
+        registre égaux, les contaminations par longueur du chemin (un parent
+        précède toujours son enfant). Ne change aucun résultat du moteur :
+        c'est une lecture du journal."""
+        new: list[tuple[str, str, dict]] = []
+        for cid, ledger in self.ledgers.items():
+            start = (marks or {}).get(cid, 0)
+            for entry in ledger.audit.entries()[start:]:
+                new.append((entry["ts"], cid, entry))
+        order = {cid: i for i, cid in enumerate(self.ledgers)}
+        new.sort(key=lambda t: (t[0], order[t[1]], t[2]["index"]))
+        # Causalité intra-groupe : dans un même (ts, registre), les entrées
+        # "quarantine" se trient par longueur du chemin (parent avant enfant)
+        # en conservant les positions des autres événements.
+        ordered: list[tuple[str, str, dict]] = []
+        i = 0
+        while i < len(new):
+            j = i
+            while j < len(new) and (new[j][0], new[j][1]) == (new[i][0], new[i][1]):
+                j += 1
+            grp = new[i:j]
+            qpos = {k for k, e in enumerate(grp) if e[2]["event"] == "quarantine"}
+            if len(qpos) > 1:
+                qs = sorted(
+                    (grp[k] for k in qpos),
+                    key=lambda t: (len(t[2]["details"].get("taint_path") or []),
+                                   t[2]["index"]))
+                it = iter(qs)
+                grp = [next(it) if k in qpos else grp[k] for k in range(len(grp))]
+            ordered.extend(grp)
+            i = j
+        new = ordered
+
+        # Compteurs au début du rejeu : état courant ± ce que l'action a changé.
+        current_q = {
+            r.id
+            for led in self.ledgers.values()
+            for r in led.records.values() if r.status == "quarantined"
+        }
+        entered = {e["details"]["record"] for _, _, e in new
+                   if e["event"] == "quarantine"}
+        exited = {e["details"]["record"] for _, _, e in new
+                  if e["event"] in ("release", "remediation")}
+        qset = (current_q | exited) - entered
+        total_amount = sum(
+            r.payload.get("amount", 0)
+            for led in self.ledgers.values()
+            for r in led.records.values()
+            if isinstance(r.payload.get("amount"), (int, float))
+        )
+        token_links = {link.token: link for link in self.federation.links}
+
+        steps: list[dict] = []
+        for ts, cid, entry in new:
+            ev, d = entry["event"], entry["details"]
+            rid = d.get("record")
+            if ev == "quarantine":
+                qset.add(rid)
+            elif ev in ("release", "remediation") and rid:
+                qset.discard(rid)
+            blocked_amount = sum(self._amount(r) for r in qset)
+            counters = {
+                "quarantined": len(qset),
+                "gates_blocked": sum(
+                    1 for r in qset
+                    if self._record(r) is not None and self._record(r).gate
+                ),
+                "amount_blocked": blocked_amount,
+                "amount_flowing": total_amount - blocked_amount,
+            }
+            steps.append(self._step(len(steps) + 1, ts, cid, ev, d,
+                                    counters, token_links))
+        return steps
+
+    def _step(self, n: int, ts: str, cid: str, ev: str, d: dict,
+              counters: dict, token_links: dict) -> dict:
+        rid = d.get("record")
+        record = self._record(rid) if rid else None
+        path = d.get("taint_path") or []
+        parent = path[-2] if len(path) > 1 else None
+        rule = d.get("rule")
+        alert = None
+        if ev in ("alert_sent", "alert_received"):
+            links = [
+                [token_links[t].sender_record, token_links[t].recipient_record]
+                for t in d.get("tokens", []) if t in token_links
+            ]
+            alert = {
+                "type": d.get("type"), "from": d.get("from"), "to": d.get("to"),
+                "tokens_count": len(d.get("tokens", [])),
+                "verified": d.get("verified"), "links": links,
+            }
+        if ev == "quarantine":
+            if record is not None and record.gate:
+                stype = "gate_blocked"
+            elif rule in ("source_compromise", "alerte_verifiee"):
+                stype = "seed"
+            else:
+                stype = "quarantine"
+        else:
+            stype = {
+                "declaration": "declaration",
+                "declaration_withdrawn": "withdrawal",
+                "remediation": "remediation",
+                "release": "release",
+                "alert_sent": "alert_sent",
+                "alert_received": "alert_received",
+            }.get(ev, ev)
+        return {
+            "n": n, "ts": ts, "type": stype, "company": cid,
+            "record": rid, "parent": parent,
+            "gate": bool(record.gate) if record else False,
+            "label": record.label if record else None,
+            "rule": rule, "alert": alert,
+            "counters": counters,
+            "text": self._step_text(stype, cid, d, record, parent),
+        }
+
+    def _step_text(self, stype: str, cid: str, d: dict,
+                   record: Record | None, parent: str | None) -> str:
+        label = record.label if record else ""
+        match stype:
+            case "declaration":
+                since = d.get("effective_since", d.get("since", ""))[:16].replace("T", " ")
+                return f"{d.get('source')} déclarée compromise depuis {since} — registre {cid}."
+            case "withdrawal":
+                return f"Déclaration retirée pour {d.get('source')} — registre {cid}."
+            case "seed":
+                return f"Semence de contamination : « {label} » ({cid})."
+            case "quarantine":
+                p = self._record(parent)
+                via = f" via « {p.label} »" if p else ""
+                return f"« {label} » contaminée{via} ({cid})."
+            case "gate_blocked":
+                amount = record.payload.get("amount") if record else None
+                m = f" ({amount} €)" if amount else ""
+                return f"Action irréversible bloquée : « {label} »{m} ({cid})."
+            case "release":
+                return f"« {label} » libérée ({cid})."
+            case "remediation":
+                return f"Remédiation « {d.get('action')} » sur « {label} » ({cid})."
+            case "alert_sent":
+                kind = "levée" if d.get("type") == "release" else "contamination"
+                return (f"Alerte signée {kind} émise : {d.get('from')} → {d.get('to')} "
+                        f"({len(d.get('tokens', []))} jeton(s)).")
+            case "alert_received":
+                ok = d.get("verified")
+                return (f"Alerte reçue chez {d.get('to')} — signature "
+                        f"{'vérifiée' if ok else 'REJETÉE'}.")
+            case _:
+                return f"{stype} ({cid})."
 
     # -- accès ------------------------------------------------------------
 
@@ -240,7 +417,8 @@ class Simulation:
         per_company = {cid: led.counters() for cid, led in self.ledgers.items()}
         global_counters = {
             key: sum(c[key] for c in per_company.values())
-            for key in ("total", "quarantined", "ok", "released", "gates_blocked")
+            for key in ("total", "quarantined", "ok", "released", "gates_blocked",
+                        "amount_blocked", "amount_flowing")
         }
         alerts = [
             {

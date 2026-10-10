@@ -51,8 +51,10 @@ Les exemples ci-dessous sont de vraies réponses du serveur, tronquées (`…`).
 | `ok` | Records qui continuent normalement (`total - quarantined - released`). |
 | `released` | Records débloqués par remédiation. |
 | `gates_blocked` | Actions irréversibles bloquées. |
+| `amount_blocked` | Somme des `payload.amount` (€) des records en quarantaine. |
+| `amount_flowing` | Montant cumulé (€) des opérations qui continuent (`ok` + `released`). |
 
-« Opérations qui continuent » à l'écran = `ok + released`.
+« Opérations qui continuent » à l'écran = `ok + released`. Les records sans `payload.amount` ne participent à aucun des deux totaux.
 
 ## Erreurs
 
@@ -349,6 +351,59 @@ Recalcule toutes les chaînes de hash (ou une seule avec `?company=<id>`) et dit
 - Limite : la chaîne prouve qu'aucune entrée n'a été modifiée **sans recalculer tous les hash suivants**. Pour se protéger aussi contre ce cas, il faut publier `head` ailleurs (chez un partenaire ou sur une blockchain) ; ce n'est pas encore fait.
 
 Erreur : 404 si l'entreprise est inconnue.
+
+### `GET /api/timeline`
+
+Rejeu pas à pas de **la dernière action** (`POST /api/compromise`, `…/compromise/withdraw`, `…/records/{id}/remediate`, ou une ingestion confirmée). Les étapes sont lues depuis les journaux d'audit chaînés : la timeline ne change aucun résultat du moteur, elle l'instrumente. Vide (`{"steps": []}`) juste après un reset.
+
+```json
+{"steps": [
+  {"n": 1, "ts": "2026-10-10T15:00:00", "type": "declaration",
+   "company": "fournisseur", "record": null, "parent": null, "gate": false,
+   "label": null, "rule": null, "alert": null,
+   "counters": {"quarantined": 0, "gates_blocked": 0,
+                "amount_blocked": 0, "amount_flowing": 121380},
+   "text": "fournisseur déclarée compromise depuis 2026-10-10 14:00 — registre fournisseur."},
+  {"n": 12, "ts": "2026-10-10T15:00:00", "type": "gate_blocked",
+   "company": "fabricant", "record": "m-pay-X", "parent": "m-inv-X",
+   "gate": true, "label": "Paiement facture F-9999 (RIB modifié)",
+   "rule": "dependance", "alert": null,
+   "counters": {"quarantined": 8, "gates_blocked": 3,
+                "amount_blocked": 10420, "amount_flowing": 110960},
+   "text": "Action irréversible bloquée : « Paiement facture F-9999 (RIB modifié) » (5210 €) (fabricant)."}
+]}
+```
+
+| `type` | Sens |
+|---|---|
+| `declaration` | Une déclaration de compromission enregistrée sur ce registre (`company` = registre, la source est dans `text`). |
+| `seed` | Record contaminé directement par une règle : `rule` = `source_compromise` (origine déclarée, `ts` dans la fenêtre) ou `alerte_verifiee` (jeton d'une alerte vérifiée). |
+| `quarantine` | Record contaminé par dépendance ; `parent` = record contaminé dont il dérive. |
+| `gate_blocked` | Quarantaine d'un `gate` (action irréversible). |
+| `alert_sent` / `alert_received` | Alerte signée émise / reçue-vérifiée. `alert.links` donne les paires `[record_émis, record_reçu]` des jetons — les arêtes `cross: true` à animer. `alert.verified` = `false` si la signature est rejetée. |
+| `release` | Record sorti de quarantaine au recalcul (ne dépend plus d'une donnée suspecte). |
+| `remediation` | Action humaine de remédiation (le record passe `released`). |
+| `withdrawal` | Déclaration retirée (fausse alerte). |
+
+- `counters` donne l'impact **cumulé à cette étape** : rejouer les étapes dans l'ordre reproduit l'état final de `/api/state` (y compris les cascades de libération après remédiation ou retrait).
+- `text` est une phrase française prête pour l'affichage.
+
+### `GET /api/events?speed=<s>`
+
+Diffuse la même séquence en **Server-Sent Events** (`text/event-stream`) : un événement `data:` par étape (même charge utile JSON qu'une entrée de `/api/timeline`), précédé d'un commentaire `: rejeu firebreak`, flux fermé en fin de séquence. `speed` = pause en secondes entre événements (défaut `0.5`, `0` pour tout d'un coup, max `10`).
+
+```js
+const es = new EventSource('/api/events?speed=0.8');
+es.onmessage = (e) => {
+  const step = JSON.parse(e.data);
+  console.log(step.n, step.type, step.text);
+  // step.counters = {quarantined, gates_blocked, amount_blocked, amount_flowing}
+  // step.alert.links = [[record_emis, record_recu], …] → arêtes cross à animer
+};
+// le flux se ferme tout seul en fin de séquence
+```
+
+L'état final reconstruit en appliquant les étapes dans l'ordre est identique à `GET /api/state` (vérifié par `tests/test_timeline.py`).
 
 ### `POST /api/ingest/document?company=<id>`
 

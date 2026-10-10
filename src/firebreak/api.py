@@ -8,14 +8,16 @@ Contrat documenté dans docs/api.md ; schéma OpenAPI sur /docs.
 from __future__ import annotations
 
 import copy
+import json
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
 from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -35,6 +37,7 @@ from .schemas import (
     ScenarioId,
     ScenarioOut,
     StateOut,
+    TimelineOut,
 )
 from .simulation import (
     REMEDIATION_ACTIONS,
@@ -316,6 +319,7 @@ def post_confirm_document(proposal_id: str, body: ConfirmBody | None = None) -> 
         ))
         rec["origin"], rec["inputs"] = origin, list(inputs)
         proposal["status"] = "confirmed"
+        marks = sim.audit_marks()
         ledger.audit.append(sim.clock, "document_confirmed", "humain", {
             "record": rec["id"],
             "proposal": proposal_id,
@@ -326,6 +330,7 @@ def post_confirm_document(proposal_id: str, body: ConfirmBody | None = None) -> 
             "confidence": proposal["confidence"],
         })
         sim.run()  # le record passe par les mêmes règles que les autres
+        sim.timeline = sim.collect_timeline(marks)
         return sim.state()
 
 
@@ -347,12 +352,14 @@ def post_ingest_epcis(company: str, document: dict = Body(
             raise HTTPException(400, str(exc)) from exc
         for record in result.records:
             ledger.add(record)
+        marks = sim.audit_marks()
         ledger.audit.append(sim.clock, "epcis_import", "humain", {
             "records": [r.id for r in result.records],
             "events": result.events,
             "ignored": len(result.ignored),
         })
         sim.run()
+        sim.timeline = sim.collect_timeline(marks)
         return {
             "events": result.events,
             "imported": [serialize_record(r) for r in result.records],
@@ -369,6 +376,35 @@ class ResetBody(BaseModel):
          response_model=list[ScenarioOut])
 def get_scenarios() -> list[dict]:
     return scenarios_meta()
+
+
+@app.get("/api/timeline", summary="Étapes ordonnées de la dernière action",
+         response_model=TimelineOut)
+def get_timeline() -> dict:
+    """Rejeu pas à pas : déclarations, semences, contaminations avec parent,
+    alertes émises/vérifiées, gates bloqués, releases. Chaque étape porte
+    des compteurs d'impact cumulés (quarantined, gates_blocked,
+    amount_blocked, amount_flowing)."""
+    with _lock:
+        return {"steps": copy.deepcopy(sim.timeline)}
+
+
+@app.get("/api/events", summary="Rejeu en direct (Server-Sent Events)",
+         response_class=StreamingResponse)
+def get_events(speed: float = Query(
+        default=0.5, ge=0, le=10,
+        description="Pause en secondes entre deux événements (0 = tout d'un coup).")):
+    with _lock:
+        steps = copy.deepcopy(sim.timeline)
+
+    def gen():
+        yield ": rejeu firebreak\n\n"
+        for step in steps:
+            yield f"data: {json.dumps(step, ensure_ascii=False)}\n\n"
+            if speed:
+                time.sleep(speed)
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
 
 
 @app.post("/api/reset", summary="Réinitialiser (choix du scénario)",

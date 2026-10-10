@@ -40,9 +40,11 @@
   <select id="sel-scenario" title="Scénario"></select>
   <button id="btn-compromise">Déclarer le fournisseur compromis (depuis 14:00)</button>
   <button id="btn-withdraw" class="secondary">Retirer la déclaration (fausse alerte)</button>
+  <button id="btn-replay" class="secondary">Rejouer</button>
   <button id="btn-reset" class="secondary">Réinitialiser</button>
   <span class="counter" id="cnt-main">—</span>
   <span class="counter" id="cnt-gates">—</span>
+  <span class="counter" id="cnt-money">—</span>
 </div>
 <div id="main">
   <div id="cy"></div>
@@ -59,6 +61,19 @@
 const COLORS = { ok: '#43a047', quarantined: '#e53935', released: '#1e88e5' };
 const COL_X = { fournisseur: 80, fabricant: 330, distributeur: 580, client: 830 };
 let cy = null, state = null;
+
+function fmtMoney(v) {
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v || 0) + ' €';
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function setCounters(c) {
+  document.getElementById('cnt-main').innerHTML =
+    `<b>${c.quarantined}</b> opérations bloquées`;
+  document.getElementById('cnt-gates').innerHTML =
+    `<b>${c.gates_blocked}</b> actions irréversibles bloquées`;
+  document.getElementById('cnt-money').innerHTML =
+    `<b>${fmtMoney(c.amount_blocked)}</b> bloqués / ${fmtMoney(c.amount_flowing)} en circulation`;
+}
 
 async function api(path, method = 'GET', body = null) {
   const res = await fetch(path, {
@@ -83,6 +98,8 @@ function render(s) {
     `<b>${g.quarantined}</b> opérations bloquées / ${g.ok + g.released} continuent`;
   document.getElementById('cnt-gates').innerHTML =
     `<b>${g.gates_blocked}</b> actions irréversibles bloquées`;
+  document.getElementById('cnt-money').innerHTML =
+    `<b>${fmtMoney(g.amount_blocked)}</b> bloqués / ${fmtMoney(g.amount_flowing)} en circulation`;
 
   const rows = {};
   const elements = [];
@@ -123,6 +140,8 @@ function render(s) {
           'arrow-scale': 0.6, 'curve-style': 'bezier' } },
       { selector: 'edge[cross]', style: { 'line-style': 'dashed', 'line-color': '#8899bb',
           'target-arrow-color': '#8899bb' } },
+      { selector: '.travelling', style: { 'line-color': '#ffb300',
+          'target-arrow-color': '#ffb300', 'width': 3 } },
     ],
   });
   cy.on('tap', 'node[status]', evt => showDetail(evt.target.data('record')));
@@ -183,6 +202,45 @@ document.getElementById('btn-withdraw').onclick = async () => {
       { company: state.scenario.compromise.company }));
   } catch (e) { alert(e.message); }
 };
+let replaying = false;
+async function replay() {
+  if (replaying) return;
+  replaying = true;
+  try {
+    const { steps } = await api('/api/timeline');
+    if (!steps.length || !cy) return;
+    cy.nodes('[status="quarantined"]').forEach(n => n.data('status', 'ok'));
+    const feed = document.getElementById('alerts');
+    feed.innerHTML = '';
+    for (const st of steps) {
+      if (st.record) {
+        const n = cy.getElementById(st.record);
+        if (n.nonempty()) {
+          if (['seed', 'quarantine', 'gate_blocked'].includes(st.type))
+            n.data('status', 'quarantined');
+          else if (st.type === 'release') n.data('status', 'ok');
+          else if (st.type === 'remediation') n.data('status', 'released');
+        }
+      }
+      if (st.alert && st.alert.links) {
+        st.alert.links.forEach(([s, t]) => {
+          const e = cy.edges().filter(ed =>
+            ed.source().id() === s && ed.target().id() === t)[0];
+          if (e) { e.addClass('travelling'); setTimeout(() => e.removeClass('travelling'), 700); }
+        });
+        const div = document.createElement('div');
+        div.className = 'alert';
+        div.innerHTML = `${st.alert.from} → ${st.alert.to} — ${st.alert.tokens_count} jeton(s)`;
+        feed.prepend(div);
+      }
+      if (st.counters) setCounters(st.counters);
+      const det = document.getElementById('detail');
+      det.className = ''; det.innerHTML = `<b>Étape ${st.n}</b> — ${st.text}`;
+      await sleep(500);
+    }
+  } finally { replaying = false; }
+}
+document.getElementById('btn-replay').onclick = replay;
 document.getElementById('btn-reset').onclick = async () => {
   render(await api('/api/reset', 'POST', { scenario: state.scenario.id }));
 };
