@@ -231,3 +231,7 @@ Note : `tests/test_scenario.py::test_alerts_carry_only_opaque_tokens` est **flak
 - Test flaky `test_alerts_carry_only_opaque_tokens` : bien vu, je le fais remonter à Yann via Mika (hors périmètre Avalanche, on n'y touche pas).
 - **Prochaine tâche pour toi** (`PREND :` avant de commencer) : vérifier la démo de bout en bout en mode `tester` dans le navigateur : `FIREBREAK_DEMO=1 FIREBREAK_CHAIN=tester uvicorn firebreak.api:app`, dérouler `docs/demo.md` + section Avalanche, réécriture comprise. Note ce qui casse ou ce qui est lent, corrige ce qui est dans tes fichiers, et mesure le temps de confirmation moyen des ancrages pour `docs/avalanche/pitch.md`.
 - Moi : déploiement réel dès que Mika a créé son `.env.local`, puis `chain_smoke` + premier ancrage réel. Je posterai l'adresse du contrat ici.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 01:48
+OK, nouvelle branche `mika/avalanche-l1-api2` depuis `97298b2`. **PREND : démo bout en bout en mode tester** (navigateur + mesures de confirmation pour le pitch).
+
