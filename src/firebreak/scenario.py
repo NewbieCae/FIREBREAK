@@ -123,6 +123,65 @@ def _clean_morning(b: _Builder) -> None:
               gate=True, payload={"amount": amount + 950})
 
 
+def _add_fabricant_afternoon(b: _Builder) -> None:
+    """Après-midi d'activité légitime au fabricant (14:05 → 17:25).
+
+    ~40 records indépendants : ils ne dépendent QUE de données matinales
+    propres (m-gr-01..07, m-lot-01..07) ou entre eux — jamais d'une donnée
+    fournisseur reçue après 14:00, jamais d'un record contaminé. Les
+    paiements vont à d'autres fournisseurs (RIB habituel). Les expéditions
+    partent vers le distributeur (copies reçues + réceptions en entrepôt).
+    """
+    m, d = b.m, b.d
+    ts = _t(14, 5)
+
+    def nxt(minutes: int = 5) -> datetime:
+        nonlocal ts
+        t = ts
+        ts += timedelta(minutes=minutes)
+        return t
+
+    # 6 lots produits sur stock matinal contrôlé
+    for i in range(1, 7):
+        b.transform(m, f"m-lot-a{i}", nxt(), f"Lancement lot LOT-A{i}0 (stock matinal)",
+                    [f"m-gr-0{i}"], f"LOT-A{i}0")
+    # 6 contrôles qualité des lots
+    for i in range(1, 7):
+        b.rec(m, f"m-qc-a{i}", "quality_check", nxt(),
+              f"Contrôle qualité LOT-A{i}0", inputs=[f"m-lot-a{i}"])
+    # 6 emballages
+    for i in range(1, 7):
+        b.rec(m, f"m-pack-a{i}", "packaging", nxt(),
+              f"Emballage LOT-A{i}0", inputs=[f"m-qc-a{i}"])
+    # 4 transferts internes vers le quai
+    for i in range(1, 5):
+        b.rec(m, f"m-tr-a{i}", "internal_transfer", nxt(),
+              f"Transfert quai LOT-A{i}0", inputs=[f"m-pack-a{i}"])
+    # 4 expéditions vers le distributeur (+ réceptions entrepôt côté d)
+    for i in range(1, 5):
+        b.rec(m, f"m-ship-a{i}", "shipment", nxt(),
+              f"Expédition LOT-A{i}0", inputs=[f"m-tr-a{i}"], gate=True)
+        b.send(m, f"m-ship-a{i}", d, f"d-ship-a{i}", "shipment",
+               nxt(2), f"Expédition reçue LOT-A{i}0")
+        b.rec(d, f"d-gr-a{i}", "goods_receipt", nxt(5),
+              f"Réception entrepôt LOT-A{i}0", inputs=[f"d-ship-a{i}"])
+    # 4 commandes + paiements à d'autres fournisseurs
+    for i, amount in enumerate((2250, 2700, 3150, 3600), start=1):
+        b.rec(m, f"m-po-a{i}", "purchase_order", nxt(),
+              f"Commande BC-A{i}0 fournisseur alternatif")
+        b.rec(m, f"m-pay-a{i}", "payment", nxt(),
+              f"Paiement commande BC-A{i}0", inputs=[f"m-po-a{i}"],
+              gate=True, payload={"amount": amount, "rib": RIB_OK})
+    # 6 opérations internes diverses
+    b.rec(m, "m-so-a1", "sales_order", nxt(), "Commande chantier direct SO-A1")
+    b.rec(m, "m-so-a2", "sales_order", nxt(), "Commande distributeur SO-A2")
+    b.rec(m, "m-ic-a1", "inventory_count", nxt(), "Inventaire bobines aprèm")
+    b.rec(m, "m-mnt-a1", "maintenance", nxt(), "Maintenance découpeuse D1")
+    b.rec(m, "m-qc-a7", "quality_check", nxt(), "Contrôle LOT-502",
+          inputs=["m-lot-02"])
+    b.rec(m, "m-adj-a1", "stock_adjustment", nxt(), "Ajustement stock aprèm")
+
+
 def _internal_ops(b: _Builder) -> None:
     """Opérations internes sans lien avec l'attaque."""
     f, m, d, c = b.f, b.m, b.d, b.c
@@ -353,6 +412,7 @@ def build_simulation(scenario: str = DEFAULT_SCENARIO) -> Simulation:
     _clean_morning(b)
     definition.attack(b)
     _internal_ops(b)
+    _add_fabricant_afternoon(b)
     sim = Simulation(COMPANIES, b.ledgers, b.fed, scenario=definition.meta())
     sim.run()
     return sim

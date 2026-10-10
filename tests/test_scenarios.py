@@ -61,6 +61,20 @@ def _declared(name):
     return sim
 
 
+AFTERNOON = {  # activité légitime d'après-midi au fabricant (+ copies chez d)
+    *[f"m-lot-a{i}" for i in range(1, 7)],
+    *[f"m-qc-a{i}" for i in range(1, 7)],
+    *[f"m-pack-a{i}" for i in range(1, 7)],
+    *[f"m-tr-a{i}" for i in range(1, 5)],
+    *[f"m-ship-a{i}" for i in range(1, 5)],
+    *[f"d-ship-a{i}" for i in range(1, 5)],
+    *[f"d-gr-a{i}" for i in range(1, 5)],
+    *[f"m-po-a{i}" for i in range(1, 5)],
+    *[f"m-pay-a{i}" for i in range(1, 5)],
+    "m-so-a1", "m-so-a2", "m-ic-a1", "m-mnt-a1", "m-qc-a7", "m-adj-a1",
+}
+
+
 def _records(sim):
     return {r.id: r for led in sim.ledgers.values() for r in led.records.values()}
 
@@ -92,12 +106,22 @@ def test_scenario_invariants(name):
     records = _records(sim)
     total = len(records)
     quarantined = [r for r in records.values() if r.status == "quarantined"]
-    assert 100 <= total <= 150
+    assert 100 <= total <= 200
     assert 0 < len(quarantined) < 0.15 * total
     assert {r.id for r in quarantined if r.gate} == GATES_BLOCKED[name]
     stopper = records[STOPPERS[name]]
     assert stopper.verified and stopper.status == "ok"
     assert any(records[i].status == "quarantined" for i in stopper.inputs)
+
+
+@pytest.mark.parametrize("name", sorted(EXPECTED))
+def test_afternoon_never_quarantined(name):
+    """Les ~40 records légitimes d'après-midi ne doivent JAMAIS entrer en
+    quarantaine : ils ne dépendent d'aucune donnée fournisseur post-14 h."""
+    sim = _declared(name)
+    records = _records(sim)
+    assert AFTERNOON <= set(records), name  # présents dans les 4 scénarios
+    assert all(records[i].status == "ok" for i in AFTERNOON), name
 
 
 @pytest.mark.parametrize("name", sorted(EXPECTED))

@@ -120,7 +120,7 @@ class TestApi:
         assert res.status_code == 200
         body = res.json()
         assert body["events"] == 11 and len(body["imported"]) == 11
-        assert body["state"]["counters"]["global"]["total"] == 145 + 11
+        assert body["state"]["counters"]["global"]["total"] == 193 + 11
         audit = client.get("/api/audit?company=fabricant").json()["entries"]
         assert audit[-1]["event"] == "epcis_import"
         state = client.post("/api/compromise", json={

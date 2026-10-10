@@ -110,7 +110,7 @@ curl localhost:8000/api/state
     …
   ],
   "counters": {
-    "global": {"total": 145, "quarantined": 0, "ok": 145, "released": 0, "gates_blocked": 0},
+    "global": {"total": 193, "quarantined": 0, "ok": 193, "released": 0, "gates_blocked": 0},
     "per_company": {"fournisseur": {"total": 28, …}, …}
   },
   "alerts": [],
@@ -147,7 +147,7 @@ curl -X POST localhost:8000/api/compromise \
 ```json
 {
   "counters": {
-    "global": {"total": 145, "quarantined": 17, "ok": 128, "released": 0, "gates_blocked": 4},
+    "global": {"total": 193, "quarantined": 17, "ok": 176, "released": 0, "gates_blocked": 4},
     "per_company": {
       "fournisseur":  {"total": 28, "quarantined": 4, "ok": 24, "released": 0, "gates_blocked": 0},
       "fabricant":    {"total": 63, "quarantined": 8, "ok": 55, "released": 0, "gates_blocked": 3},
@@ -227,7 +227,7 @@ Réponse : l'état complet, comme `/api/state`. Après compromission puis reméd
 
 ```json
 {
-  "counters": {"global": {"total": 145, "quarantined": 9, "ok": 135, "released": 1, "gates_blocked": 1}, …},
+  "counters": {"global": {"total": 193, "quarantined": 9, "ok": 183, "released": 1, "gates_blocked": 1}, …},
   "alerts": [
     …les 3 alertes taint…,
     {"type": "release", "from": "fabricant", "to": "distributeur", "tokens_count": 1, "verified": true, "issued_at": "2026-10-10T15:02:00"},
@@ -264,7 +264,7 @@ Reconstruit un scénario (aucune déclaration, aucune alerte, journaux d'audit v
 curl -X POST localhost:8000/api/reset -H 'Content-Type: application/json' -d '{"scenario": "cert"}'
 ```
 
-Sans corps : `mixed` (145 records). Réponse : l'état complet, avec `scenario`. Un identifiant inconnu donne 422 `{"detail": "requête invalide — scenario: Input should be 'mixed', 'rib', 'cert' or 'asn'"}`.
+Sans corps : `mixed` (193 records). Réponse : l'état complet, avec `scenario`. Un identifiant inconnu donne 422 `{"detail": "requête invalide — scenario: Input should be 'mixed', 'rib', 'cert' or 'asn'"}`.
 
 ### `GET /api/scenarios`
 
@@ -422,15 +422,15 @@ Même fonction de métriques des deux côtés : `blocked`, `healthy_blocked` (bl
  "without":{"title":"Sans Firebreak","policy":"B",
    "subtitle":"On coupe le fournisseur et ses clients directs depuis 14 h",
    "scope":{"fournisseur":["fournisseur","fabricant"]},
-   "blocked":14,"healthy_blocked":2,"leaked":5,
+   "blocked":54,"healthy_blocked":42,"leaked":5,
    "leaked_ids":[{"id":"d-ship-X","label":"Expédition reçue LOT-999","company":"distributeur"},…],
-   "gates_blocked":4,"payments_blocked_eur":5210,"payments_flowing_eur":80402,
-   "activity_preserved_pct":98.4,"precision":0.857,"recall":0.706,
+   "gates_blocked":18,"payments_blocked_eur":16910,"payments_flowing_eur":80402,
+   "activity_preserved_pct":76.1,"precision":0.222,"recall":0.706,
    "companies_hit":["fabricant","fournisseur"],"blocked_ids":["f-asn-08",…]},
  "with":{"title":"Avec Firebreak","policy":"C",
    "subtitle":"On gèle seulement les opérations contaminées",
    "blocked":17,"healthy_blocked":0,"leaked":0,"leaked_ids":[],
-   "gates_blocked":4,"payments_blocked_eur":5210,"payments_flowing_eur":80402,
+   "gates_blocked":4,"payments_blocked_eur":5210,"payments_flowing_eur":92102,
    "activity_preserved_pct":100.0,"precision":1.0,"recall":1.0,
    "companies_hit":["client","distributeur","fabricant","fournisseur"],"blocked_ids":[…]},
  "healthy_blocked_ratio":null,
@@ -596,10 +596,10 @@ Quatre entreprises : `fournisseur` (Aciers Durand) → `fabricant` (Mécano Pré
 
 | `id` | Attaque | Records | Bloqués | Actions irréversibles bloquées | Ce qui arrête la propagation |
 |---|---|---|---|---|---|
-| `mixed` (défaut) | Faux ASN, faux certificat et facture au RIB modifié | 145 | 17 | `m-lot-X`, `m-pay-X`, `m-ship-X`, `d-out-X` | Réception BC-1008 contrôlée physiquement (`m-gr-08`) |
-| `rib` | Mail de changement de RIB → fiche fournisseur modifiée → paiement | 137 | 8 | `m-pay-X` | Contre-appel au numéro connu pour la facture F-3008 (`m-call-08`) : son paiement continue |
-| `cert` | Faux certificat qualité sur une bobine réelle (COIL-210) | 145 | 13 | `m-lot-901`, `m-asm-950`, `m-ship-950`, `d-out-950` | Réception pesée de COIL-210 (`m-gr-X`) : la bobine existe, seul le certificat est faux. LOT-902 (autres bobines) et son expédition continuent |
-| `asn` | Faux avis d'expédition (COIL-299 n'existe pas) | 142 | 13 | `m-lot-X`, `m-ship-X`, `d-out-X` | Réception COIL-108 contrôlée physiquement (`m-gr-08`) : LOT-908 continue |
+| `mixed` (défaut) | Faux ASN, faux certificat et facture au RIB modifié | 193 | 17 | `m-lot-X`, `m-pay-X`, `m-ship-X`, `d-out-X` | Réception BC-1008 contrôlée physiquement (`m-gr-08`) |
+| `rib` | Mail de changement de RIB → fiche fournisseur modifiée → paiement | 185 | 8 | `m-pay-X` | Contre-appel au numéro connu pour la facture F-3008 (`m-call-08`) : son paiement continue |
+| `cert` | Faux certificat qualité sur une bobine réelle (COIL-210) | 193 | 13 | `m-lot-901`, `m-asm-950`, `m-ship-950`, `d-out-950` | Réception pesée de COIL-210 (`m-gr-X`) : la bobine existe, seul le certificat est faux. LOT-902 (autres bobines) et son expédition continuent |
+| `asn` | Faux avis d'expédition (COIL-299 n'existe pas) | 190 | 13 | `m-lot-X`, `m-ship-X`, `d-out-X` | Réception COIL-108 contrôlée physiquement (`m-gr-08`) : LOT-908 continue |
 
 - `rib` reste chez le fabricant : aucun objet physique ne part vers l'aval.
 - `cert` montre la généalogie des lots : LOT-901 est fabriqué avec COIL-210, puis le sous-ensemble ASM-950 avec LOT-901 et LOT-902. ASM-950 est bloqué jusqu'au client ; LOT-902 seul continue.
@@ -609,4 +609,4 @@ Quatre entreprises : `fournisseur` (Aciers Durand) → `fabricant` (Mécano Pré
 
 Le fournisseur est compromis depuis 14 h et envoie un faux avis d'expédition, un faux certificat et une facture avec RIB modifié. Une livraison légitime reçue après 14 h est contrôlée physiquement (`m-gr-08`, `verified: true`) : elle arrête la propagation.
 
-Après `{"company": "fournisseur", "since": "2026-10-10T14:00:00"}` : 17 records bloqués sur 145, 128 continuent, 4 actions irréversibles bloquées (`m-lot-X`, `m-pay-X`, `m-ship-X`, `d-out-X`), contamination jusqu'au client.
+Après `{"company": "fournisseur", "since": "2026-10-10T14:00:00"}` : 17 records bloqués sur 193, 176 continuent, 4 actions irréversibles bloquées (`m-lot-X`, `m-pay-X`, `m-ship-X`, `d-out-X`), contamination jusqu'au client.

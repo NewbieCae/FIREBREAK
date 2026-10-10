@@ -208,7 +208,9 @@ function showCompare(d) {
   const ratio = d.healthy_blocked_ratio;
   document.getElementById('cmp-headline').textContent =
     ratio !== null ? `${ratio.toFixed(1)}× moins d'opérations saines bloquées`
-    : `${d.with.healthy_blocked} opération saine bloquée avec Firebreak`;
+    : `Sans Firebreak : ${d.without.healthy_blocked} opérations saines bloquées ` +
+      `et ${d.without.leaked} contaminées qui passent. ` +
+      `Avec Firebreak : ${d.with.healthy_blocked} et ${d.with.leaked}.`;
   document.getElementById('cmp-subline').textContent =
     `Vérité terrain : ${d.truth.contaminated} opérations réellement contaminées`;
   document.getElementById('cmp-sub-l').textContent = d.without.subtitle;

@@ -27,9 +27,20 @@ TRUTH_MIXED = {
 }
 # Périmètre de la politique B : fournisseur + client direct = fabricant.
 # Bloqués : tout record f/m avec ts >= 14:00, soit les 12 contaminés +
-# m-ship-07 (14:00 pile, sain) + m-gr-08 (vérifié, sain) = 14.
-B_BLOCKED = 14
-B_HEALTHY = {"m-ship-07", "m-gr-08"}
+# m-ship-07 (14:00 pile, sain) + m-gr-08 (vérifié, sain) + les 40 records
+# légitimes d'après-midi du fabricant = 54.
+AFTERNOON_M = {
+    *[f"m-lot-a{i}" for i in range(1, 7)],
+    *[f"m-qc-a{i}" for i in range(1, 7)],
+    *[f"m-pack-a{i}" for i in range(1, 7)],
+    *[f"m-tr-a{i}" for i in range(1, 5)],
+    *[f"m-ship-a{i}" for i in range(1, 5)],
+    *[f"m-po-a{i}" for i in range(1, 5)],
+    *[f"m-pay-a{i}" for i in range(1, 5)],
+    "m-so-a1", "m-so-a2", "m-ic-a1", "m-mnt-a1", "m-qc-a7", "m-adj-a1",
+}
+B_BLOCKED = 54
+B_HEALTHY = {"m-ship-07", "m-gr-08"} | AFTERNOON_M
 B_LEAKS = {"d-ship-X", "d-gr-X", "d-out-X", "c-ship-X", "c-gr-X"}
 
 
@@ -63,7 +74,7 @@ def test_truth_and_metrics_mixed():
     assert b["policy"] == "B" and c["policy"] == "C"
     assert set(b["blocked_ids"]) - TRUTH_MIXED == B_HEALTHY
     assert b["blocked"] == B_BLOCKED
-    assert b["healthy_blocked"] == 2
+    assert b["healthy_blocked"] == 42
     assert {l["id"] for l in b["leaked_ids"]} == B_LEAKS
     assert b["companies_hit"] == ["fabricant", "fournisseur"]
     # vérité bloquée par B = les 12 contaminés du périmètre f+m
@@ -91,11 +102,15 @@ def test_payments_and_gates():
     _compromise()
     d = client.get("/api/compare").json()
     b, c = d["without"], d["with"]
-    # seul le paiement au RIB frauduleux porte un montant parmi les bloqués
-    assert b["payments_blocked_eur"] == 5210
+    # B : le RIB frauduleux + les 4 paiements d'après-midi (2250+2700+3150+3600)
+    assert b["payments_blocked_eur"] == 5210 + 11700 == 16910
     assert c["payments_blocked_eur"] == 5210
-    # B bloque aussi le gate sain m-ship-07 (14:00 pile)
-    assert b["gates_blocked"] == 4
+    assert b["payments_flowing_eur"] == 97312 - 16910 == 80402
+    assert c["payments_flowing_eur"] == 97312 - 5210 == 92102
+    # B bloque 3 gates contaminés (m-lot-X, m-pay-X, m-ship-X) + le gate sain
+    # m-ship-07 (14:00 pile) + 14 gates d'après-midi : 6 lots, 4 paiements,
+    # 4 expéditions = 18
+    assert b["gates_blocked"] == 3 + 1 + 14 == 18
     assert c["gates_blocked"] == 4
 
 

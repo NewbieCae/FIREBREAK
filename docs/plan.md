@@ -9,7 +9,7 @@ Un premier socle existe déjà dans le dépôt, il n'a pas encore été relu :
 - `src/firebreak/` : `model.py`, `engine.py` (graphe et propagation), `federation.py` (alertes signées Ed25519), `scenario.py` (4 entreprises), `simulation.py`, `ai.py` (IA simulée), `api.py` (FastAPI).
 - `web/index.html` : dashboard de debug (Cytoscape.js).
 - `tests/` : 26 tests, tous verts (`uv run pytest -q`).
-- Scénario : 145 records ; après « fournisseur compromis depuis 14 h », 17 en quarantaine, 128 continuent, 4 gates bloqués, propagation jusqu'au client.
+- Scénario : 193 records ; après « fournisseur compromis depuis 14 h », 17 en quarantaine, 176 continuent, 4 gates bloqués, propagation jusqu'au client.
 - Lancement : `uv run uvicorn firebreak.api:app --reload --port 8000`, puis http://localhost:8000.
 
 **Trou connu :** quand on remédie une opération, la libération ne se propage pas aux partenaires. Les alertes déjà émises restent actives et chacun doit remédier de son côté.
