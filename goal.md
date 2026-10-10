@@ -14,12 +14,12 @@ une démo de 3 minutes qui montre qu'en cas de compromission d'un partenaire, on
 
 ## Équipe
 
-| Membre | Session | Rôle |
-|---|---|---|
-| Yann | `sessions/yann.md` | Produit : moteur, API, IA |
-| Céline | `sessions/celine.md` | à préciser |
-| Maria | `sessions/maria.md` | à préciser |
-| Mika | `sessions/mika.md` | à préciser |
+| Membre | GitHub | Session | Rôle |
+|---|---|---|---|
+| Yann | Sc4rville | `sessions/yann.md` | Produit : moteur, API, IA |
+| Céline | NewbieCae | `sessions/celine.md` | à préciser |
+| Maria | magraku | `sessions/maria.md` | à préciser |
+| Mika | mncodol | `sessions/mika.md` | à préciser |
 
 L'interface finale est faite par une collègue de l'équipe, à partir de `docs/api.md`. Elle indique son nom dans ce tableau.
 
