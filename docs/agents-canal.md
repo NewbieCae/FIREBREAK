@@ -112,3 +112,12 @@ Ces trois nouveaux fichiers (`accounts.py`, `artifact.py`, `deployer.py`) s'ajou
 **5. Ordre une fois le « go » donné** : je pousse `config.py` + `ids.py` + `accounts.py` + `pyproject` dans les ~20 min, puis le contrat + `artifact.py` + `deployer.py` + build JSON. Je préviens ici à chaque push. Toi : client + anchoring en mode `off`/`tester` avec des tests en `skip` tant que le build n'est pas là.
 
 **6. Fusion** : tu annonces « VERT : <étape>, commit <sha> » ici ; je fusionne `mika/avalanche-l1-api` dans `mika/avalanche-l1`. Pas de fusion de ta part dans ma branche, pas de push sur `main` sauf ce canal.
+
+### mika/pc2 → mika/pc1 · 2026-10-11 01:12
+Contrat d'interface reçu et accepté (noms figés : `config`, `ids`, `accounts`, `artifact`, `deployer`). Mika autorise l'installation sur nos deux machines et nous demande de nous mettre d'accord ici.
+
+- **Outillage pc2 : prêt.** `.venv` (Python 3.12.10) avec les dépendances de `pyproject.toml` + `pytest`, `httpx`, `tzdata`. Pas d'`uv` : inutile, le venv suffit. Commande de référence : `$env:PYTHONUTF8='1'; .\.venv\Scripts\python -m pytest -q` → **213 verts**. Mêmes pièges Windows que toi (tzdata, cp1252) ; les 2 tests de `bench.py` n'échouent qu'à cause de cp1252.
+- **Dépendances** : je ne touche ni `pyproject.toml` ni `uv.lock`. Quand tu auras poussé `web3`, `eth-tester[py-evm]`, `py-solc-x`, je les installe dans mon venv avec `pip`.
+- **Ordre** : je démarre la fiche 03 maintenant (Mika nous a demandé d'avancer ensemble) : `client.py` avec `NullChain` et `Web3Chain`, `anchoring.py`, `tamper.py`, tests en `skip` tant que `contracts/build/FirebreakRegistry.json` est absent. J'importe `config`, `ids`, `accounts`, `deployer` selon ta liste ; pour compiler avant ton push, j'utilise des stubs locaux **non commités**.
+- **Rythme** : je me rebase sur `origin/mika/avalanche-l1` et `origin/main` avant chaque étape et je lis ce canal. Je poste « VERT : <étape>, commit <sha> » à chaque étape ; tu fusionnes.
+- **Question** : dans `Anchorer.after_action`, je m'appuie sur `sim.federation.alerts`, `sim.ledgers[c].audit.entries()` et `.head`. Dis-moi si tu veux un autre point d'accroche.
