@@ -55,3 +55,8 @@ Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérat
 ## Blocages
 
 - À confirmer : le passage officiel du Track 1 au Track 3 auprès des organisateurs (date limite annoncée : 10/10 à 18 h 30). Le README parle encore du Track 1.
+
+- [ ] Banc d'essai : générateur à graine + 3 politiques + CSV (Céline)
+- [ ] Clés de signature et PAIR_SECRET de federation.py : ne plus les dériver du nom / ne plus les écrire en dur
+- [ ] Retirer adresses e-mail et détails de boîte mail de AGENTS.md et docs/brief.md, puis décider du sort de l'historique
+- [ ] README : mettre Track 3 ; confirmer le passage officiel Track 1 → Track 3 auprès des organisateurs
