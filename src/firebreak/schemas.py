@@ -197,7 +197,7 @@ class CompareSideOut(CompareMetricsOut):
 
 class CompareOut(BaseModel):
     declarations: list[CompareDeclOut]
-    truth: dict = Field(description="Taille du vrai périmètre contaminé + sa définition.")
+    truth: dict = Field(description="Taille du vrai périmètre contaminé (`contaminated`), ses identifiants (`ids`) et sa définition.")
     without: CompareSideOut = Field(description="Politique B : blocage large du partenaire.")
     with_: CompareSideOut = Field(
         alias="with", description="Politique C : quarantaine ciblée Firebreak.")

@@ -1,6 +1,6 @@
 # FIREBREAK — Contrat de l'API
 
-Version du contrat : **1.2.0** (figée en 1.0.0 à l'étape 1 du [plan](plan.md) ; l'étape 2 a ajouté les levées fédérées, le retrait de déclaration et le journal d'audit ; l'étape 3 a ajouté les scénarios, la généalogie des lots et l'import EPCIS, sans rien retirer). Les étapes suivantes peuvent **ajouter** des champs ou des endpoints, jamais en retirer ou en renommer sans mettre ce document à jour.
+Version du contrat : **1.3.0** (figée en 1.0.0 à l'étape 1 du [plan](plan.md) ; l'étape 2 a ajouté les levées fédérées, le retrait de déclaration et le journal d'audit ; l'étape 3 a ajouté les scénarios, la généalogie des lots et l'import EPCIS, sans rien retirer ; la 1.3.0 ajoute `truth.ids` à `/api/compare` et sert l'interface finale sur `/app/` et les documents d'exemple sur `/samples/`). Les étapes suivantes peuvent **ajouter** des champs ou des endpoints, jamais en retirer ou en renommer sans mettre ce document à jour.
 
 - Base : `http://localhost:8000`. Tous les endpoints sont sous `/api`.
 - Schéma OpenAPI interactif : http://localhost:8000/docs (JSON brut : `/openapi.json`). Les modèles de réponse sont définis dans `src/firebreak/schemas.py`.
@@ -418,7 +418,7 @@ Même fonction de métriques des deux côtés : `blocked`, `healthy_blocked` (bl
 
 ```json
 {"declarations":[{"company":"fournisseur","since":"2026-10-10T14:00:00"}],
- "truth":{"contaminated":17,"definition":"Records réellement contaminés : …"},
+ "truth":{"contaminated":17,"ids":["c-gr-X","c-ship-X",…],"definition":"Records réellement contaminés : …"},
  "without":{"title":"Sans Firebreak","policy":"B",
    "subtitle":"On coupe le fournisseur et ses clients directs depuis 14 h",
    "scope":{"fournisseur":["fournisseur","fabricant"]},
@@ -441,6 +441,7 @@ Même fonction de métriques des deux côtés : `blocked`, `healthy_blocked` (bl
  "real_world":[{"name":"Jaguar Land Rover","date":"septembre 2025","text":"…","source":"https://www.reuters.com/…"},{…}]}
 ```
 
+- `truth.ids` : identifiants du vrai périmètre contaminé (ajouté en 1.3.0). Un record de `blocked_ids` absent de `truth.ids` est un blocage collatéral : l'interface peut le hachurer sans rien recalculer.
 - `healthy_blocked_ratio` = `without.healthy_blocked / with.healthy_blocked` (`null` si 0 — la comparaison est alors « infinie »).
 - `bench` : agrégat de `bench/results.csv` (moyenne par graine, politiques B et C, à `p=0` et au `p` max présent) ; `null` si le fichier manque.
 - `real_world` : exemples réels de coupure totale, avec liens sources.
