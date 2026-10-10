@@ -8,8 +8,8 @@
 Livrer **FIREBREAK, le pare-feu des supply chains**, au hackathon Secure Horizons (Track 3 · Uncharted Frontiers) :
 une démo de 3 minutes qui montre qu'en cas de compromission d'un partenaire, on bloque **uniquement les opérations contaminées** (3 sur 100, pas 100), avec une décision prouvable et des alertes signées entre entreprises.
 
-- Fin du hacking : **dimanche 11 octobre 2026, 17 h**.
-- Gel du code visé : dimanche en début d'après-midi, puis répétition du pitch.
+- **Rendu : dimanche 11 octobre 2026, 12 h.** (Le brief annonçait 17 h pour la fin du hacking.)
+- Gel du code visé : dimanche **10 h**, puis répétition du pitch jusqu'à 12 h.
 - Idée : `docs/firebreak.md` · Concurrents : `docs/benchmark-firebreak.md` · Plan : `docs/plan.md` · API : `docs/api.md`.
 
 ## Équipe
@@ -32,7 +32,7 @@ L'interface finale est faite par une collègue de l'équipe, à partir de `docs/
 | 3 | Scénarios réalistes et import EPCIS | Fait | `6560a9c`, `76711ec` |
 | 4 | Timeline et événements live (SSE) | Fait | `fe5ff07`, `c0476e5` (compteurs € = paiements uniquement) |
 | 5 | IA : Bedrock et lecture de documents | Fait | `434abde` |
-| 6 | Prêt pour la démo | À faire | dimanche matin |
+| 6 | Prêt pour la démo | En cours | lancé le 10/10 à 23 h 50, gel à 10 h |
 
 Tests : 147 verts (`uv run pytest -q`), état au 10 octobre à 23 h 45.
 
