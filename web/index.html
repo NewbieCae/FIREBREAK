@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Firebreak — tableau de bord</title>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #14171c; color: #e6e8eb; }
+  #topbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+            background: #1d2129; border-bottom: 1px solid #333; flex-wrap: wrap; }
+  #topbar h1 { font-size: 18px; margin: 0 12px 0 0; }
+  button { background: #2f6fed; color: #fff; border: 0; border-radius: 6px;
+           padding: 8px 14px; cursor: pointer; font-size: 14px; }
+  button.secondary { background: #444a55; }
+  button:hover { filter: brightness(1.15); }
+  .counter { background: #262b34; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+  .counter b { color: #ff7043; }
+  #main { display: flex; height: calc(100vh - 52px); }
+  #cy { flex: 1; }
+  #panel { width: 360px; overflow-y: auto; background: #1d2129;
+           border-left: 1px solid #333; padding: 14px; font-size: 13px; }
+  #panel h2 { font-size: 15px; margin: 0 0 8px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px;
+         font-size: 12px; margin-right: 6px; }
+  .tag.ok { background: #2e7d32; } .tag.quarantined { background: #c62828; }
+  .tag.released { background: #1565c0; }
+  .path li { margin: 3px 0; }
+  .alert { border-bottom: 1px solid #333; padding: 6px 0; }
+  .sig-ok { color: #66bb6a; } .sig-ko { color: #ef5350; }
+  #panel .rem-btn { margin: 4px 6px 0 0; font-size: 12px; padding: 5px 9px; }
+  .muted { color: #9aa0aa; }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>🔥 Firebreak</h1>
+  <button id="btn-compromise">Déclarer le fournisseur compromis (depuis 14:00)</button>
+  <button id="btn-reset" class="secondary">Réinitialiser</button>
+  <span class="counter" id="cnt-main">—</span>
+  <span class="counter" id="cnt-gates">—</span>
+</div>
+<div id="main">
+  <div id="cy"></div>
+  <div id="panel">
+    <h2>Détail</h2>
+    <div id="detail" class="muted">Cliquez sur une opération.</div>
+    <h2 style="margin-top:18px">Alertes signées</h2>
+    <div id="alerts" class="muted">Aucune alerte.</div>
+  </div>
+</div>
+<script>
+const COLORS = { ok: '#43a047', quarantined: '#e53935', released: '#1e88e5' };
+const COL_X = { fournisseur: 80, fabricant: 330, distributeur: 580, client: 830 };
+let cy = null, state = null;
+
+async function api(path, method = 'GET', body = null) {
+  const res = await fetch(path, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : null,
+  });
+  if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+  return res.json();
+}
+
+function render(s) {
+  state = s;
+  const g = s.counters.global;
+  document.getElementById('cnt-main').innerHTML =
+    `<b>${g.quarantined}</b> opérations bloquées / ${g.ok + g.released} continuent`;
+  document.getElementById('cnt-gates').innerHTML =
+    `<b>${g.gates_blocked}</b> actions irréversibles bloquées`;
+
+  const rows = {};
+  const elements = [];
+  s.companies.forEach(c => {
+    elements.push({ data: { id: 'co-' + c.id, label: c.name } });
+    rows[c.id] = 0;
+  });
+  s.records.forEach(r => {
+    const row = rows[r.company]++;
+    elements.push({
+      data: { id: r.id, parent: 'co-' + r.company, label: r.label,
+              status: r.status, gate: r.gate, record: r },
+      position: { x: COL_X[r.company], y: 40 + row * 26 },
+    });
+  });
+  s.edges.forEach(e => elements.push({
+    data: { source: e.source, target: e.target, cross: e.cross },
+  }));
+
+  if (cy) cy.destroy();
+  cy = cytoscape({
+    container: document.getElementById('cy'),
+    elements,
+    layout: { name: 'preset' },
+    style: [
+      { selector: ':parent', style: {
+          'label': 'data(label)', 'text-valign': 'top', 'font-size': 12,
+          'color': '#cfd3da', 'background-opacity': 0.08, 'padding': 24 } },
+      { selector: 'node[status]', style: {
+          'label': 'data(label)', 'font-size': 8, 'color': '#e6e8eb',
+          'text-valign': 'center', 'text-wrap': 'wrap', 'text-max-width': 110,
+          'width': 22, 'height': 22, 'background-color': COLORS.ok } },
+      { selector: 'node[status="quarantined"]', style: { 'background-color': COLORS.quarantined } },
+      { selector: 'node[status="released"]', style: { 'background-color': COLORS.released } },
+      { selector: 'node[gate]', style: { 'shape': 'diamond', 'width': 28, 'height': 28 } },
+      { selector: 'edge', style: { 'width': 1, 'line-color': '#556',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#556',
+          'arrow-scale': 0.6, 'curve-style': 'bezier' } },
+      { selector: 'edge[cross]', style: { 'line-style': 'dashed', 'line-color': '#8899bb',
+          'target-arrow-color': '#8899bb' } },
+    ],
+  });
+  cy.on('tap', 'node[status]', evt => showDetail(evt.target.data('record')));
+
+  const feed = document.getElementById('alerts');
+  feed.innerHTML = s.alerts.length ? '' : 'Aucune alerte.';
+  s.alerts.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'alert';
+    div.innerHTML = `${a.from} → ${a.to} — ${a.tokens_count} jeton(s) — ` +
+      `<span class="${a.verified ? 'sig-ok' : 'sig-ko'}">` +
+      `signature ${a.verified ? 'OK' : 'REJETÉE'}</span><br>` +
+      `<span class="muted">${a.issued_at}</span>`;
+    feed.appendChild(div);
+  });
+}
+
+async function showDetail(r) {
+  const el = document.getElementById('detail');
+  const data = await api(`/api/records/${r.id}/explain`);
+  let html = `<div><b>${r.label}</b> <span class="muted">(${r.id})</span></div>
+    <div style="margin:6px 0"><span class="tag ${r.status}">${r.status}</span>
+    <span class="muted">${r.kind} · ${r.company} · ${r.ts.slice(11, 16)}</span></div>
+    <p>${data.explanation}</p>`;
+  if (data.path.length > 1) {
+    html += '<div class="muted">Chemin :</div><ul class="path">' +
+      data.path.map(p => `<li>${p.label}</li>`).join('') + '</ul>';
+  }
+  if (r.status === 'quarantined') {
+    html += '<div>' + data.remediation_plan.map(p =>
+      `<button class="rem-btn" data-action="${p.action}" title="${p.rationale}">${p.label}</button>`
+    ).join('') + '</div>';
+  }
+  el.innerHTML = html;
+  el.className = '';
+  el.querySelectorAll('.rem-btn').forEach(btn => btn.onclick = async () => {
+    render(await api(`/api/records/${r.id}/remediate`, 'POST', { action: btn.dataset.action }));
+  });
+}
+
+document.getElementById('btn-compromise').onclick = async () => {
+  render(await api('/api/compromise', 'POST',
+    { company: 'fournisseur', since: '2026-10-10T14:00:00' }));
+};
+document.getElementById('btn-reset').onclick = async () => {
+  render(await api('/api/reset', 'POST'));
+};
+api('/api/state').then(render).catch(e => alert(e.message));
+</script>
+</body>
+</html>

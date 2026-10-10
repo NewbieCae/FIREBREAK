@@ -10,3 +10,6 @@ secrets/
 CLAUDE.md
 sessionyann.md
 steps/
+.venv/
+__pycache__/
+.pytest_cache/

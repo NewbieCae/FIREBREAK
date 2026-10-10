@@ -1,0 +1,91 @@
+from firebreak.scenario import COMPROMISED_SINCE, build_simulation
+
+EXPECTED_QUARANTINED = {
+    # fournisseur : les 3 malveillants + l'ASN légitime post-14:00 (fenêtre suspecte)
+    "f-asn-X", "f-cert-X", "f-inv-X", "f-asn-08",
+    # fabricant : copies reçues + chaîne de production/paiement/expédition de X
+    "m-asn-X", "m-cert-X", "m-inv-X", "m-asn-08",
+    "m-gr-X", "m-lot-X", "m-pay-X", "m-ship-X",
+    # distributeur : réception + réexpédition du lot contaminé
+    "d-ship-X", "d-gr-X", "d-out-X",
+    # client : livraison + réception du lot contaminé
+    "c-ship-X", "c-gr-X",
+}
+
+
+def _sim_declared():
+    sim = build_simulation()
+    sim.declare_compromise("fournisseur", COMPROMISED_SINCE)
+    return sim
+
+
+def _q(sim):
+    return {
+        r.id
+        for led in sim.ledgers.values()
+        for r in led.records.values()
+        if r.status == "quarantined"
+    }
+
+
+def test_nothing_tainted_before_declaration():
+    sim = build_simulation()
+    assert _q(sim) == set()
+    assert sim.federation.alerts == []
+
+
+def test_exact_quarantined_set():
+    sim = _sim_declared()
+    assert _q(sim) == EXPECTED_QUARANTINED
+
+
+def test_rib_payment_gate_blocked():
+    sim = _sim_declared()
+    r = sim.ledgers["fabricant"].records["m-pay-X"]
+    assert r.status == "quarantined" and r.gate
+    assert r.payload["rib"].endswith("666")
+
+
+def test_propagation_reaches_distributeur_and_client():
+    sim = _sim_declared()
+    q = _q(sim)
+    assert {"d-ship-X", "d-gr-X", "d-out-X"} <= q
+    assert {"c-ship-X", "c-gr-X"} <= q
+    # alertes signées à chaque saut
+    hops = {(a.sender, a.recipient) for a in sim.federation.alerts}
+    assert ("fournisseur", "fabricant") in hops
+    assert ("fabricant", "distributeur") in hops
+    assert ("distributeur", "client") in hops
+    assert all(a.verified for a in sim.federation.alerts)
+
+
+def test_verified_record_stops_propagation():
+    sim = _sim_declared()
+    # m-asn-08 est contaminée (fenêtre suspecte) mais la réception
+    # vérifiée physiquement stoppe la propagation
+    assert sim.ledgers["fabricant"].records["m-asn-08"].status == "quarantined"
+    assert sim.ledgers["fabricant"].records["m-gr-08"].status == "ok"
+    assert sim.ledgers["fabricant"].records["m-gr-08"].verified
+
+
+def test_quarantined_fraction_small():
+    sim = _sim_declared()
+    counters = sim.state()["counters"]["global"]
+    assert counters["quarantined"] / counters["total"] < 0.15
+    assert counters["quarantined"] >= 1
+
+
+def test_remediate_frees_descendants():
+    sim = _sim_declared()
+    sim.remediate("m-gr-X", "human_approval")
+    led = sim.ledgers["fabricant"]
+    assert led.records["m-gr-X"].status == "released"
+    # lot / expédition ne dépendaient que de m-gr-X : libérés
+    assert led.records["m-lot-X"].status == "ok"
+    assert led.records["m-ship-X"].status == "ok"
+    # les alertes déjà émises restent stockées : le distributeur doit
+    # remédier lui-même à la donnée reçue (d-ship-X toujours en quarantaine)
+    assert sim.ledgers["distributeur"].records["d-ship-X"].status == "quarantined"
+    assert sim.ledgers["client"].records["c-ship-X"].status == "quarantined"
+    # le paiement au RIB frauduleux reste bloqué (seed m-inv-X)
+    assert led.records["m-pay-X"].status == "quarantined"

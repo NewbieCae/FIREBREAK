@@ -6,6 +6,7 @@ Dépôt privé du projet finswag, Team 14 au hackathon Secure Horizons, Track 1 
 - [Brief et ressources](docs/brief.md)
 - [Piste FIREBREAK — pare-feu des supply chains (Track 3)](docs/firebreak.md)
 - [Benchmark des concurrents FIREBREAK](docs/benchmark-firebreak.md)
+- [Plan de build en 6 étapes](docs/plan.md)
 
 ## Organisation
 
