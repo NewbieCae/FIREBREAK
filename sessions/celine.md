@@ -4,25 +4,26 @@
 
 ## Où j'en suis
 
-Banc d'essai livré : `src/firebreak/synth.py` (mondes synthétiques à graine avec vérité terrain, dépendances cachées avec probabilité p), 3 politiques (A alerte seule, B blocage fournisseur + partenaires directs, C Firebreak = moteur existant), métriques (fuites, dégâts collatéraux, activité saine préservée, précision, rappel), `scripts/bench.py` → `bench/results.csv` + `docs/bench-results.md`, tests dans `tests/test_bench.py`. Aucune modification de `engine.py` ni `federation.py`.
+Banc d'essai v2 livré : 4 politiques (A alerte seule, B blocage fournisseur + partenaires, C Firebreak, D Firebreak + prudence = C + signal « provenance manquante » lu dans l'état du moteur uniquement), tirage de l'entreprise compromise parmi les 5 (e4, le client final, n'était jamais tirée en v1), 10 % de réceptions légitimes hors fédération (bruit pour D), colonnes `leaked_gates` / `contaminated_gates` / `fp_origin_rule`, rapport avec IC 95 %, 5e centile et pire cas du rappel, part des mondes avec fuite, ventilation par entreprise, limites chiffrées par le script. Toujours aucune modification d'`engine.py` ni de `federation.py`.
 
-Résultats (500 graines, 5 entreprises, 300 opérations) : Firebreak bloque 11,4 opérations saines contre 49,5 pour B (4,3× moins), activité saine préservée 95,7 % contre 81,3 %, précision 75 % contre 40 %. Rappel de C : 100 % à p=0, 97,1 % / 94,3 % / 91,6 % à p=0,1 / 0,2 / 0,3. B a un rappel de 98 % quel que soit p.
+**⚠️ Les chiffres publiés ont changé (11/10)** : p=0 → C 9,6 sains bloqués contre 43,2 pour B (4,5× moins), précision 78 % contre 44 %, rappel 100 % contre 98,5 %, 0 action irréversible fuitée (A : 11,1 par monde ; B : au moins une fuite dans 24,6 % des mondes). p=0,3 → rappel C 93,4 % (5e centile 79,2 %, pire cas 66 %), D 97,9 %. À p=0, 100 % des sains bloqués par C viennent de la règle d'origine.
 
 ## En cours
 
-- Banc d'essai v2 (réservé dans `goal.md`) : plan présenté, en attente de validation (D propage aux descendants ? tirage sur toutes les entreprises, ce qui change les chiffres publiés).
+- (rien)
 
 ## Prochaine étape
 
-- Ajouter au pitch une slide « preuve chiffrée » à partir de `docs/bench-results.md`.
-- Pistes possibles : métriques sur les gates (paiements/expéditions) et montants ; un graphique des résultats.
+- Slide « preuve chiffrée » pour le pitch à partir de `docs/bench-results.md` (v2).
 
 ## Besoin des autres
 
-- Yann (pour info) : À p=0, la plupart des faux positifs de Firebreak viennent de la règle d'origine. Toute copie reçue de l'entreprise compromise après `since` est seedée, même si elle reprend un record antérieur à `since` ou `verified`. Garder ce choix prudent, ou seeder via le jeton seulement ? Sur ces mondes, ça ferait gagner de la précision.
+- Yann : j'ai modifié `tests/test_compare.py` (3 valeurs attendues : 43,2 / 9,6 / 0,985) et l'exemple `bench` de `docs/api.md` pour suivre la v2. Le CSV a désormais des lignes pour D et de nouvelles colonnes (les noms existants sont inchangés, `bench_block` fonctionne tel quel).
+- Yann (pour info) : à p=0, tous les faux positifs de Firebreak viennent de la règle d'origine. Garder ce choix prudent ou seeder via le jeton seulement ?
 
 ## Journal
 
+- 11/10 01 h : banc d'essai v2 livré et chiffres régénérés (500 graines × 4 p × 4 politiques) ; fiche de défense, exemple API et test_compare mis à jour ; 213 tests verts.
 - 11/10 00 h 30 : README — marqueurs de conflit poussés sur main résolus (version récente gardée + Track 3, ligne secrets `.env.example`, phrase finale brief/FIREBREAK). 197 tests verts.
 - 11/10 00 h 15 : plan du banc d'essai v2 rédigé ; défaut trouvé : la dernière entreprise n'est jamais tirée comme compromise.
 - 10/10 23 h 59 : banc d'essai livré (synth + 3 politiques + bench 500 graines + 12 tests), 183 tests verts.

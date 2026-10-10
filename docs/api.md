@@ -436,8 +436,8 @@ Même fonction de métriques des deux côtés : `blocked`, `healthy_blocked` (bl
  "healthy_blocked_ratio":null,
  "bench":{"p_values":["0.0","0.1","0.2","0.3"],"seeds_per_group":500,
    "command":"uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3",
-   "groups":{"p0.0:B":{"seeds":500,"healthy_blocked_mean":49.5,"leaks_mean":0.91,"recall_mean":0.98,"activity_preserved_mean":0.813},
-             "p0.0:C":{"seeds":500,"healthy_blocked_mean":11.4,"leaks_mean":0.0,"recall_mean":1.0,"activity_preserved_mean":0.957},…}},
+   "groups":{"p0.0:B":{"seeds":500,"healthy_blocked_mean":43.182,"leaks_mean":0.662,"recall_mean":0.985,"activity_preserved_mean":0.838},
+             "p0.0:C":{"seeds":500,"healthy_blocked_mean":9.616,"leaks_mean":0.0,"recall_mean":1.0,"activity_preserved_mean":0.964},…}},
  "real_world":[{"name":"Jaguar Land Rover","date":"septembre 2025","text":"…","source":"https://www.reuters.com/…"},{…}]}
 ```
 

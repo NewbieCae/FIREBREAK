@@ -1,6 +1,6 @@
 # Fiche de défense — FIREBREAK (Team 14, Track 3)
 
-> Chiffres du banc d'essai (`scripts/bench.py`, 500 mondes × 4 valeurs de p). **À régénérer et vérifier avant le dépôt** : `uv run python scripts/bench.py`, puis comparer avec `docs/bench-results.md`.
+> Chiffres du banc d'essai v2 (`scripts/bench.py`, 500 mondes × 4 valeurs de p), **régénérés le 11/10** : les chiffres de la v1 (49,5 / 11,4…) sont caducs. **À vérifier avant le dépôt** : `uv run python scripts/bench.py`, puis comparer avec `docs/bench-results.md`.
 
 ## Menace traitée
 Un partenaire d'une chaîne d'approvisionnement est compromis et injecte de fausses données (confirmations de livraison, stocks, coordonnées bancaires) dans les processus de ses clients et fournisseurs. Les partenaires n'ont aujourd'hui que deux options : tout couper avec lui, ou continuer et laisser passer la contamination.
@@ -26,21 +26,25 @@ Un partenaire d'une chaîne d'approvisionnement est compromis et injecte de faus
 - Réglementation citée comme contexte, sans prétendre à la conformité : NIS2 (sécurité de la chaîne d'approvisionnement, gestion des incidents). Le journal d'audit *aide à démontrer* les décisions.
 
 ## Métriques (simulateur, 500 mondes aléatoires, 4 niveaux de dépendances non enregistrées)
-Trois politiques comparées sur le même monde : A alerte seule, B blocage du fournisseur et de ses partenaires directs, C FIREBREAK.
+Quatre politiques comparées sur le même monde : A alerte seule, B blocage du fournisseur et de ses partenaires directs, C FIREBREAK, D FIREBREAK + prudence (C, plus la quarantaine des réceptions sans provenance enregistrée chez les partenaires directs). L'entreprise compromise est tirée parmi les 5, client final compris ; 10 % des réceptions viennent d'hors fédération (légitimes, sans jeton).
 
-| | A | B | C (FIREBREAK) |
-|---|---|---|---|
-| Sains bloqués à tort (p=0) | 0 | 49,5 | 11,4 |
-| Activité saine préservée (p=0) | 100 % | 81,3 % | 95,7 % |
-| Précision (p=0) | n/d | 40 % | 75 % |
-| Rappel à p = 0 / 0,1 / 0,2 / 0,3 | 0 % | ≈ 98 % | 100 / 97,1 / 94,3 / 91,6 % |
+| | A | B | C (FIREBREAK) | D (+ prudence) |
+|---|---|---|---|---|
+| Sains bloqués à tort (p=0) | 0 | 43,2 | 9,6 | 11,7 |
+| Activité saine préservée (p=0) | 100 % | 83,8 % | 96,4 % | 95,6 % |
+| Précision (p=0) | n/d | 44 % | 78 % | 75 % |
+| Actions irréversibles contaminées qui passent (p=0, par monde) | 11,1 | 0,07 | 0 | 0 |
+| Mondes avec au moins une fuite (p=0) | 100 % | 24,6 % | 0 % | 0 % |
+| Rappel à p = 0 / 0,1 / 0,2 / 0,3 | 0 % | 98,5 % (quel que soit p) | 100 / 98,0 / 95,7 / 93,4 % | 100 / 99,4 / 98,6 / 97,9 % |
+| Rappel à p = 0,3 : 5e centile / pire cas | — | 91,2 / 72,9 % | 79,2 / 66,0 % | 90,0 / 78,6 % |
 
 Temps de détection / de réponse : non mesuré (le déclencheur est une alerte reçue).
 
 ## Limites connues (à dire avant que le jury les trouve)
 - Tout est simulé ; les chiffres viennent de notre modèle, pas d'une entreprise réelle.
-- FIREBREAK ne voit que les dépendances enregistrées : quand 10 à 30 % manquent, il laisse passer plus de contamination que le blocage large (B), pour moins de dégâts collatéraux. C'est un compromis, pas une victoire écrasante.
-- À p=0, FIREBREAK bloque encore des opérations saines : la règle d'origine bloque toute donnée reçue de la source compromise après la date déclarée, même si elle copie une donnée antérieure.
+- FIREBREAK ne voit que les dépendances enregistrées : quand 10 à 30 % manquent, son rappel moyen passe sous celui du blocage large (B), pour 4,5 à 5,4 fois moins de dégâts collatéraux. À 30 % de dépendances manquantes, 28 % des mondes laissent passer au moins une action irréversible contaminée. C'est un compromis, pas une victoire écrasante.
+- À p=0, FIREBREAK bloque encore des opérations saines, et toutes viennent de la règle d'origine : toute donnée attribuée à la source compromise après la date déclarée est bloquée, même si elle copie une donnée antérieure ou vérifiée.
+- La politique D exploite le signal « provenance manquante » (réception sans jeton ni lien). Le simulateur suppose qu'un envoi non tracé laisse toujours une réception non attribuée : ses chiffres sont une borne haute.
 - Le déclencheur est une déclaration ou une alerte reçue ; nous ne détectons pas la compromission.
 - Aucun client validé à ce jour.
 
