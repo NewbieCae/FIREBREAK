@@ -54,6 +54,7 @@ Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérat
 - 10/10 : on construit FIREBREAK, pensé pour le Track 3, au lieu des pistes du Track 1 du brief initial.
 - 10/10 : stack Python 3.12 + uv + FastAPI + networkx ; IA simulée par défaut, Bedrock en option.
 - 10/10 : le blocage est décidé par des règles sur le graphe, jamais par l'IA.
+- 11/10 : pas de branches, tout sur `main`, pull au début et push à la fin de chaque itération ; conflits arbitrés par l'agent (`AGENTS.md` → « Conflits Git »). L'équipe se parle via `messages.md` (`scripts/messages.py`).
 
 ## Blocages
 

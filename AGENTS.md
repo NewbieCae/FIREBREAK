@@ -9,6 +9,7 @@ Quatre personnes travaillent en même temps sur ce dépôt, chacune avec son age
 | `goal.md` | Objectif commun, avancement du plan, prochaines actions, décisions, blocages | Tout le monde |
 | `sessions/<membre>.md` | Ce que chaque membre a fait, fait maintenant, fera ensuite, et ce dont il a besoin | Uniquement l'agent de ce membre |
 | `docs/plan.md` | Plan de build en 6 étapes et handoffs | Mis à jour quand le plan change |
+| `messages.md` | Messagerie de l'équipe : on se parle à travers le dépôt | Tout le monde, via `scripts/messages.py send` |
 
 ### Qui suis-je ?
 
@@ -18,7 +19,7 @@ Le membre est identifié par `scripts/team-sync.sh whoami`. Il regarde, dans cet
 
 1. **Au début** : se synchroniser (`git fetch && git rebase --autostash @{u}`), lire `goal.md` et sa propre session. Regarder les sessions des autres avant de toucher une zone partagée.
 2. **Pendant** : avant de prendre une tâche de `goal.md`, mettre son prénom dessus (`- [ ] … (Maria)`) et pousser tout de suite, pour qu'il n'y ait pas deux personnes sur la même tâche.
-3. **À la fin, avant de rendre la main** :
+3. **À la fin de chaque vraie itération, avant de rendre la main** (règle de Yann du 11/10 : **pull au début, push à la fin, à chaque fois, pour tout le monde**) :
    - mettre à jour `sessions/<membre>.md` : « Où j'en suis », « En cours », « Prochaine étape », « Besoin des autres », plus une ligne datée en haut du « Journal » ;
    - mettre à jour `goal.md` : cocher ce qui est fini, ajuster le tableau d'avancement, ajouter les décisions et les blocages ;
    - commit puis push sur `main` (`scripts/team-sync.sh sync` le fait, avec un garde-fou contre les secrets).
@@ -37,6 +38,13 @@ Le membre est identifié par `scripts/team-sync.sh whoami`. Il regarde, dans cet
 - Lire `goal.md`, `docs/firebreak.md` et `docs/plan.md` avant de coder. Le contrat de l'API est dans `docs/api.md` : on ne casse pas un endpoint existant.
 - `uv run pytest -q` doit rester vert avant chaque push.
 - Aucun secret dans le dépôt : les clés vont dans `.env.local`, qui est ignoré.
+
+### Messagerie — `messages.md`, on se parle à travers le dépôt
+
+- **Lire** : à chaque tour, le hook `team-sync.sh start` livre à l'agent les messages non lus adressés au membre (`tous` ou son prénom). L'agent les **affiche mot pour mot à l'utilisateur, en tête de réponse**, avant tout le reste. Sans hook (Codex, humain) : `python3 scripts/messages.py deliver` en début d'itération.
+- **Écrire** : quand l'utilisateur dit « envoie un message à Maria », « dis à tous que… », « demande à Yann… », l'agent lance `python3 scripts/messages.py send <tous|yann|celine|maria|mika> "texte"`. Le script commite et pousse tout seul. Plusieurs destinataires : `yann,mika`.
+- **Jamais d'édition d'un message existant.** Le fichier est en `merge=union` (`.gitattributes`) : deux personnes qui ajoutent en même temps ne créent pas de conflit.
+- **Chez Yann** un cron (`python3 scripts/messages.py poll`) vérifie toutes les minutes et notifie sur le bureau. Chacun peut installer le même : `crontab -e` puis `* * * * * cd <dépôt> && python3 scripts/messages.py poll`.
 
 ### Conflits Git — pas de branches, l'agent arbitre
 

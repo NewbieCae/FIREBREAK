@@ -155,6 +155,15 @@ if [ "$CMD" = "start" ]; then
   fi
   if member=$(whoami_member); then
     ctx="Coéquipier : $member. Avant de terminer ce tour, mets à jour sessions/$member.md (fait / en cours / prochaine étape) et goal.md (état du plan, blocages) — cf. AGENTS.md.$problem"
+    # messages d'équipe non lus (messages.md) → livrés mot pour mot à l'utilisateur
+    inbox=$(python3 "$(git rev-parse --show-toplevel)/scripts/messages.py" deliver "$member" 2>/dev/null || true)
+    if [ -n "$inbox" ]; then
+      ctx="$ctx
+
+NOUVEAUX MESSAGES D'ÉQUIPE (messages.md) — affiche-les à l'utilisateur MOT POUR MOT, en tête de ta réponse, dans un bloc de citation, avant toute autre chose. Pour répondre : python3 scripts/messages.py send <destinataire> \"texte\".
+
+$inbox"
+    fi
   else
     ctx="Coéquipier inconnu : demande son nom à l'utilisateur puis exécute « git config finswag.member <yann|mika|celine|maria> ». Avant de terminer ce tour, mets à jour sessions/<membre>.md et goal.md — cf. AGENTS.md.$problem"
   fi
@@ -173,7 +182,7 @@ if [ "$CMD" = "stop" ]; then
   changed=$({ git status --porcelain -uall 2>/dev/null | cut -c4- | sed 's/.* -> //'
               upstream_ref >/dev/null && git diff --name-only '@{u}'..HEAD 2>/dev/null
             } | sort -u)
-  non_doc=$(printf '%s\n' "$changed" | grep -vE '^(sessions/|goal\.md$)' | grep . || true)
+  non_doc=$(printf '%s\n' "$changed" | grep -vE '^(sessions/|goal\.md$|messages\.md$)' | grep . || true)
 
   if [ -n "$non_doc" ] && [ "$stop_active" != "true" ]; then
     if [ -z "$member" ]; then

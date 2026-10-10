@@ -20,6 +20,7 @@ Le moteur FIREBREAK est livré : graphe, propagation, fédération signée, jour
 
 ## Journal
 
+- **11/10 01 h 15** — Messagerie d'équipe : `messages.md` (message de bienvenue à tous), `scripts/messages.py` (send / deliver / poll), livraison des messages non lus par le hook à chaque tour, cron chaque minute chez moi. Règles de conflits et pull/push obligatoires dans `AGENTS.md`.
 - **11/10 00 h 10** — Étape 6 livrée : mode démo, `/api/demo/step` (5 clics), `docs/demo.md` avec chiffres reproductibles, `scripts/demo.sh`, test de bout en bout, `/api/state` en 28 ms.
 - **10/10 23 h 45** — Étape 4 livrée : `/api/timeline`, flux SSE `/api/events`, bouton « Rejouer » animé, compteurs d'euros. Corrigé un triple comptage : seuls les paiements comptent (5 210 € bloqués, 80 402 € continuent).
 - **10/10 20 h 30** — Structure d'équipe : `goal.md` partagé, une session par membre, protocole et hook de synchronisation (pull au début, mise à jour des sessions et de `goal.md`, push à la fin).
