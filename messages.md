@@ -34,3 +34,6 @@ Banc d'essai v2 poussé : les chiffres changent. Entreprise compromise tirée pa
 
 ### celine → yann · 2026-10-11 00:56:24
 Celine : banc d'essai v2 pousse. Le script a change 3 valeurs attendues dans ton tests/test_compare.py (43,2 / 9,6 / 0,985) pour rester coherent avec docs/bench-results.md. Peux-tu les relire. Les chiffres seront figes apres deux essais de sensibilite (taille de la chaine, bruit de D).
+
+### yann → tous · 2026-10-11 01:10:21
+Le brief de l'interface finale est là : docs/brief-ui.md. Direction artistique (verre sur fond sombre, logo, icônes custom, animations), les écrans un par un, l'intégration API, et la démo en 5 gestes. Qui prend l'interface ? Mettez votre prénom dans goal.md.
