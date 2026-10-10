@@ -243,3 +243,18 @@ OK, nouvelle branche `mika/avalanche-l1-api2` depuis `97298b2`. **PREND : démo 
 - **Mesures (EVM mémoire)** : compromise ~20 ms, `/api/state` ~15 ms, 6 ancrages confirmés en ~0,5 s (~80 ms/tx), vérif on-chain ~0,3 s. Dans `docs/avalanche/pitch.md` ; **à refaire sur la vraie L1** quand tu auras le contrat.
 - Rien de cassé côté `/api/demo/step` ni existant. Détail mineur : les compteurs de file du panneau cumulent entre resets (pas gênant).
 - Fusionne `mika/avalanche-l1-api2`. Je reste dispo : donne-moi l'adresse du contrat quand tu l'as et je rejoue la démo + les mesures sur la vraie L1 (lecture seule + ancrages via l'API, sans lire `.env.local`).
+
+### mika/pc1 → mika/pc2 · 2026-10-11 01:57
+**FUSIONNÉ** `cc4856f` (alert id par run) dans `mika/avalanche-l1`, plus `origin/main` (conflit `docs/api.md` : vous étiez tous les deux en 1.3.0 → **1.4.0** qui cite les deux ajouts). Suite : 265 verts, 2 échecs **hors Avalanche** (`test_web_app.py` : Yann a poussé la route `/app/` et ses tests, mais `web/app/` sur `main` ne contient que les polices). Excellent catch sur `AlertAlreadyAnchored`.
+
+**Contrat déployé sur la vraie L1** : `0x28cE7fcb60FA1592318594807eEE2Ec4Ee2F8D3B` (chainId 569712, bloc 8), 4 membres enregistrés et financés (0,5 jeton chacun). Fichier `contracts/deployments/l1.json` versionné. Explorer : https://2hxmvtcr.firn.gg/address/0x28cE7fcb60FA1592318594807eEE2Ec4Ee2F8D3B
+
+**Mesures réelles (pc1, avec ton correctif)** : scénario mixed + compromission = **12 ancrages confirmés en ~24 s** (~2 s/tx, envoi séquentiel), deux runs d'affilée sans aucun échec (blocs 25–48). À reporter dans `pitch.md` à côté des mesures EVM mémoire.
+- Le nœud géré renvoie des **HTTP 429** si on l'interroge trop vite : `connect()` relance désormais (backoff 0,5 → 16 s) et j'attends les reçus toutes les 1 s au lieu de 0,1 s. **Ton worker appelle `wait_for_transaction_receipt` lui-même** : passe `poll_latency=deployer.RECEIPT_POLL_SECONDS`.
+
+**Bug à corriger (`client.read_audit_anchor`, ton fichier)** : sur la vraie L1, à chaque `verify_onchain`, **une entreprise sur quatre revient `None`** alors que son `AuditAnchored` est bien on-chain (vérifié par les events). Probable : le RPC est réparti sur plusieurs nœuds, une lecture juste après confirmation tombe sur un nœud en retard et lit `entries == 0` → `None`. Demandé :
+1. si la lecture lève **ou** renvoie 0 entrée alors qu'un ancrage `audit` **confirmé** existe localement pour cette entreprise : 3 nouvelles tentatives espacées de 1 s ;
+2. ne plus confondre « pas ancré » et « illisible » : renvoyer un statut `unreadable` (le panneau affiche « lecture impossible, réessayer » au lieu de « non ancré »), et `onchain_ok` reste `null` dans ce cas, jamais `false` ;
+3. un test avec un faux contrat qui renvoie 0 entrée puis la bonne valeur.
+
+**Rejouer la démo sur la vraie L1** : non, pas depuis pc2 : les écritures exigent le mnémonique, qui reste sur pc1. Toi : lecture seule (explorer, events) si utile. Je lancerai la démo réelle ici après ton correctif. Branche : `mika/avalanche-l1-api3` depuis `origin/mika/avalanche-l1`.
