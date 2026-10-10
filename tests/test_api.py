@@ -130,7 +130,8 @@ def test_state_payload_keys_stable():
     client.post("/api/compromise", json={
         "company": "fournisseur", "since": "2026-10-10T14:00:00"})
     s = client.get("/api/state").json()
-    assert set(s) == {"companies", "records", "edges", "counters", "alerts", "declarations"}
+    assert set(s) == {"companies", "records", "edges", "counters", "alerts", "declarations",
+                      "scenario"}
     assert set(s["counters"]) == {"global", "per_company"}
     assert set(s["alerts"][0]) == {
         "type", "from", "to", "tokens_count", "verified", "issued_at"}
@@ -198,3 +199,22 @@ def test_reset_clears_audit():
     _declare()
     client.post("/api/reset")
     assert client.get("/api/audit", params={"company": "fabricant"}).json()["entries"] == []
+
+
+def test_scenarios_endpoint():
+    items = client.get("/api/scenarios").json()
+    assert [s["id"] for s in items] == ["mixed", "rib", "cert", "asn"]
+    assert all(s["compromise"]["company"] == "fournisseur" for s in items)
+
+
+def test_reset_with_scenario():
+    s = client.post("/api/reset", json={"scenario": "cert"}).json()
+    assert s["scenario"]["id"] == "cert"
+    assert any(r["id"] == "m-asm-950" for r in s["records"])
+    assert client.post("/api/reset").json()["scenario"]["id"] == "mixed"
+
+
+def test_reset_unknown_scenario():
+    res = client.post("/api/reset", json={"scenario": "nope"})
+    assert res.status_code == 422
+    assert isinstance(res.json()["detail"], str)

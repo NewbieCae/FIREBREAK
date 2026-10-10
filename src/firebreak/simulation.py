@@ -46,7 +46,9 @@ class Simulation:
         companies: list[Company],
         ledgers: dict[str, Ledger],
         federation: Federation,
+        scenario: dict | None = None,
     ) -> None:
+        self.scenario = scenario
         self.companies = companies
         self.ledgers = ledgers
         self.federation = federation
@@ -267,4 +269,5 @@ class Simulation:
             "counters": {"global": global_counters, "per_company": per_company},
             "alerts": alerts,
             "declarations": declarations,
+            "scenario": self.scenario,
         }

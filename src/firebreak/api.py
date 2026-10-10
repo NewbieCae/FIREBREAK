@@ -12,7 +12,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -22,14 +22,18 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .ai import get_explainer
 from .ingest.documents import DocumentError, Party, document_text, get_extractor
+from .ingest.epcis import EpcisError, parse_epcis
 from .model import Record
-from .scenario import build_simulation
+from .scenario import DEFAULT_SCENARIO, SCENARIOS, build_simulation, scenarios_meta
 from .schemas import (
     AuditOut,
     AuditVerifyOut,
+    EpcisImportOut,
     ErrorOut,
     ExplainOut,
     ProposalOut,
+    ScenarioId,
+    ScenarioOut,
     StateOut,
 )
 from .simulation import (
@@ -206,10 +210,14 @@ def _known_ribs(company: str) -> dict[str, set[str]]:
     return ribs
 
 
-def _next_record_id(company: str) -> str:
-    """Même préfixe que les records du registre (ex. « m- » pour fabricant)."""
+def _id_prefix(company: str) -> str:
+    """Même préfixe que les records du registre (ex. « m » pour fabricant)."""
     first = next(iter(sim.ledgers[company].records), "")
-    prefix = first.split("-", 1)[0] if "-" in first else company
+    return first.split("-", 1)[0] if "-" in first else company
+
+
+def _next_record_id(company: str) -> str:
+    prefix = _id_prefix(company)
     taken = {p["record"]["id"] for p in proposals.values()}
     n = 1
     while sim.find_record(f"{prefix}-doc-{n:02d}") is not None or \
@@ -321,11 +329,57 @@ def post_confirm_document(proposal_id: str, body: ConfirmBody | None = None) -> 
         return sim.state()
 
 
-@app.post("/api/reset", summary="Réinitialiser le scénario", response_model=StateOut)
-def post_reset() -> dict:
-    global sim
+@app.post("/api/ingest/epcis", summary="Importer un document GS1 EPCIS 2.0",
+          response_model=EpcisImportOut, responses=ERRORS)
+def post_ingest_epcis(company: str, document: dict = Body(
+        description="Document EPCIS 2.0 JSON / JSON-LD (type: EPCISDocument).")) -> dict:
+    """Données structurées : les records sont ajoutés directement (pas de
+    confirmation), puis passent par les mêmes règles que les autres."""
     with _lock:
-        sim = build_simulation()
+        if company not in sim.ledgers:
+            raise HTTPException(404, f"entreprise inconnue: {company}")
+        ledger = sim.ledgers[company]
+        taken = {rid for led in sim.ledgers.values() for rid in led.records}
+        try:
+            result = parse_epcis(document, company, sim.companies, ledger.records,
+                                 _id_prefix(company), taken)
+        except EpcisError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        for record in result.records:
+            ledger.add(record)
+        ledger.audit.append(sim.clock, "epcis_import", "humain", {
+            "records": [r.id for r in result.records],
+            "events": result.events,
+            "ignored": len(result.ignored),
+        })
+        sim.run()
+        return {
+            "events": result.events,
+            "imported": [serialize_record(r) for r in result.records],
+            "ignored": result.ignored,
+            "state": sim.state(),
+        }
+
+
+class ResetBody(BaseModel):
+    scenario: ScenarioId = Field(default=DEFAULT_SCENARIO, examples=["cert"])
+
+
+@app.get("/api/scenarios", summary="Scénarios disponibles",
+         response_model=list[ScenarioOut])
+def get_scenarios() -> list[dict]:
+    return scenarios_meta()
+
+
+@app.post("/api/reset", summary="Réinitialiser (choix du scénario)",
+          response_model=StateOut, responses=ERRORS)
+def post_reset(body: ResetBody | None = None) -> dict:
+    global sim
+    scenario = (body or ResetBody()).scenario
+    if scenario not in SCENARIOS:
+        raise HTTPException(400, f"scénario inconnu: {scenario}")
+    with _lock:
+        sim = build_simulation(scenario)
         proposals.clear()
         return sim.state()
 

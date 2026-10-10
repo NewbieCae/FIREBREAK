@@ -20,6 +20,7 @@ class Company:
     id: str
     name: str
     role: str
+    gs1_prefix: str = ""  # préfixe entreprise GS1 : relie GLN/SGLN EPCIS à l'entreprise
 
 
 @dataclass

@@ -18,6 +18,8 @@ class CompanyOut(BaseModel):
     id: str
     name: str
     role: str
+    gs1_prefix: str = Field(
+        description="Préfixe entreprise GS1 : relie les lieux (SGLN/GLN) EPCIS à l'entreprise.")
 
 
 class RecordOut(BaseModel):
@@ -66,7 +68,7 @@ class CountersBlock(BaseModel):
 AlertType = Literal["taint", "release"]
 AuditEvent = Literal[
     "declaration", "declaration_withdrawn", "alert_sent", "alert_received",
-    "quarantine", "remediation", "release", "document_confirmed",
+    "quarantine", "remediation", "release", "document_confirmed", "epcis_import",
 ]
 
 
@@ -89,6 +91,21 @@ class DeclarationOut(BaseModel):
     since: str
 
 
+class CompromiseHint(BaseModel):
+    company: str = Field(description="Entreprise à déclarer compromise pour la démo.")
+    since: str = Field(description="Début de la fenêtre de compromission.")
+
+
+ScenarioId = Literal["mixed", "rib", "cert", "asn"]
+
+
+class ScenarioOut(BaseModel):
+    id: ScenarioId
+    label: str
+    description: str
+    compromise: CompromiseHint
+
+
 class StateOut(BaseModel):
     companies: list[CompanyOut]
     records: list[RecordOut]
@@ -96,6 +113,20 @@ class StateOut(BaseModel):
     counters: CountersBlock
     alerts: list[AlertOut]
     declarations: list[DeclarationOut]
+    scenario: ScenarioOut = Field(description="Scénario chargé par le dernier reset.")
+
+
+class EpcisIgnoredOut(BaseModel):
+    index: int = Field(description="Position de l'événement dans eventList.")
+    type: str | None
+    reason: str
+
+
+class EpcisImportOut(BaseModel):
+    events: int = Field(description="Nombre d'événements dans le document.")
+    imported: list[RecordOut] = Field(description="Records ajoutés, après recalcul.")
+    ignored: list[EpcisIgnoredOut]
+    state: StateOut
 
 
 class RemediationOption(BaseModel):
