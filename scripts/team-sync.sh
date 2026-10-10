@@ -11,7 +11,6 @@
 # <git-common-dir>/auto-commit-sync.lock (même approche que hooks/auto-commit.sh).
 
 set -u
-umask 077
 MEMBERS="yann mika celine maria"
 CMD="${1:-}"
 
