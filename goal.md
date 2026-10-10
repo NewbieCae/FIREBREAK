@@ -30,15 +30,17 @@ L'interface finale est faite par une collègue de l'équipe, à partir de `docs/
 | 1 | Consolider le socle et figer le contrat API | Fait | `37cf8dd` |
 | 2 | Fédération complète et journal d'audit | Fait | `5ea8486` |
 | 3 | Scénarios réalistes et import EPCIS | Fait | `6560a9c`, `76711ec` |
-| 4 | Timeline et événements live (SSE) | À faire | prochaine priorité : débloque l'animation de l'UI |
+| 4 | Timeline et événements live (SSE) | Fait | `fe5ff07`, `c0476e5` (compteurs € = paiements uniquement) |
 | 5 | IA : Bedrock et lecture de documents | Fait | `434abde` |
 | 6 | Prêt pour la démo | À faire | dimanche matin |
 
-Tests : 138 verts (`uv run pytest -q`), état au 10 octobre à 20 h 30.
+Tests : 147 verts (`uv run pytest -q`), état au 10 octobre à 23 h 45.
+
+Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérations bloquées sur 145, 4 actions irréversibles bloquées, 5 210 € de paiement frauduleux bloqué, 80 402 € de paiements qui continuent.
 
 ## Prochaines actions
 
-- [ ] Étape 4 : timeline et flux SSE (handoff 4 de `docs/plan.md`).
+- [x] Étape 4 : timeline et flux SSE (`/api/timeline`, `/api/events`, bouton « Rejouer »).
 - [ ] Interface finale branchée sur l'API (`docs/api.md`).
 - [ ] Étape 6 : mode démo, script de démo avec chiffres réels, gel.
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
