@@ -33,10 +33,17 @@ preuves, pas les données.
 
 ## Chiffres mesurés
 
-À compléter après la mesure sur la L1 (ne pas annoncer de chiffre non
-mesuré) : latence d'ancrage médiane, délai jusqu'à confirmation, surcoût sur
-`POST /api/compromise` (cible < 20 ms, l'ancrage est asynchrone), nombre
-d'ancrages sur le scénario de démonstration.
+Mesurés sur l'EVM en mémoire (mode `tester`, pc2, 11/10) — **à refaire sur la
+vraie L1** (la latence y dépend du temps de bloc) :
+
+- `POST /api/compromise` : ~20 ms (l'ancrage est asynchrone, hors du chemin
+  de la requête) ; `/api/state` : ~15 ms.
+- Une compromission produit 6 ancrages (alertes, accusés, incident, journaux),
+  tous confirmés en ~0,5 s au total, soit ~80 ms par transaction (envoi
+  séquentiel).
+- Démo complète (6 étapes) : 19 ancrages, 0 échec.
+- « Vérifier sur Avalanche » (ancrage forcé des 4 journaux + vérification) :
+  ~0,3 s.
 
 ## Si on nous demande
 

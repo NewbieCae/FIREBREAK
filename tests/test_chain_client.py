@@ -68,6 +68,20 @@ def test_tester_ancrage_de_bout_en_bout():
         [(r.kind, r.status, r.error) for r in recs]
 
 
+def test_tester_rejouer_la_demo_ne_echoue_pas():
+    chain = get_chain_client(ChainConfig(mode="tester"))
+    anchorer = Anchorer(chain)
+    for _ in range(2):
+        sim = build_simulation()
+        anchorer.on_new_simulation(sim)
+        sim.declare_compromise("fournisseur", datetime(2026, 1, 1))
+        anchorer.after_action(sim, "compromise")
+        chain.flush(10)
+    recs = chain.anchors()
+    assert recs and all(r.status == "confirmed" for r in recs), \
+        [(r.kind, r.status) for r in recs if r.status != "confirmed"]
+
+
 def test_l1_injoignable_ne_leve_pas():
     cfg = ChainConfig(mode="l1", rpc_url="http://127.0.0.1:1", chain_id=1,
                       mnemonic="test test test test test test test test test "
