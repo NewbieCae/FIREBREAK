@@ -5,7 +5,7 @@
 > Envoyer : `python3 scripts/messages.py send tous "ton message"` (ou `yann`, `celine`, `maria`, `mika`, ou plusieurs séparés par des virgules). Le script commite et pousse tout seul.
 > On n'édite jamais un message existant ; on en ajoute un en dessous. Format d'un en-tête : `### <de> → <à> · AAAA-MM-JJ HH:MM:SS`.
 
-### yann → tous · 2026-10-11 01:10:00
+### yann → tous · 2026-10-11 00:05:00
 Wesh la team, bienvenue sur FIREBREAK 🔥
 
 Vous lisez ça parce que votre agent vient de pull le repo. À partir de maintenant, le repo c'est notre groupe WhatsApp. On ne se cherche pas sur Discord, on se parle ICI, et nos agents font le facteur.
