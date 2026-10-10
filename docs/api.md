@@ -1,6 +1,6 @@
 # FIREBREAK — Contrat de l'API
 
-Version du contrat : **1.2.0** (figée en 1.0.0 à l'étape 1 du [plan](plan.md) ; l'étape 2 a ajouté les levées fédérées, le retrait de déclaration et le journal d'audit ; l'étape 3 a ajouté les scénarios, la généalogie des lots et l'import EPCIS, sans rien retirer). Les étapes suivantes peuvent **ajouter** des champs ou des endpoints, jamais en retirer ou en renommer sans mettre ce document à jour.
+Version du contrat : **1.3.0** (l'étape Avalanche a ajouté `/api/chain/*`, le champ optionnel `onchain` de `/api/audit/verify` et `/api/demo/rewrite` ; figée en 1.0.0 à l'étape 1 du [plan](plan.md) ; l'étape 2 a ajouté les levées fédérées, le retrait de déclaration et le journal d'audit ; l'étape 3 a ajouté les scénarios, la généalogie des lots et l'import EPCIS, sans rien retirer). Les étapes suivantes peuvent **ajouter** des champs ou des endpoints, jamais en retirer ou en renommer sans mettre ce document à jour.
 
 - Base : `http://localhost:8000`. Tous les endpoints sont sous `/api`.
 - Schéma OpenAPI interactif : http://localhost:8000/docs (JSON brut : `/openapi.json`). Les modèles de réponse sont définis dans `src/firebreak/schemas.py`.
@@ -563,6 +563,52 @@ Règles :
 Après import de l'exemple puis compromission du fournisseur depuis 14 h : 7 des 11 records importés sont bloqués (`m-epcis-03` à `06`, la transformation `m-epcis-08` → LOT-801, la palettisation et l'expédition). Le contrôle conforme de COIL-78 (`m-epcis-07`) protège LOT-802 (`m-epcis-09`). L'import est inscrit au journal d'audit (`event: "epcis_import"`).
 
 Erreurs : 404 si l'entreprise est inconnue ; 400 si ce n'est pas un document EPCIS.
+
+## Avalanche L1 (ancrage de preuves)
+
+Optionnel et **jamais bloquant** : la chaîne ne décide rien, elle ancre des empreintes (jamais de données métier). Désactivée par défaut (`FIREBREAK_CHAIN=off`) : les réponses existantes sont inchangées, seuls des champs optionnels valent `null`. Les écritures passent par une file d'envoi en arrière-plan ; un ancrage `pending` ou `failed` n'est jamais une erreur HTTP.
+
+Variables : `FIREBREAK_CHAIN` (`off` · `tester` EVM en mémoire · `l1`), `FIREBREAK_CHAIN_RPC_URL`, `FIREBREAK_CHAIN_ID`, `FIREBREAK_CHAIN_EXPLORER_URL`, `FIREBREAK_CHAIN_MNEMONIC`, `FIREBREAK_CHAIN_DEPLOYMENT`. Avec la chaîne active, fixer aussi `FIREBREAK_KEY_SEED` et `FIREBREAK_PAIR_SECRET`.
+
+Ce qui est ancré après chaque action : chaque alerte signée (par l'émetteur) puis son accusé de réception (par le destinataire) ; chaque déclaration ou retrait d'incident ; la tête (`head`) et la longueur de chaque journal d'audit modifié.
+
+### `GET /api/chain/status`
+
+```json
+{"mode": "tester", "connected": true, "chain_id": 1337, "contract": "0x…", "explorer_url": null,
+ "run_id": "9f3c…", "last_block": 14, "queue": {"pending": 0, "sent": 0, "confirmed": 14, "failed": 0}}
+```
+
+En mode `off` : `mode: "off"`, `connected: false`, file à zéro.
+
+### `GET /api/chain/anchors?kind=&company=`
+
+Liste triée par `created_at`. `kind` : `audit`, `alert`, `incident`, `ack`. `status` : `pending`, `sent`, `confirmed`, `failed`.
+
+```json
+[{"id": 1, "kind": "alert", "company": "fournisseur", "hash": "0x…", "status": "confirmed",
+  "tx_hash": "0x…", "block": 3, "error": null, "created_at": "2026-10-11T01:30:00+00:00",
+  "explorer_link": null}]
+```
+
+### `POST /api/chain/anchor`
+
+Ancre maintenant la tête de tous les journaux, attend jusqu'à 5 s, renvoie les ancrages créés. **409** si la chaîne est désactivée.
+
+### Ajout à `GET /api/audit/verify`
+
+Chaque élément de `journals` porte `onchain` (`null` si chaîne désactivée ou rien d'ancré) ; la racine porte `onchain_ok` (`null` ou booléen) :
+
+```json
+"onchain": {"anchored_head": "…", "anchored_entries": 25, "block": 12, "tx_hash": "0x…",
+            "explorer_link": null, "matches": true}
+```
+
+`matches` : le journal local tronqué à `anchored_entries` entrées a pour dernier hash `anchored_head`.
+
+### `POST /api/demo/rewrite` (seulement avec `FIREBREAK_DEMO=1`, sinon 404)
+
+Corps `{"company": "fabricant", "drop_event": "alert_received"}`. Supprime la première entrée de ce type du journal et **recalcule tous les hash** : `/api/audit/verify` renvoie `ok: true` (la chaîne locale est cohérente) mais `onchain_ok: false` (le journal ne correspond plus à l'ancrage). 400 si aucune entrée de ce type.
 
 ## IA : Bedrock et repli mock
 
