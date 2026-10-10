@@ -43,6 +43,7 @@ Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérat
 - [x] Étape 4 : timeline et flux SSE (`/api/timeline`, `/api/events`, bouton « Rejouer »).
 - [ ] Interface finale branchée sur l'API (`docs/api.md`).
 - [x] Étape 6 : mode démo (`FIREBREAK_DEMO=1`, `/api/demo/step`, flèche droite), script `docs/demo.md`, test de bout en bout.
+- [ ] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux, `/api/compare`, chiffres du banc d'essai de Céline + cas JLR et CDK (Yann).
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
 - [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
