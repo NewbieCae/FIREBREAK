@@ -34,7 +34,7 @@ L'interface finale est faite par une collègue de l'équipe, à partir de `docs/
 | 5 | IA : Bedrock et lecture de documents | Fait | `434abde` |
 | 6 | Prêt pour la démo | Fait | `9307ad8` — `bash scripts/demo.sh`, script `docs/demo.md`, chiffres `uv run python -m firebreak.demo_figures` |
 
-Tests : 213 verts (`uv run pytest -q`), état au 11 octobre à 01 h.
+Tests : 218 verts (`uv run pytest -q`), état au 11 octobre à 01 h 30.
 
 Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h ; source : `uv run python -m firebreak.demo_figures`) : 17 opérations bloquées sur 193, 4 actions irréversibles bloquées, 5 210 € de paiement frauduleux bloqué, 92 102 € de paiements qui continuent.
 Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 54 opérations bloquées dont 42 saines, et 5 contaminées passent quand même jusqu'au client ; avec Firebreak, 17 bloquées, 0 saine, 0 fuite.
@@ -44,7 +44,7 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 - [x] Étape 4 : timeline et flux SSE (`/api/timeline`, `/api/events`, bouton « Rejouer »).
 - [ ] Interface finale branchée sur l'API (`docs/api.md`).
 - [x] Étape 6 : mode démo (`FIREBREAK_DEMO=1`, `/api/demo/step`, flèche droite), script `docs/demo.md`, test de bout en bout.
-- [ ] Banc d'essai : balayages de sensibilité (taille 5/8/12 entreprises, bruit hors fédération 0/10/30 %) avant de figer les chiffres (Céline) — plan présenté, en attente de validation
+- [x] Banc d'essai : balayages de sensibilité (taille 5/8/12 entreprises à 60 opérations chacune, bruit hors fédération 0/10/30 %) avant de figer les chiffres (Céline) — section « Sensibilité » de `docs/bench-results.md`, données dans `bench/sensitivity.csv`. **Les 4 conclusions de la fiche de défense tiennent** (C < B en collatéraux à toutes les tailles, ratio 4,5× à 9×, qui augmente avec la taille ; rappel C 100 % à p=0 ; à p=0,3, C sous B en rappel ; D rattrape des fuites quel que soit le bruit, mais 7 sains bloqués par fuite rattrapée à 30 % de bruit). Chiffres principaux et `bench/results.csv` inchangés à l'octet.
 - [x] Banc d'essai v2 : gates fuités, pire cas / 5e centile, ventilation par entreprise compromise, politique D « Firebreak + prudence », limites écrites par le script (Céline). **⚠️ Chiffres publiés changés le 11/10** (toutes les entreprises tirées + 10 % de réceptions hors fédération) : p=0 → Firebreak 9,6 sains bloqués contre 43,2 pour B (4,5× moins), rappel 100 % contre 98,5 %, 0 action irréversible fuitée ; p=0,3 → rappel C 93,4 %, D 97,9 %. `docs/bench-results.md`, `docs/fiche-defense.md`, l'exemple de `docs/api.md` et `tests/test_compare.py` sont à jour ; `/api/compare` lit le CSV.
 - [x] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux (bouton « Avec vs sans » + étape 3 de la démo), `/api/compare`, banc d'essai de Céline, cas JLR et CDK sourcés (Yann).
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).

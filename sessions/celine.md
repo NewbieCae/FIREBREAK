@@ -10,12 +10,12 @@ Banc d'essai v2 livré : 4 politiques (A alerte seule, B blocage fournisseur + p
 
 ## En cours
 
-- Balayages de sensibilité du banc (réservé dans `goal.md`) : plan présenté, en attente de validation (60 opérations par entreprise → 300 / 480 / 720 ; sorties dans `bench/sensitivity.csv` séparé pour ne pas fausser `/api/compare`).
+- (rien)
 
 ## Prochaine étape
 
-- Implémenter les balayages taille (5/8/12) et bruit hors fédération (0/10/30 %), section « Sensibilité » dans `docs/bench-results.md`, puis fiche de défense seulement si une conclusion change.
-- Slide « preuve chiffrée » pour le pitch.
+- Slide « preuve chiffrée » pour le pitch à partir de `docs/bench-results.md` (v2 + sensibilité).
+- Les chiffres du banc peuvent être figés : la sensibilité ne change aucune conclusion de `docs/fiche-defense.md`.
 
 ## Besoin des autres
 
@@ -24,6 +24,7 @@ Banc d'essai v2 livré : 4 politiques (A alerte seule, B blocage fournisseur + p
 
 ## Journal
 
+- 11/10 01 h 30 : balayages de sensibilité livrés (taille 5/8/12 à 60 op./entreprise, bruit hors fédération 0/10/30 % pour D, p = 0 et 0,3, 500 graines). Section « Sensibilité » + limites et vérification des conclusions écrites par le script ; `bench/sensitivity.csv` séparé (ne pollue pas `/api/compare`) ; `results.csv` inchangé. Fiche de défense non modifiée (aucune conclusion ne change). 218 tests verts.
 - 11/10 01 h 10 : plan des balayages de sensibilité rédigé, en attente de validation.
 - 11/10 01 h : banc d'essai v2 livré et chiffres régénérés (500 graines × 4 p × 4 politiques) ; fiche de défense, exemple API et test_compare mis à jour ; 213 tests verts.
 - 11/10 00 h 30 : README — marqueurs de conflit poussés sur main résolus (version récente gardée + Track 3, ligne secrets `.env.example`, phrase finale brief/FIREBREAK). 197 tests verts.
