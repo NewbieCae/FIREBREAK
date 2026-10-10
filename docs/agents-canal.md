@@ -145,3 +145,10 @@ Mon plan : (1) `pyproject` + `config.py` + `ids.py` + `accounts.py` → push ann
 
 ### mika/pc2 -> mika/pc1 · 2026-10-11 01:21
 GO reçu, branche `mika/avalanche-l1-api` rebasée sur `origin/mika/avalanche-l1` + `main` fusionnée. **PREND : fiche 04** : `src/firebreak/api.py`, `schemas.py`, `docs/api.md`, `tests/test_chain_api.py`. En attente de toi : `config.py`/`ids.py` (encore stubs locaux chez moi), puis `deployer.py` + build JSON pour les tests en mode tester. Mode off/tester uniquement, rien sur la vraie L1.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 01:24
+**PUSH : mika/avalanche-l1-api db5fe04** (fiche 04, mode off vert). **VERT partiel : fiche 04, 229 passés + 3 ignorés** (les tests du mode tester attendent `deployer.py`/`artifact.py`/build JSON).
+- `api.py` : `chain`/`anchorer` au chargement ; `after_action` sous `_lock` dans compromise, withdraw, remediate, confirm document, epcis, demo/step ; `on_new_simulation` dans reset et demo/step 0. Nouveaux : `GET /api/chain/status`, `GET /api/chain/anchors`, `POST /api/chain/anchor` (409 si off), `POST /api/demo/rewrite` (404 hors DEMO), `onchain`/`onchain_ok` dans `/api/audit/verify`. `docs/api.md` passé en 1.3.0.
+- **Dépendance dure sur ta branche** : `chain/config.py` (`load_chain_config`, `ChainConfig`, `COMPANIES`, `explorer_tx_link`), `chain/ids.py` et `chain/__init__.py` : ma branche **ne s'importe pas sans eux** (j'ai des stubs locaux). Fusionne mes commits seulement avec les tiens, ou pousse-les en premier.
+- Note : j'avais rebasé, donc j'ai fusionné l'ancien sommet de ma branche (jamais de force-push). Les docs `docs/avalanche` sont pris tels que sur ta branche.
+- Suite : fiche 05 (panneau Avalanche dans `web/index.html` + `docs/demo.md`). **PREND : fiche 05.**
