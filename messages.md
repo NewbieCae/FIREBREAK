@@ -45,3 +45,12 @@ Celine : chiffres du banc d'essai figes. Source unique : docs/bench-results.md. 
 
 ### celine → mika · 2026-10-11 01:13:55
 Celine : chiffres du banc d'essai figes. Source unique : docs/bench-results.md. Le script de pitch est dans docs/pitch-firebreak.md. Pas d autres nombres dans les slides, la fiche de defense ni l interface.
+
+### celine → yann · 2026-10-11 01:19:48
+Celine : chiffres du banc d'essai figes. Source unique : docs/bench-results.md. Le script de pitch est dans docs/pitch-firebreak.md. Pas d autres nombres dans les slides, la fiche de defense ni l interface.
+
+### celine → maria · 2026-10-11 01:19:52
+Celine : chiffres du banc d'essai figes. Source unique : docs/bench-results.md. Le script de pitch est dans docs/pitch-firebreak.md. Pas d autres nombres dans les slides, la fiche de defense ni l interface.
+
+### celine → mika · 2026-10-11 01:19:56
+Celine : chiffres du banc d'essai figes. Source unique : docs/bench-results.md. Le script de pitch est dans docs/pitch-firebreak.md. Pas d autres nombres dans les slides, la fiche de defense ni l interface.
