@@ -17,15 +17,18 @@ Constat du 11/10 : `uv`, `forge` et Python ≥ 3.12 sont absents ; seul Python 3
 
 | Info | Valeur |
 |---|---|
-| Nom de la L1 | … |
-| chainId | … |
-| URL RPC | … |
-| Explorer | … |
-| Symbole du jeton natif | … |
-| Créée avec | console Builder Hub / Avalanche CLI |
-| `TxAllowList` activé ? admin = ? | … |
-| `ContractDeployerAllowList` activé ? admin = ? | … |
-| Adresse publique du compte 0 (admin, celui qui a les jetons) | 0x… |
+| EVM chainId | `569712` |
+| URL RPC | `https://nodes-prod.43.207.73.245.sslip.io/ext/bc/2HxMVTcRc1ZmgN18oemXZPSMnarWoWMA8H1g48orwbEuqxSBks/rpc` (nœud géré par le Builder Hub) |
+| Explorer | `https://2hxmvtcr.firn.gg` |
+| Blockchain ID | `2HxMVTcRc1ZmgN18oemXZPSMnarWoWMA8H1g48orwbEuqxSBks` |
+| Subnet ID (P-Chain) | `mbgwkeduUWKyJ7taabLPyiWKFHvPiDDfyhqA9fXKyZgthzTMT` |
+| Validator Manager (sur le C-Chain) | `0xf8fbe4674a555fd34ea7ba0c3ec1ffed6cc482fb` |
+| Nœud validateur | `NodeID-DfVkATxNoiQcbqCwJoy4nApEqJWnRhN7D` (un seul : si ce nœud tombe, la L1 s'arrête) |
+| Créée avec | console Builder Hub |
+| Symbole du jeton natif | à confirmer |
+| `TxAllowList` activé ? admin = ? | à confirmer (genèse, ou lecture du precompile par `scripts/chain_smoke.py`) |
+| `ContractDeployerAllowList` activé ? admin = ? | à confirmer (idem) |
+| Adresse publique du compte 0 (admin, celui qui a les jetons) | à confirmer : 0x… |
 
 ## 3. Fichier `.env.local` à la racine de `finswag/` (ignoré par Git)
 
