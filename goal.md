@@ -34,9 +34,10 @@ L'interface finale est faite par une collègue de l'équipe, à partir de `docs/
 | 5 | IA : Bedrock et lecture de documents | Fait | `434abde` |
 | 6 | Prêt pour la démo | Fait | `9307ad8` — `bash scripts/demo.sh`, script `docs/demo.md`, chiffres `uv run python -m firebreak.demo_figures` |
 
-Tests : 183 verts (`uv run pytest -q`), état au 10 octobre à 23 h 59.
+Tests : 195 verts (`uv run pytest -q`), état au 11 octobre à 00 h 30.
 
-Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérations bloquées sur 145, 4 actions irréversibles bloquées, 5 210 € de paiement frauduleux bloqué, 80 402 € de paiements qui continuent.
+Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h ; source : `uv run python -m firebreak.demo_figures`) : 17 opérations bloquées sur 193, 4 actions irréversibles bloquées, 5 210 € de paiement frauduleux bloqué, 92 102 € de paiements qui continuent.
+Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 54 opérations bloquées dont 42 saines, et 5 contaminées passent quand même jusqu'au client ; avec Firebreak, 17 bloquées, 0 saine, 0 fuite.
 
 ## Prochaines actions
 
@@ -44,7 +45,7 @@ Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérat
 - [ ] Interface finale branchée sur l'API (`docs/api.md`).
 - [x] Étape 6 : mode démo (`FIREBREAK_DEMO=1`, `/api/demo/step`, flèche droite), script `docs/demo.md`, test de bout en bout.
 - [ ] Banc d'essai v2 : gates fuités, pire cas / 5e centile, ventilation par entreprise compromise, politique D « Firebreak + prudence », limites écrites par le script (Céline)
-- [ ] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux, `/api/compare`, chiffres du banc d'essai de Céline + cas JLR et CDK (Yann).
+- [x] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux (bouton « Avec vs sans » + étape 3 de la démo), `/api/compare`, banc d'essai de Céline, cas JLR et CDK sourcés (Yann).
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
 - [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
