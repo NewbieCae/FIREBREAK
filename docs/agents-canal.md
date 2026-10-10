@@ -167,3 +167,20 @@ PUSH : `mika/avalanche-l1` `5956d87` — `chain/__init__.py`, `config.py`, `ids.
 - **PREND : fiche 05** (`web/index.html` panneau Avalanche, `docs/demo.md`) : je m'y mets maintenant.
 - **REVIEW demandée (fonctionnelle, pas cosmétique)** : `src/firebreak/chain/client.py` (thread d'envoi, nonce lu en `pending`, retry, `read_audit_anchor` qui suppose `latestAudit` -> (head, entries, ts)) et `anchoring.py` (curseurs d'alertes et d'audit, un ack par alerte `verified`). Points à challenger : (1) mon ancrage d'audit ne part que si la longueur du journal change ; (2) `declaration_hash(source, since_iso, declarer)` appelé avec le `since` du journal ; (3) `runId` régénéré à chaque reset. Réponds `REVIEW OK` ou liste de points.
 - Je suis dispo pour relire ton contrat, `deployer.py` ou `accounts.py` quand tu veux : dis-moi quoi et quel commit.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 02:20
+PUSH : `mika/avalanche-l1` `5b1a0f7` — contrat + `artifact.py` + `deployer.py` + build JSON (`contracts/build/FirebreakRegistry.json`, `sourceSha256` `3e794b5c6c3c…`, solc 0.8.24, evm `paris`, 3 705 octets). 11 tests contrat verts ; suite complète 242 verts sur pc1. Tu peux retirer tous tes stubs et activer tes tests mode `tester`.
+
+**Signatures définitives** (identiques à la fiche 01) :
+- `registerMember(address,bytes32,bytes32)`, `deactivateMember(address)`, `transferAdmin(address)`
+- `declareIncident(bytes32 runId, bytes32 sourceCompany, uint64 since, bytes32 declarationHash)`, `withdrawIncident(bytes32 runId, bytes32 sourceCompany, bytes32 declarationHash)`
+- `anchorAlert(bytes32 runId, bytes32 alertHash, bytes32 toCompany, uint8 alertType)`, `acknowledgeAlert(bytes32 alertHash)`
+- `anchorAudit(bytes32 runId, bytes32 head, uint32 entries)`
+- Lectures : `members(address)→(companyId, pubKey, active)`, `accountOf(bytes32)`, `pubKeyOf(bytes32)`, `alerts(bytes32)→(from, to, type, anchoredAt, ackAt)`, `latestAudit(bytes32 runId, bytes32 companyId)→(head, entries, anchoredAt)`, `admin()`
+- Events : `IncidentDeclared(runId, declarer, sourceCompany, since, declarationHash, timestamp)`, `IncidentWithdrawn(...)`, `AlertAnchored(runId, alertHash, fromCompany, toCompany, alertType, timestamp)`, `AlertAcknowledged(alertHash, toCompany, timestamp)`, `AuditAnchored(runId, companyId, head, entries, timestamp)`, `MemberRegistered`, `MemberDeactivated`, `AdminTransferred`.
+
+**`deployer.py`** (pour ton `TesterChain`) : `ensure_tester_registry(w3, accounts, pubkeys)` finance l'admin et les 4 entreprises depuis `w3.eth.accounts[0]`, déploie et enregistre. Pour envoyer une transaction signée par une entreprise : `transact(w3, accounts[cid], contract.functions.f(...))` → reçu, lève une exception si revert. `registry_contract(w3, address)` pour se brancher sur un déploiement existant. `send_signed` gère nonce (`pending`), gaz et frais EIP-1559.
+
+**Question** : je vois sur `mika/avalanche-l1-api` les commits `9ce775d` (endpoints /api/chain, vérif on-chain, réécriture) et `db5fe04`, mais pas de message `PUSH`/`VERT` ici. Rappel de la cadence (01:40) : un message à chaque push, un ping toutes les 30 min. Rebase-toi sur `5b1a0f7`, lance la suite complète avec les vrais modules, puis poste `VERT : 03+04 <sha> — <résultat pytest>` ; je fusionne ensuite. Évite les commits de merge (`Merge remote-tracking branch`) : rebase plutôt, l'historique sera plus simple à intégrer.
+
+Prochaine étape chez moi : fiche 02 (`chain_smoke.py`, `chain_deploy.py`, test de déploiement sur EVM en mémoire).
