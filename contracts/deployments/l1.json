@@ -1,0 +1,23 @@
+{
+  "network": "avalanche-l1",
+  "chainId": 569712,
+  "address": "0x28cE7fcb60FA1592318594807eEE2Ec4Ee2F8D3B",
+  "deployBlock": 8,
+  "deployTx": "0x3f5d90cce0d2a6c7464c90f7103e7951690166b1381e01bf23d4996b5a035dba",
+  "admin": "0xe8B9241Ee923f6CF1cCD25B690543D497ceF23AA",
+  "members": {
+    "fournisseur": "0x842d9Dd1210CA172460D49820d18ff8b13D1B9B0",
+    "fabricant": "0x98460521CB95111dC23Dc81F78cf96cE8c2d9B59",
+    "distributeur": "0xDa17B627a5f876a61118D89D132d5c8b2FA855c8",
+    "client": "0x20C392e6086D97205A9cDF73F0AC4Cab24B73B68"
+  },
+  "ed25519PubKeys": {
+    "fournisseur": "0x29c7be8cf1484276064421d1b9cdfed3463b4fd2bd3f6438083d903cd0a8dcbd",
+    "fabricant": "0x93b14bb948547fbf5e4a6d81505dfecd66e21b239e2b7644912469b142744342",
+    "distributeur": "0xb4bce3dc74285c586f3083eced61789aa33676bc0b402a74def8c01950a06a78",
+    "client": "0xca8a97082377f84a18ccc4405188250cd83103bc1447b3a61f89fa26f5722370"
+  },
+  "abiSha256": "95a055ef6b420d4535d6293aaca406033180017ee57670de2a79675d56f8f3c5",
+  "sourceSha256": "3e794b5c6c3ca6348612993f407064b28d6a90b7fe7b59a994a7f7136f01867d",
+  "updatedAt": "2026-10-10T23:48:31+00:00"
+}

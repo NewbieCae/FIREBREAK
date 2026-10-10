@@ -35,15 +35,48 @@ class TransactionFailed(RuntimeError):
     pass
 
 
+RECEIPT_POLL_SECONDS = 1.0  # web3 interroge toutes les 0,1 s par défaut : trop pour un nœud géré
+_EXTRA_RETRY_METHODS = (
+    "eth_blockNumber", "eth_getBlockByNumber", "eth_gasPrice", "eth_maxPriorityFeePerGas",
+    "eth_getBalance", "eth_getCode",
+)
+
+
 def connect(rpc_url: str, timeout: int = 15) -> Web3:
-    """Client HTTP vers une L1 Subnet-EVM. Le middleware PoA tolère un champ
-    `extraData` d'en-tête de bloc plus long que sur Ethereum."""
+    """Client HTTP vers une L1 Subnet-EVM.
+
+    - Le middleware PoA tolère un champ `extraData` d'en-tête de bloc plus long
+      que sur Ethereum.
+    - Les nœuds gérés du Builder Hub limitent le débit (HTTP 429) : relance
+      automatique avec attente exponentielle (0,5 s → 16 s). Relancer
+      `eth_sendRawTransaction` est sans risque : même transaction signée,
+      même hash, le nœud ne l'applique qu'une fois.
+    """
+    from requests.exceptions import ConnectionError as RequestsConnectionError
+    from requests.exceptions import HTTPError, Timeout
     from web3 import Web3
     from web3.middleware import ExtraDataToPOAMiddleware
+    from web3.providers.rpc.utils import REQUEST_RETRY_ALLOWLIST, ExceptionRetryConfiguration
 
-    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": timeout}))
+    retry = ExceptionRetryConfiguration(
+        errors=(HTTPError, RequestsConnectionError, Timeout),
+        retries=6,
+        backoff_factor=0.5,
+        method_allowlist=list(dict.fromkeys([*REQUEST_RETRY_ALLOWLIST, *_EXTRA_RETRY_METHODS])),
+    )
+    w3 = Web3(Web3.HTTPProvider(
+        rpc_url, request_kwargs={"timeout": timeout}, exception_retry_configuration=retry
+    ))
     w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
     return w3
+
+
+def _chain_id(w3: Web3) -> int:
+    cached = getattr(w3, "_firebreak_chain_id", None)
+    if cached is None:
+        cached = w3.eth.chain_id
+        w3._firebreak_chain_id = cached  # type: ignore[attr-defined]
+    return cached
 
 
 def allowlist_role(w3: Web3, precompile: str, address: str) -> int | None:
@@ -60,7 +93,7 @@ def allowlist_role(w3: Web3, precompile: str, address: str) -> int | None:
 def _finalize(w3: Web3, account: LocalAccount, tx: dict[str, Any]) -> dict[str, Any]:
     tx = dict(tx)
     tx.setdefault("from", account.address)
-    tx.setdefault("chainId", w3.eth.chain_id)
+    tx.setdefault("chainId", _chain_id(w3))
     tx.setdefault("nonce", w3.eth.get_transaction_count(account.address, "pending"))
     if "gasPrice" not in tx and "maxFeePerGas" not in tx:
         base = w3.eth.get_block("latest").get("baseFeePerGas")
@@ -79,7 +112,9 @@ def send_signed(w3: Web3, account: LocalAccount, tx: dict[str, Any], timeout: in
     """Signe localement, envoie, attend le reçu. Lève TransactionFailed si revert."""
     signed = account.sign_transaction(_finalize(w3, account, tx))
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout)
+    receipt = w3.eth.wait_for_transaction_receipt(
+        tx_hash, timeout=timeout, poll_latency=RECEIPT_POLL_SECONDS
+    )
     if receipt["status"] != 1:
         raise TransactionFailed(f"transaction {tx_hash.hex()} revert")
     return receipt
