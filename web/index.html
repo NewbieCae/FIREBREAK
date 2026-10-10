@@ -32,6 +32,35 @@
   .sig-ok { color: #66bb6a; } .sig-ko { color: #ef5350; }
   #panel .rem-btn { margin: 4px 6px 0 0; font-size: 12px; padding: 5px 9px; }
   .muted { color: #9aa0aa; }
+  #compare { position: fixed; inset: 52px 0 0 0; background: #14171c;
+             display: none; flex-direction: column; z-index: 10; }
+  #compare.open { display: flex; }
+  #cmp-head { text-align: center; padding: 10px 0 4px; }
+  #cmp-head .big { font-size: 28px; font-weight: 700; color: #ffb300; }
+  #cmp-head .sub { font-size: 14px; color: #9aa0aa; margin-top: 2px; }
+  #cmp-halves { flex: 1; display: flex; min-height: 0; }
+  .cmp-half { flex: 1; display: flex; flex-direction: column; min-width: 0;
+              border-right: 1px solid #333; }
+  .cmp-half:last-child { border-right: 0; }
+  .cmp-title { text-align: center; padding: 8px 4px 2px; }
+  .cmp-title h3 { margin: 0; font-size: 18px; }
+  .cmp-title .muted { font-size: 12px; }
+  .cmp-cy { flex: 1; min-height: 0; }
+  .cmp-counters { display: flex; justify-content: center; gap: 14px;
+                  flex-wrap: wrap; padding: 6px 8px 10px; }
+  .cmp-stat { text-align: center; min-width: 90px; }
+  .cmp-stat .v { font-size: 22px; font-weight: 700; }
+  .cmp-stat .k { font-size: 11px; color: #9aa0aa; }
+  .v.red { color: #e53935; } .v.orange { color: #ff9800; }
+  .v.green { color: #43a047; } .v.amber { color: #ffb300; }
+  #cmp-bottom { border-top: 1px solid #333; padding: 8px 16px; font-size: 13px; }
+  #cmp-bench { text-align: center; color: #ffb300; margin-bottom: 6px; }
+  #cmp-real { display: flex; gap: 12px; }
+  .rw-card { flex: 1; background: #1d2129; border-radius: 8px; padding: 10px 12px; }
+  .rw-card b { font-size: 13px; } .rw-card .date { color: #9aa0aa; font-size: 12px; }
+  .rw-card p { margin: 6px 0; font-size: 12px; color: #cfd3da; }
+  .rw-card a { color: #6ea8ff; font-size: 11px; }
+  #cmp-close { position: absolute; top: 8px; right: 14px; }
 </style>
 </head>
 <body>
@@ -42,6 +71,7 @@
   <button id="btn-withdraw" class="secondary">Retirer la déclaration (fausse alerte)</button>
   <button id="btn-replay" class="secondary">Rejouer</button>
   <button id="btn-demo" class="secondary">Démo : étape suivante →</button>
+  <button id="btn-compare" class="secondary">Avec vs sans</button>
   <button id="btn-reset" class="secondary">Réinitialiser</button>
   <span class="counter" id="cnt-main">—</span>
   <span class="counter" id="cnt-gates">—</span>
@@ -56,6 +86,26 @@
     <div id="alerts" class="muted">Aucune alerte.</div>
     <h2 style="margin-top:18px">Journal d'audit</h2>
     <div id="audit" class="muted">—</div>
+  </div>
+</div>
+<div id="compare">
+  <button id="cmp-close" class="secondary">Fermer ✕</button>
+  <div id="cmp-head"><div class="big" id="cmp-headline"></div><div class="sub" id="cmp-subline"></div></div>
+  <div id="cmp-halves">
+    <div class="cmp-half">
+      <div class="cmp-title"><h3>Sans Firebreak</h3><div class="muted" id="cmp-sub-l"></div></div>
+      <div class="cmp-cy" id="cyL"></div>
+      <div class="cmp-counters" id="cntL"></div>
+    </div>
+    <div class="cmp-half">
+      <div class="cmp-title"><h3>Avec Firebreak</h3><div class="muted" id="cmp-sub-r"></div></div>
+      <div class="cmp-cy" id="cyR"></div>
+      <div class="cmp-counters" id="cntR"></div>
+    </div>
+  </div>
+  <div id="cmp-bottom">
+    <div id="cmp-bench"></div>
+    <div id="cmp-real"></div>
   </div>
 </div>
 <script>
@@ -86,8 +136,111 @@ async function api(path, method = 'GET', body = null) {
   return res.json();
 }
 
+let cyL = null, cyR = null;
+function buildSplitCy(containerId, statusOf) {
+  const rows = {};
+  const elements = [];
+  state.companies.forEach(c => {
+    elements.push({ data: { id: 'co-' + containerId + '-' + c.id, label: c.name } });
+    rows[c.id] = 0;
+  });
+  state.records.forEach(r => {
+    const row = rows[r.company]++;
+    elements.push({
+      data: { id: r.id, parent: 'co-' + containerId + '-' + r.company,
+              label: r.label, status: statusOf(r), gate: r.gate },
+      position: { x: COL_X[r.company], y: 40 + row * 26 },
+    });
+  });
+  state.edges.forEach(e => elements.push({
+    data: { source: e.source, target: e.target, cross: e.cross },
+  }));
+  return cytoscape({
+    container: document.getElementById(containerId),
+    elements, layout: { name: 'preset' },
+    userZoomingEnabled: false, userPanningEnabled: false, boxSelectionEnabled: false,
+    style: [
+      { selector: ':parent', style: {
+          'label': 'data(label)', 'text-valign': 'top', 'font-size': 12,
+          'color': '#cfd3da', 'background-opacity': 0.08, 'padding': 24 } },
+      { selector: 'node[status]', style: {
+          'label': 'data(label)', 'font-size': 8, 'color': '#e6e8eb',
+          'text-valign': 'center', 'text-wrap': 'wrap', 'text-max-width': 110,
+          'width': 22, 'height': 22, 'background-color': COLORS.ok } },
+      { selector: 'node[status="quarantined"]', style: { 'background-color': COLORS.quarantined } },
+      { selector: 'node[status="released"]', style: { 'background-color': COLORS.released } },
+      { selector: 'node[status="coupe"]', style: { 'background-color': '#616b7a' } },
+      { selector: 'node[status="coupe-contaminated"]', style: { 'background-color': '#a83232' } },
+      { selector: 'node[status="leak"]', style: { 'background-color': '#ff9800',
+          'border-width': 3, 'border-color': '#ffd54f', 'border-style': 'double' } },
+      { selector: 'node[gate]', style: { 'shape': 'diamond', 'width': 28, 'height': 28 } },
+      { selector: 'edge', style: { 'width': 1, 'line-color': '#556',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#556',
+          'arrow-scale': 0.6, 'curve-style': 'bezier' } },
+      { selector: 'edge[cross]', style: { 'line-style': 'dashed', 'line-color': '#8899bb',
+          'target-arrow-color': '#8899bb' } },
+    ],
+  });
+}
+
+function cmpStat(v, k, cls) {
+  return `<div class="cmp-stat"><div class="v ${cls}">${v}</div><div class="k">${k}</div></div>`;
+}
+function cmpCounters(m) {
+  return cmpStat(m.blocked, 'opérations bloquées', 'red') +
+    cmpStat(m.healthy_blocked, 'dont saines', 'orange') +
+    cmpStat(m.leaked, 'fuites', 'orange') +
+    cmpStat(fmtMoney(m.payments_blocked_eur), 'paiements bloqués', 'red') +
+    cmpStat(fmtMoney(m.payments_flowing_eur), 'paiements qui continuent', 'green') +
+    cmpStat((m.activity_preserved_pct ?? 0).toFixed(1) + ' %', 'activité saine préservée', 'amber');
+}
+
+function showCompare(d) {
+  // vérité affichée ≈ bloqué-C ∪ fuites-B (C n'a pas de fuite sur le scénario)
+  const truthIds = new Set(d.with.blocked_ids.concat(d.without.leaked_ids.map(l => l.id)));
+  const bIds = new Set(d.without.blocked_ids);
+  const leakIds = new Set(d.without.leaked_ids.map(l => l.id));
+  cyL = buildSplitCy('cyL', r =>
+    leakIds.has(r.id) ? 'leak'
+    : bIds.has(r.id) ? (truthIds.has(r.id) ? 'coupe-contaminated' : 'coupe')
+    : 'ok');
+  cyR = buildSplitCy('cyR', r => r.status);
+  const ratio = d.healthy_blocked_ratio;
+  document.getElementById('cmp-headline').textContent =
+    ratio !== null ? `${ratio.toFixed(1)}× moins d'opérations saines bloquées`
+    : `${d.with.healthy_blocked} opération saine bloquée avec Firebreak`;
+  document.getElementById('cmp-subline').textContent =
+    `Vérité terrain : ${d.truth.contaminated} opérations réellement contaminées`;
+  document.getElementById('cmp-sub-l').textContent = d.without.subtitle;
+  document.getElementById('cmp-sub-r').textContent = d.with.subtitle;
+  document.getElementById('cntL').innerHTML = cmpCounters(d.without);
+  document.getElementById('cntR').innerHTML = cmpCounters(d.with);
+  const benchEl = document.getElementById('cmp-bench');
+  if (d.bench && d.bench.groups && d.bench.groups['p0.0:C'] && d.bench.groups['p0.0:B']) {
+    const c = d.bench.groups['p0.0:C'], b = d.bench.groups['p0.0:B'];
+    benchEl.textContent = `Sur ${c.seeds} supply chains simulées : Firebreak bloque ` +
+      `${c.healthy_blocked_mean.toFixed(1)} opérations saines contre ` +
+      `${b.healthy_blocked_mean.toFixed(1)}, rappel ${(c.recall_mean * 100).toFixed(0)} %`;
+  } else benchEl.textContent = '';
+  document.getElementById('cmp-real').innerHTML = (d.real_world || []).map(rw =>
+    `<div class="rw-card"><b>${rw.name}</b> <span class="date">— ${rw.date}</span>` +
+    `<p>${rw.text}</p><a href="${rw.source}" target="_blank">source</a></div>`).join('');
+  document.getElementById('compare').classList.add('open');
+}
+function hideCompare() {
+  document.getElementById('compare').classList.remove('open');
+  if (cyL) { cyL.destroy(); cyL = null; }
+  if (cyR) { cyR.destroy(); cyR = null; }
+}
+document.getElementById('cmp-close').onclick = hideCompare;
+document.getElementById('btn-compare').onclick = async () => {
+  try { showCompare(await api('/api/compare')); }
+  catch (e) { alert(e.message); }
+};
+
 function render(s) {
   state = s;
+  hideCompare();
   const sel = document.getElementById('sel-scenario');
   sel.value = s.scenario.id;
   sel.title = s.scenario.description;
@@ -245,6 +398,7 @@ document.getElementById('btn-replay').onclick = replay;
 async function demoNext() {
   const r = await api('/api/demo/step', 'POST', {});
   if (r.state) render(r.state);
+  if (r.detail && r.detail.without && r.detail.with) showCompare(r.detail);
   const det = document.getElementById('detail');
   det.className = '';
   let html = `<b>Démo — étape ${r.step + 1}/${r.total}</b><p>${r.caption}</p>`;

@@ -406,6 +406,45 @@ es.onmessage = (e) => {
 
 L'état final reconstruit en appliquant les étapes dans l'ordre est identique à `GET /api/state` (vérifié par `tests/test_timeline.py`).
 
+### `GET /api/compare`
+
+**Avec vs sans Firebreak**, mesuré sur la simulation courante et ses déclarations actives (400 `{"detail": "aucune déclaration active"}` s'il n'y en a pas). Deux politiques comparées sur la **même vérité terrain** :
+
+- **Vérité terrain** : records réellement contaminés — BFS depuis les records **émis** par la source dans son propre registre (`origin == company`) après `since`, le long des dépendances enregistrées (`inputs` + envois inter-entreprises) ; un record `verified` n'est jamais contaminé et arrête la propagation. Indépendante des statuts (la remédiation ne la change pas).
+- **`without` (politique B, « sans Firebreak »)** : pour chaque déclaration, on coupe la source et ses **clients directs** (ceux qui ont reçu ses données) — tout record de leurs registres avec `ts >= since` est bloqué. `scope` donne ce périmètre par source.
+- **`with` (politique C, « avec Firebreak »)** : les records actuellement `quarantined`.
+
+Même fonction de métriques des deux côtés : `blocked`, `healthy_blocked` (bloqués hors vérité = collatéraux), `leaked`/`leaked_ids` (contaminés non bloqués = fuites), `gates_blocked`, `payments_blocked_eur`/`payments_flowing_eur` (paiements seulement), `activity_preserved_pct` (part des opérations saines non bloquées), `precision`, `recall` (null quand indéfini), `companies_hit`, `blocked_ids`.
+
+```json
+{"declarations":[{"company":"fournisseur","since":"2026-10-10T14:00:00"}],
+ "truth":{"contaminated":17,"definition":"Records réellement contaminés : …"},
+ "without":{"title":"Sans Firebreak","policy":"B",
+   "subtitle":"On coupe le fournisseur et ses clients directs depuis 14 h",
+   "scope":{"fournisseur":["fournisseur","fabricant"]},
+   "blocked":14,"healthy_blocked":2,"leaked":5,
+   "leaked_ids":[{"id":"d-ship-X","label":"Expédition reçue LOT-999","company":"distributeur"},…],
+   "gates_blocked":4,"payments_blocked_eur":5210,"payments_flowing_eur":80402,
+   "activity_preserved_pct":98.4,"precision":0.857,"recall":0.706,
+   "companies_hit":["fabricant","fournisseur"],"blocked_ids":["f-asn-08",…]},
+ "with":{"title":"Avec Firebreak","policy":"C",
+   "subtitle":"On gèle seulement les opérations contaminées",
+   "blocked":17,"healthy_blocked":0,"leaked":0,"leaked_ids":[],
+   "gates_blocked":4,"payments_blocked_eur":5210,"payments_flowing_eur":80402,
+   "activity_preserved_pct":100.0,"precision":1.0,"recall":1.0,
+   "companies_hit":["client","distributeur","fabricant","fournisseur"],"blocked_ids":[…]},
+ "healthy_blocked_ratio":null,
+ "bench":{"p_values":["0.0","0.1","0.2","0.3"],"seeds_per_group":500,
+   "command":"uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3",
+   "groups":{"p0.0:B":{"seeds":500,"healthy_blocked_mean":49.5,"leaks_mean":0.91,"recall_mean":0.98,"activity_preserved_mean":0.813},
+             "p0.0:C":{"seeds":500,"healthy_blocked_mean":11.4,"leaks_mean":0.0,"recall_mean":1.0,"activity_preserved_mean":0.957},…}},
+ "real_world":[{"name":"Jaguar Land Rover","date":"septembre 2025","text":"…","source":"https://www.reuters.com/…"},{…}]}
+```
+
+- `healthy_blocked_ratio` = `without.healthy_blocked / with.healthy_blocked` (`null` si 0 — la comparaison est alors « infinie »).
+- `bench` : agrégat de `bench/results.csv` (moyenne par graine, politiques B et C, à `p=0` et au `p` max présent) ; `null` si le fichier manque.
+- `real_world` : exemples réels de coupure totale, avec liens sources.
+
 ### `POST /api/ingest/document?company=<id>`
 
 Lit un document fournisseur reçu par l'entreprise `company` (bon de commande, avis d'expédition, facture, changement de RIB) et renvoie une **proposition** de record. Rien n'est ajouté au registre avant `…/confirm`.

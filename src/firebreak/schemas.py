@@ -161,6 +161,54 @@ class TimelineOut(BaseModel):
                     "(compromise, withdraw, remédiation, ingestion).")
 
 
+class CompareDeclOut(BaseModel):
+    company: str = Field(description="Entreprise déclarée compromise.")
+    since: str
+
+
+class LeakedOut(BaseModel):
+    id: str
+    label: str
+    company: str
+
+
+class CompareMetricsOut(BaseModel):
+    blocked: int = Field(description="Records bloqués par cette politique.")
+    healthy_blocked: int = Field(description="Records bloqués hors vérité terrain (collatéraux).")
+    leaked: int = Field(description="Records contaminés non bloqués (fuites).")
+    leaked_ids: list[LeakedOut]
+    gates_blocked: int = Field(description="Actions irréversibles bloquées.")
+    payments_blocked_eur: float = Field(description="Montant des paiements bloqués (€).")
+    payments_flowing_eur: float = Field(description="Montant des paiements qui continuent (€).")
+    activity_preserved_pct: float | None = Field(
+        description="Part des opérations saines non bloquées (%).")
+    precision: float | None = Field(description="Précision du blocage (null si rien de bloqué).")
+    recall: float | None = Field(description="Rappel (null si rien de contaminé).")
+    companies_hit: list[str] = Field(description="Entreprises avec ≥ 1 record bloqué.")
+    blocked_ids: list[str]
+
+
+class CompareSideOut(CompareMetricsOut):
+    title: str
+    policy: str = Field(description="« B » : coupe fournisseur + clients directs. « C » : Firebreak.")
+    subtitle: str | None = None
+    scope: dict | None = Field(default=None, description="Périmètre coupé par déclaration (politique B).")
+
+
+class CompareOut(BaseModel):
+    declarations: list[CompareDeclOut]
+    truth: dict = Field(description="Taille du vrai périmètre contaminé + sa définition.")
+    without: CompareSideOut = Field(description="Politique B : blocage large du partenaire.")
+    with_: CompareSideOut = Field(
+        alias="with", description="Politique C : quarantaine ciblée Firebreak.")
+    healthy_blocked_ratio: float | None = Field(
+        description="without.healthy_blocked / with.healthy_blocked (null si 0).")
+    bench: dict | None = Field(description="Agrégat de bench/results.csv, null si absent.")
+    real_world: list[dict] = Field(description="Exemples réels de coupure totale.")
+
+    model_config = {"populate_by_name": True}
+
+
 class EpcisIgnoredOut(BaseModel):
     index: int = Field(description="Position de l'événement dans eventList.")
     type: str | None

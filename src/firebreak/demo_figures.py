@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from .compare import compare
 from .scenario import SCENARIOS, build_simulation
 
 
@@ -39,6 +40,18 @@ def main() -> None:
     pay = next(r for r in blocked if r["id"] == "m-pay-X")
     print(f"paiement_frauduleux      = {pay['payload']['amount']:.0f} € "
           f"(RIB {pay['payload']['rib']})")
+    print()
+    print("== Avec vs sans Firebreak (politique C vs B) ==")
+    cmp = compare(sim)
+    for side in ("without", "with"):
+        m = cmp[side]
+        print(f"{m['policy']:4s} {m['title']:16s} bloqués {m['blocked']:3d}  "
+              f"saines bloquées {m['healthy_blocked']:3d}  fuites {m['leaked']}  "
+              f"gates {m['gates_blocked']}  "
+              f"activité préservée {m['activity_preserved_pct']:.1f} %")
+    ratio = cmp["healthy_blocked_ratio"]
+    print(f"ratio                    = "
+          f"{f'{ratio:.1f}x' if ratio is not None else 'infini (0 sain bloqué avec Firebreak)'}")
     print()
     print("== Les 4 scénarios ==")
     for sid in SCENARIOS:

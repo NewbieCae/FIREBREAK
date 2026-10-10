@@ -24,6 +24,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .ai import MockExplainer, get_explainer
+from .compare import compare as sim_compare
 from .demo import DEMO_CAPTIONS, DEMO_MODE, DEMO_REPLAY_SPEED, DEMO_SCENARIO, demo_caption
 from .ingest.documents import DocumentError, Party, document_text, get_extractor
 from .ingest.epcis import EpcisError, parse_epcis
@@ -39,6 +40,7 @@ from .schemas import (
     ScenarioId,
     ScenarioOut,
     StateOut,
+    CompareOut,
     TimelineOut,
 )
 from .simulation import (
@@ -383,6 +385,19 @@ def get_scenarios() -> list[dict]:
     return scenarios_meta()
 
 
+@app.get("/api/compare", summary="Avec vs sans Firebreak : comparaison des politiques",
+         response_model=CompareOut, responses=ERRORS)
+def get_compare() -> dict:
+    """Politique B (couper le fournisseur et ses clients directs) vs
+    politique C (quarantaine ciblée), mesurées sur la même vérité
+    terrain. 400 tant qu'aucune déclaration n'est active."""
+    with _lock:
+        try:
+            return sim_compare(sim)
+        except LookupError as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+
 @app.get("/api/timeline", summary="Étapes ordonnées de la dernière action",
          response_model=TimelineOut)
 def get_timeline() -> dict:
@@ -435,6 +450,11 @@ def post_demo_step() -> dict:
                 to_scenario_time(datetime.fromisoformat(hint["since"])))
             detail = {"steps": len(sim.timeline)}
         elif i == 2:
+            try:
+                detail = sim_compare(sim)
+            except LookupError as exc:
+                error = str(exc)
+        elif i == 3:
             record = sim.find_record("m-pay-X")
             if record is None or record.status != "quarantined":
                 error = "m-pay-X n'est pas en quarantaine — passer l'étape 1 d'abord."
@@ -445,14 +465,14 @@ def post_demo_step() -> dict:
                     "path": [serialize_record(r) for r in path],
                     **explainer.analyze(rec_copy, path),
                 }
-        elif i == 3:
+        elif i == 4:
             rec = sim.find_record("m-gr-X")
             if rec is None or rec.status != "quarantined":
                 error = "m-gr-X n'est pas en quarantaine — passer l'étape 1 d'abord."
             else:
                 sim.remediate("m-gr-X", "human_approval")
                 detail = {"steps": len(sim.timeline)}
-        elif i == 4:
+        elif i == 5:
             detail = sim.audit_verify()
         if i < len(DEMO_CAPTIONS):
             demo_index = i + 1

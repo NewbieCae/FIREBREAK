@@ -65,24 +65,30 @@ def test_demo_step_drives_the_script():
     assert r1["state"]["counters"]["global"]["quarantined"] > 0
     assert r1["detail"]["steps"] > 0                    # timeline disponible
 
-    r2 = client.post("/api/demo/step").json()          # explain m-pay-X
-    assert r2["step"] == 2 and r2["detail"]["explanation"]
-    assert r2["detail"]["record"]["id"] == "m-pay-X"
+    r2 = client.post("/api/demo/step").json()          # avec vs sans
+    assert r2["step"] == 2
+    assert r2["detail"]["without"]["policy"] == "B"
+    assert r2["detail"]["with"]["policy"] == "C"
+    assert r2["detail"]["with"]["healthy_blocked"] == 0
 
-    r3 = client.post("/api/demo/step").json()          # remediate → cascade
-    assert r3["step"] == 3 and r3["error"] is None
-    st = {r["id"]: r["status"] for r in r3["state"]["records"]}
+    r3 = client.post("/api/demo/step").json()          # explain m-pay-X
+    assert r3["step"] == 3 and r3["detail"]["explanation"]
+    assert r3["detail"]["record"]["id"] == "m-pay-X"
+
+    r4 = client.post("/api/demo/step").json()          # remediate → cascade
+    assert r4["step"] == 4 and r4["error"] is None
+    st = {r["id"]: r["status"] for r in r4["state"]["records"]}
     assert st["m-gr-X"] == "released" and st["m-lot-X"] == "ok"
 
-    r4 = client.post("/api/demo/step").json()          # audit verify
-    assert r4["step"] == 4 and r4["detail"]["ok"] is True
-    assert r4["done"] is True
+    r5 = client.post("/api/demo/step").json()          # audit verify
+    assert r5["step"] == 5 and r5["detail"]["ok"] is True
+    assert r5["done"] is True
 
-    r5 = client.post("/api/demo/step").json()          # reste en fin
-    assert r5["step"] == 5 and r5["done"] is True
-    assert r5["caption"]
+    r6 = client.post("/api/demo/step").json()          # reste en fin
+    assert r6["step"] == 6 and r6["done"] is True
+    assert r6["caption"]
 
-    for r in (r0, r1, r2, r3, r4, r5):
+    for r in (r0, r1, r2, r3, r4, r5, r6):
         assert r["caption"]  # légende française toujours présente
 
 

@@ -21,6 +21,9 @@ DEMO_CAPTIONS = [
     "Aciers Durand est déclarée compromise depuis 14 h : la contamination se "
     "propage d'entreprise en entreprise, seules les opérations contaminées "
     "passent en quarantaine.",
+    "Avec vs sans Firebreak : à gauche, la coupure totale du partenaire et "
+    "de ses clients ; à droite, la quarantaine ciblée — mêmes fuites "
+    "traitées, beaucoup moins de dégâts collatéraux.",
     "Explication : le paiement au RIB modifié est bloqué — la preuve est le "
     "chemin exact dans le graphe de dépendances.",
     "Remédiation : validation humaine de la réception vérifiée — les records "
