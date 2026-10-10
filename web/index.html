@@ -86,6 +86,14 @@
     <div id="alerts" class="muted">Aucune alerte.</div>
     <h2 style="margin-top:18px">Journal d'audit</h2>
     <div id="audit" class="muted">—</div>
+    <details id="chain-box" style="display:none;margin-top:18px">
+      <summary><h2 style="display:inline">Avalanche</h2> <span id="chain-dot">●</span></summary>
+      <div id="chain-head" class="muted"></div>
+      <button id="btn-onchain" class="secondary rem-btn">Vérifier sur Avalanche</button>
+      <button id="btn-rewrite" class="secondary rem-btn" style="display:none">Simuler une réécriture du journal</button>
+      <div id="chain-verify"></div>
+      <div id="chain-anchors" class="muted"></div>
+    </details>
   </div>
 </div>
 <div id="compare">
@@ -428,6 +436,64 @@ api('/api/scenarios').then(list => {
     `<option value="${sc.id}">${sc.label}</option>`).join('');
   return api('/api/state');
 }).then(render).catch(e => alert(e.message));
+
+// --- Panneau Avalanche : visible seulement si la chaîne est active ---
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const short = h => h ? h.slice(0, 8) + '…' + h.slice(-4) : '—';
+const STATUS_COLOR = { confirmed: '#66bb6a', sent: '#ffb300', pending: '#9aa0aa', failed: '#ef5350' };
+const KIND_ICON = { audit: '📒', alert: '✉️', ack: '✅', incident: '🚨' };
+let chainOn = false;
+
+async function refreshChain() {
+  let st;
+  try { st = await api('/api/chain/status'); } catch { return; }
+  chainOn = st.mode !== 'off';
+  const box = document.getElementById('chain-box');
+  box.style.display = chainOn ? '' : 'none';
+  if (!chainOn) return;
+  document.getElementById('chain-dot').style.color = st.connected ? '#66bb6a' : '#ef5350';
+  const q = st.queue;
+  document.getElementById('chain-head').innerHTML =
+    `mode ${esc(st.mode)} — ${st.connected ? 'connectée' : 'injoignable'}` +
+    (st.chain_id ? ` — chainId ${st.chain_id}` : '') +
+    (st.contract ? `<br>contrat <code>${esc(short(st.contract))}</code>` : '') +
+    `<br>run <code>${esc(short(st.run_id))}</code> — ` +
+    `${q.confirmed} confirmé(s), ${q.pending + q.sent} en cours, ${q.failed} échec(s)`;
+  if (!box.open) return;
+  const anchors = await api('/api/chain/anchors');
+  document.getElementById('chain-anchors').innerHTML = anchors.slice(-30).reverse().map(a =>
+    `<div class="alert">${KIND_ICON[a.kind] || ''} ${esc(a.kind)} · ${esc(a.company)} · ` +
+    `<code>${esc(short(a.hash))}</code> <span style="color:${STATUS_COLOR[a.status] || '#9aa0aa'}">` +
+    `${esc(a.status)}${a.block ? ' · bloc ' + a.block : ''}</span>` +
+    (a.explorer_link ? ` <a href="${esc(a.explorer_link)}" target="_blank" rel="noopener">tx</a>` : '') +
+    (a.error ? `<br><span class="sig-ko">${esc(a.error)}</span>` : '') + `</div>`).join('') || 'Aucun ancrage.';
+}
+
+function showOnchain(v) {
+  const mark = ok => `<span class="${ok ? 'sig-ok' : 'sig-ko'}">${ok ? '✓' : '✗'}</span>`;
+  document.getElementById('chain-verify').innerHTML = v.journals.map(j =>
+    `<div>${esc(j.company)} — local ${mark(j.ok)} — Avalanche ` +
+    (j.onchain ? `${mark(j.onchain.matches)} (${j.onchain.anchored_entries} entrées` +
+      `${j.onchain.block ? ', bloc ' + j.onchain.block : ''})` : '<span class="muted">non ancré</span>') +
+    `</div>`).join('') +
+    (v.onchain_ok === false ? '<b class="sig-ko">Le journal ne correspond plus à ce qui a été ancré.</b>' : '');
+}
+
+document.getElementById('btn-onchain').onclick = async () => {
+  try {
+    await api('/api/chain/anchor', 'POST', {});
+    showOnchain(await api('/api/audit/verify'));
+  } catch (e) { alert(e.message); }
+};
+document.getElementById('btn-rewrite').onclick = async () => {
+  try {
+    const r = await api('/api/demo/rewrite', 'POST', { company: 'fabricant', drop_event: 'alert_received' });
+    showOnchain(r.verify);
+  } catch (e) { alert(e.message); }
+};
+document.getElementById('chain-box').addEventListener('toggle', refreshChain);
+refreshChain().then(() => { if (chainOn) document.getElementById('btn-rewrite').style.display = ''; });
+setInterval(refreshChain, 2000);
 </script>
 </body>
 </html>
