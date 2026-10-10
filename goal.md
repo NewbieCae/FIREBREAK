@@ -44,7 +44,7 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 - [x] Étape 4 : timeline et flux SSE (`/api/timeline`, `/api/events`, bouton « Rejouer »).
 - [ ] Interface finale branchée sur l'API (`docs/api.md`).
 - [x] Étape 6 : mode démo (`FIREBREAK_DEMO=1`, `/api/demo/step`, flèche droite), script `docs/demo.md`, test de bout en bout.
-- [ ] Banc d'essai : balayages de sensibilité (taille 5/8/12 entreprises, bruit hors fédération 0/10/30 %) avant de figer les chiffres (Céline)
+- [ ] Banc d'essai : balayages de sensibilité (taille 5/8/12 entreprises, bruit hors fédération 0/10/30 %) avant de figer les chiffres (Céline) — plan présenté, en attente de validation
 - [x] Banc d'essai v2 : gates fuités, pire cas / 5e centile, ventilation par entreprise compromise, politique D « Firebreak + prudence », limites écrites par le script (Céline). **⚠️ Chiffres publiés changés le 11/10** (toutes les entreprises tirées + 10 % de réceptions hors fédération) : p=0 → Firebreak 9,6 sains bloqués contre 43,2 pour B (4,5× moins), rappel 100 % contre 98,5 %, 0 action irréversible fuitée ; p=0,3 → rappel C 93,4 %, D 97,9 %. `docs/bench-results.md`, `docs/fiche-defense.md`, l'exemple de `docs/api.md` et `tests/test_compare.py` sont à jour ; `/api/compare` lit le CSV.
 - [x] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux (bouton « Avec vs sans » + étape 3 de la démo), `/api/compare`, banc d'essai de Céline, cas JLR et CDK sourcés (Yann).
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).

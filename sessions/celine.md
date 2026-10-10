@@ -10,11 +10,12 @@ Banc d'essai v2 livré : 4 politiques (A alerte seule, B blocage fournisseur + p
 
 ## En cours
 
-- (rien)
+- Balayages de sensibilité du banc (réservé dans `goal.md`) : plan présenté, en attente de validation (60 opérations par entreprise → 300 / 480 / 720 ; sorties dans `bench/sensitivity.csv` séparé pour ne pas fausser `/api/compare`).
 
 ## Prochaine étape
 
-- Slide « preuve chiffrée » pour le pitch à partir de `docs/bench-results.md` (v2).
+- Implémenter les balayages taille (5/8/12) et bruit hors fédération (0/10/30 %), section « Sensibilité » dans `docs/bench-results.md`, puis fiche de défense seulement si une conclusion change.
+- Slide « preuve chiffrée » pour le pitch.
 
 ## Besoin des autres
 
@@ -23,6 +24,7 @@ Banc d'essai v2 livré : 4 politiques (A alerte seule, B blocage fournisseur + p
 
 ## Journal
 
+- 11/10 01 h 10 : plan des balayages de sensibilité rédigé, en attente de validation.
 - 11/10 01 h : banc d'essai v2 livré et chiffres régénérés (500 graines × 4 p × 4 politiques) ; fiche de défense, exemple API et test_compare mis à jour ; 213 tests verts.
 - 11/10 00 h 30 : README — marqueurs de conflit poussés sur main résolus (version récente gardée + Track 3, ligne secrets `.env.example`, phrase finale brief/FIREBREAK). 197 tests verts.
 - 11/10 00 h 15 : plan du banc d'essai v2 rédigé ; défaut trouvé : la dernière entreprise n'est jamais tirée comme compromise.
