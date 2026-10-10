@@ -10,7 +10,7 @@ Résultats (500 graines, 5 entreprises, 300 opérations) : Firebreak bloque 11,4
 
 ## En cours
 
-- (rien)
+- Banc d'essai v2 (réservé dans `goal.md`) : plan présenté, en attente de validation (D propage aux descendants ? tirage sur toutes les entreprises, ce qui change les chiffres publiés).
 
 ## Prochaine étape
 
@@ -23,4 +23,6 @@ Résultats (500 graines, 5 entreprises, 300 opérations) : Firebreak bloque 11,4
 
 ## Journal
 
+- 11/10 00 h 30 : README — marqueurs de conflit poussés sur main résolus (version récente gardée + Track 3, ligne secrets `.env.example`, phrase finale brief/FIREBREAK). 197 tests verts.
+- 11/10 00 h 15 : plan du banc d'essai v2 rédigé ; défaut trouvé : la dernière entreprise n'est jamais tirée comme compromise.
 - 10/10 23 h 59 : banc d'essai livré (synth + 3 politiques + bench 500 graines + 12 tests), 183 tests verts.

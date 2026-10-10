@@ -65,4 +65,5 @@ Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérat
 - [x] Banc d'essai : générateur à graine + 3 politiques + CSV (Céline) — `docs/bench-results.md` : sur 500 mondes, Firebreak bloque 4,3× moins d'opérations saines que « bloquer le fournisseur + partenaires » (11,4 contre 49,5), rappel 100 % à p=0, 91,6 % à p=0,3 de dépendances cachées. Reproduire : `uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3`
 - [ ] Clés de signature et PAIR_SECRET de federation.py : ne plus les dériver du nom / ne plus les écrire en dur
 - [ ] Retirer adresses e-mail et détails de boîte mail de AGENTS.md et docs/brief.md, puis décider du sort de l'historique
-- [ ] README : mettre Track 3 ; confirmer le passage officiel Track 1 → Track 3 auprès des organisateurs
+- [x] README : mettre Track 3, marqueurs de conflit poussés sur main résolus (Céline, 11/10)
+- [ ] Confirmer le passage officiel Track 1 → Track 3 auprès des organisateurs (annoncé le 10/10, voir Décisions)
