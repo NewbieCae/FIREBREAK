@@ -1,6 +1,9 @@
 # finswag
 
-Dépôt privé du projet finswag.
+Dépôt privé du projet finswag, Team 14 au hackathon Secure Horizons, Track 1 « Guardians of Value » (Fintech Security).
+
+- [Page Notion — brief et coordination](https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e)
+- [Brief et ressources](docs/brief.md)
 
 ## Organisation
 
@@ -9,4 +12,4 @@ Dépôt privé du projet finswag.
 - `scripts/` : scripts utilitaires.
 - `docs/` : documentation.
 
-La stack et les fonctionnalités restent à définir.
+Le brief prévoit AWS Bedrock et Avalanche Fuji. Le produit, la stack détaillée et la répartition des rôles restent à valider.
