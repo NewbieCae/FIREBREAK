@@ -20,9 +20,41 @@ if TYPE_CHECKING:
 
 RECEIPT_TIMEOUT = 60
 
+# Precompiles Subnet-EVM (adresses fixes). readAllowList : 0 aucun, 1 enabled, 2 admin, 3 manager.
+TX_ALLOWLIST = "0x0200000000000000000000000000000000000002"
+DEPLOYER_ALLOWLIST = "0x0200000000000000000000000000000000000000"
+ALLOWLIST_ABI = [
+    {"type": "function", "name": "readAllowList", "stateMutability": "view",
+     "inputs": [{"name": "addr", "type": "address"}], "outputs": [{"name": "role", "type": "uint256"}]},
+    {"type": "function", "name": "setEnabled", "stateMutability": "nonpayable",
+     "inputs": [{"name": "addr", "type": "address"}], "outputs": []},
+]
+
 
 class TransactionFailed(RuntimeError):
     pass
+
+
+def connect(rpc_url: str, timeout: int = 15) -> Web3:
+    """Client HTTP vers une L1 Subnet-EVM. Le middleware PoA tolère un champ
+    `extraData` d'en-tête de bloc plus long que sur Ethereum."""
+    from web3 import Web3
+    from web3.middleware import ExtraDataToPOAMiddleware
+
+    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": timeout}))
+    w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+    return w3
+
+
+def allowlist_role(w3: Web3, precompile: str, address: str) -> int | None:
+    """Rôle de `address` dans une allowlist Subnet-EVM ; None si le precompile
+    n'est pas activé sur la chaîne (réponse vide)."""
+    selector = w3.keccak(text="readAllowList(address)")[:4]
+    data = selector + bytes(12) + bytes.fromhex(address[2:])
+    raw = w3.eth.call({"to": w3.to_checksum_address(precompile), "data": data})
+    if not raw:
+        return None
+    return int.from_bytes(raw[-32:], "big")
 
 
 def _finalize(w3: Web3, account: LocalAccount, tx: dict[str, Any]) -> dict[str, Any]:
