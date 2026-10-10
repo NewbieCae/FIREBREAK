@@ -20,6 +20,7 @@ Le moteur FIREBREAK est livré : graphe, propagation, fédération signée, jour
 
 ## Journal
 
+- **11/10 01 h 00** — `team-sync.sh` ne commite ni ne pousse plus un conflit non résolu (demande de Céline après les marqueurs poussés dans README.md, commit d8054d9) : fichiers « unmerged » vérifiés avant `git add`, marqueurs `<<<<<<<` / `>>>>>>>` en tête de ligne refusés, contrôle aussi avant push et au début de chaque tour. 43 assertions vertes sur dépôts jetables.
 - **11/10 00 h 30** — « Avec vs sans Firebreak » : `/api/compare` (même définition que le banc de Céline), écran coupé en deux, étape 3 de la démo. Scénario enrichi d'un après-midi réaliste au fabricant (40 opérations saines) : sans Firebreak 54 bloquées dont 42 saines + 5 fuites ; avec, 17 / 0 / 0.
 - **11/10 01 h 15** — Messagerie d'équipe : `messages.md` (message de bienvenue à tous), `scripts/messages.py` (send / deliver / poll), livraison des messages non lus par le hook à chaque tour, cron chaque minute chez moi. Règles de conflits et pull/push obligatoires dans `AGENTS.md`.
 - **11/10 00 h 10** — Étape 6 livrée : mode démo, `/api/demo/step` (5 clics), `docs/demo.md` avec chiffres reproductibles, `scripts/demo.sh`, test de bout en bout, `/api/state` en 28 ms.
