@@ -24,6 +24,10 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .ai import MockExplainer, get_explainer
+from .chain.anchoring import Anchorer
+from .chain.client import get_chain_client
+from .chain.config import load_chain_config
+from .chain.tamper import rewrite_journal
 from .compare import compare as sim_compare
 from .demo import DEMO_CAPTIONS, DEMO_MODE, DEMO_REPLAY_SPEED, DEMO_SCENARIO, demo_caption
 from .ingest.documents import DocumentError, Party, document_text, get_extractor
@@ -31,7 +35,10 @@ from .ingest.epcis import EpcisError, parse_epcis
 from .model import Record
 from .scenario import DEFAULT_SCENARIO, SCENARIOS, build_simulation, scenarios_meta
 from .schemas import (
+    AnchorOut,
     AuditOut,
+    ChainStatusOut,
+    RewriteBody,
     AuditVerifyOut,
     EpcisImportOut,
     ErrorOut,
@@ -76,6 +83,9 @@ app.add_middleware(
 sim = build_simulation(DEMO_SCENARIO if DEMO_MODE else DEFAULT_SCENARIO)
 explainer = MockExplainer() if DEMO_MODE else get_explainer()
 demo_index = 0
+chain = get_chain_client(load_chain_config())
+anchorer = Anchorer(chain)
+anchorer.on_new_simulation(sim)
 extractor = get_extractor()
 proposals: dict[str, dict] = {}
 _lock = threading.Lock()
@@ -124,6 +134,64 @@ class RemediateBody(BaseModel):
     )
 
 
+def _chain_on() -> bool:
+    return chain.status()["mode"] != "off"
+
+
+def _with_onchain(result: dict) -> dict:
+    """Ajoute l'ancrage Avalanche à la vérification d'audit (appelé sous `_lock`)."""
+    if not _chain_on():
+        return result
+    checks = anchorer.verify_onchain(sim)
+    for j in result["journals"]:
+        j["onchain"] = checks.get(j["company"])
+    anchored = [j["onchain"] for j in result["journals"] if j.get("onchain")]
+    result["onchain_ok"] = all(a["matches"] for a in anchored) if anchored else None
+    return result
+
+
+@app.get("/api/chain/status", summary="État de la couche Avalanche",
+         response_model=ChainStatusOut)
+def get_chain_status() -> dict:
+    return {**chain.status(), "run_id": anchorer.run_id.hex()}
+
+
+@app.get("/api/chain/anchors", summary="Ancrages Avalanche",
+         response_model=list[AnchorOut])
+def get_chain_anchors(kind: str | None = None, company: str | None = None) -> list[dict]:
+    records = [a.to_dict() for a in chain.anchors()
+               if (kind is None or a.kind == kind)
+               and (company is None or a.company == company)]
+    return sorted(records, key=lambda r: r["created_at"])
+
+
+@app.post("/api/chain/anchor", summary="Ancrer maintenant les têtes de journaux",
+          response_model=list[AnchorOut], responses={409: ERRORS[400]})
+def post_chain_anchor() -> list[dict]:
+    if not _chain_on():
+        raise HTTPException(409, "chaîne désactivée (FIREBREAK_CHAIN=off)")
+    with _lock:
+        ids = {r.id for r in anchorer.anchor_all(sim)}
+    chain.flush(5.0)
+    return [a.to_dict() for a in chain.anchors() if a.id in ids]
+
+
+@app.post("/api/demo/rewrite", summary="Démo : réécrire un journal en recalculant les hash",
+          responses=ERRORS)
+def post_demo_rewrite(body: RewriteBody) -> dict:
+    if not DEMO_MODE:
+        raise HTTPException(404, "Not Found")
+    with _lock:
+        if body.company not in sim.ledgers:
+            raise HTTPException(404, f"entreprise inconnue: {body.company}")
+        try:
+            index = rewrite_journal(sim, body.company, body.drop_event)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {"company": body.company, "dropped_index": index,
+                "verify": _with_onchain(sim.audit_verify())}
+
+
 @app.get("/api/state", summary="État complet de la simulation", response_model=StateOut)
 def get_state() -> dict:
     with _lock:
@@ -137,6 +205,7 @@ def post_compromise(body: CompromiseBody) -> dict:
         if body.company not in sim.ledgers:
             raise HTTPException(404, f"entreprise inconnue: {body.company}")
         sim.declare_compromise(body.company, to_scenario_time(body.since))
+        anchorer.after_action(sim, "compromise")
         return sim.state()
 
 
@@ -150,6 +219,7 @@ def post_withdraw(body: WithdrawBody) -> dict:
             sim.withdraw_compromise(body.company)
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
+        anchorer.after_action(sim, "withdraw")
         return sim.state()
 
 
@@ -169,7 +239,7 @@ def get_audit_verify(company: str | None = None) -> dict:
     with _lock:
         if company is not None and company not in sim.ledgers:
             raise HTTPException(404, f"entreprise inconnue: {company}")
-        return sim.audit_verify(company)
+        return _with_onchain(sim.audit_verify(company))
 
 
 @app.get("/api/records/{record_id}/explain", summary="Explication d'un record",
@@ -200,6 +270,7 @@ def post_remediate(record_id: str, body: RemediateBody) -> dict:
             sim.remediate(record_id, body.action)
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
+        anchorer.after_action(sim, "remediate")
         return sim.state()
 
 
@@ -338,6 +409,7 @@ def post_confirm_document(proposal_id: str, body: ConfirmBody | None = None) -> 
         })
         sim.run()  # le record passe par les mêmes règles que les autres
         sim.timeline = sim.collect_timeline(marks)
+        anchorer.after_action(sim, "document")
         return sim.state()
 
 
@@ -367,6 +439,7 @@ def post_ingest_epcis(company: str, document: dict = Body(
         })
         sim.run()
         sim.timeline = sim.collect_timeline(marks)
+        anchorer.after_action(sim, "epcis")
         return {
             "events": result.events,
             "imported": [serialize_record(r) for r in result.records],
@@ -443,6 +516,7 @@ def post_demo_step() -> dict:
         if i == 0:
             sim = build_simulation(DEMO_SCENARIO if DEMO_MODE else sim_scenario(sim))
             proposals.clear()
+            anchorer.on_new_simulation(sim)
         elif i == 1:
             hint = sim.scenario["compromise"]
             sim.declare_compromise(
@@ -474,6 +548,8 @@ def post_demo_step() -> dict:
                 detail = {"steps": len(sim.timeline)}
         elif i == 5:
             detail = sim.audit_verify()
+        if i != 0:
+            anchorer.after_action(sim, "demo")
         if i < len(DEMO_CAPTIONS):
             demo_index = i + 1
         return {
@@ -502,6 +578,7 @@ def post_reset(body: ResetBody | None = None) -> dict:
         sim = build_simulation(scenario)
         proposals.clear()
         demo_index = 0
+        anchorer.on_new_simulation(sim)
         return sim.state()
 
 

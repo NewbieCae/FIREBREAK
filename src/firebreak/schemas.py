@@ -286,6 +286,18 @@ class AuditOut(BaseModel):
     entries: list[AuditEntryOut]
 
 
+class OnchainCheck(BaseModel):
+    anchored_head: str = Field(description="Tête du journal telle qu'ancrée sur la chaîne.")
+    anchored_entries: int
+    block: int | None = None
+    tx_hash: str | None = None
+    explorer_link: str | None = None
+    matches: bool = Field(
+        description="Le journal local tronqué à `anchored_entries` a pour dernier hash "
+                    "`anchored_head`."
+    )
+
+
 class AuditJournalCheck(BaseModel):
     company: str
     ok: bool
@@ -294,6 +306,9 @@ class AuditJournalCheck(BaseModel):
         description="Index de la première entrée cassée, null si la chaîne est intacte."
     )
     head: str
+    onchain: OnchainCheck | None = Field(
+        default=None, description="Ancrage Avalanche ; null si la chaîne est désactivée "
+                                  "ou si rien n'est encore ancré.")
 
 
 class BrokenRef(BaseModel):
@@ -305,6 +320,45 @@ class AuditVerifyOut(BaseModel):
     ok: bool
     first_broken: BrokenRef | None
     journals: list[AuditJournalCheck]
+    onchain_ok: bool | None = Field(
+        default=None, description="Tous les journaux ancrés correspondent ; null si "
+                                  "la chaîne est désactivée ou rien d'ancré.")
+
+
+class ChainQueueOut(BaseModel):
+    pending: int
+    sent: int
+    confirmed: int
+    failed: int
+
+
+class ChainStatusOut(BaseModel):
+    mode: str = Field(description="off, tester ou l1.")
+    connected: bool
+    chain_id: int | None
+    contract: str | None
+    explorer_url: str | None
+    run_id: str | None = Field(description="Identifiant du run courant (hex 32 octets).")
+    last_block: int | None
+    queue: ChainQueueOut
+
+
+class AnchorOut(BaseModel):
+    id: int
+    kind: str = Field(description="audit, alert, incident ou ack.")
+    company: str
+    hash: str
+    status: str = Field(description="pending, sent, confirmed, failed ou disabled.")
+    tx_hash: str | None
+    block: int | None
+    error: str | None
+    created_at: str
+    explorer_link: str | None
+
+
+class RewriteBody(BaseModel):
+    company: str = Field(examples=["fabricant"])
+    drop_event: str = Field(examples=["alert_received"])
 
 
 class ErrorOut(BaseModel):
