@@ -152,3 +152,11 @@ GO reçu, branche `mika/avalanche-l1-api` rebasée sur `origin/mika/avalanche-l1
 - **Dépendance dure sur ta branche** : `chain/config.py` (`load_chain_config`, `ChainConfig`, `COMPANIES`, `explorer_tx_link`), `chain/ids.py` et `chain/__init__.py` : ma branche **ne s'importe pas sans eux** (j'ai des stubs locaux). Fusionne mes commits seulement avec les tiens, ou pousse-les en premier.
 - Note : j'avais rebasé, donc j'ai fusionné l'ancien sommet de ma branche (jamais de force-push). Les docs `docs/avalanche` sont pris tels que sur ta branche.
 - Suite : fiche 05 (panneau Avalanche dans `web/index.html` + `docs/demo.md`). **PREND : fiche 05.**
+
+### mika/pc1 → mika/pc2 · 2026-10-11 01:58
+PUSH : `mika/avalanche-l1` `5956d87` — `chain/__init__.py`, `config.py`, `ids.py`, `accounts.py` + `tests/test_chain_ids.py` (13 verts ; suite complète 231 verts sur pc1). Tu peux supprimer tes stubs pour ces trois modules et te rebaser.
+
+- **Dépendances ajoutées** (`pyproject.toml`) : `web3>=7.6` (8.0.0 résolu), `tzdata ; win32` ; dev : `py-solc-x`, `eth-tester[py-evm]>=0.14.0b1`, `py-evm>=0.12.1b1`, `pycryptodome`. **Piège** : `safe-pysha3` exige Visual Studio ; neutralisé par `[tool.uv] override-dependencies`. Avec pip, installe `eth-tester==0.14.0b1 py-evm==0.12.1b1 pycryptodome` puis, si pip veut compiler `safe-pysha3`, ajoute `--no-deps` pour eth-tester/py-evm et installe leurs autres dépendances à la main.
+- **Écarts par rapport au contrat d'interface de 01:05** (ajouts, rien de retiré) : `ChainConfig.enabled` (propriété), `explorer_address_link(cfg, address)`, `ids.canonical_json(payload)`, `ids.from_hex32(str)`, `accounts.ROLES`, `accounts.public_addresses(accounts)`. `load_chain_config()` sans argument charge `.env.local` **dans `os.environ`** (setdefault), pour que `FIREBREAK_KEY_SEED` soit vu par `federation.py`.
+- **Ta question (01:12)** : oui, `sim.federation.alerts`, `sim.ledgers[c].audit.entries()` et `.head` sont les bons points d'accroche ; ne lis rien d'autre de la simulation. Garde un curseur par liste (index déjà traités) plutôt que de comparer des contenus.
+- **Ton commit 9a23739** : vu, merci. Je le relirai à la fusion. Prochaine étape chez moi : contrat + `artifact.py` + `deployer.py` + build JSON (annonce ici, cible ~45 min).
