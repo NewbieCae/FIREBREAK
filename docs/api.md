@@ -1,6 +1,6 @@
 # FIREBREAK — Contrat de l'API
 
-Version du contrat : **1.1.0** (figée en 1.0.0 à l'étape 1 du [plan](plan.md) ; l'étape 2 a ajouté les levées fédérées, le retrait de déclaration et le journal d'audit, sans rien retirer). Les étapes suivantes peuvent **ajouter** des champs ou des endpoints, jamais en retirer ou en renommer sans mettre ce document à jour.
+Version du contrat : **1.2.0** (figée en 1.0.0 à l'étape 1 du [plan](plan.md) ; l'étape 2 a ajouté les levées fédérées, le retrait de déclaration et le journal d'audit ; l'étape 3 a ajouté les scénarios, la généalogie des lots et l'import EPCIS, sans rien retirer). Les étapes suivantes peuvent **ajouter** des champs ou des endpoints, jamais en retirer ou en renommer sans mettre ce document à jour.
 
 - Base : `http://localhost:8000`. Tous les endpoints sont sous `/api`.
 - Schéma OpenAPI interactif : http://localhost:8000/docs (JSON brut : `/openapi.json`). Les modèles de réponse sont définis dans `src/firebreak/schemas.py`.
@@ -73,7 +73,9 @@ Toutes les erreurs ont la même forme : `{"detail": "<message en français>"}` (
 | POST | `/api/compromise/withdraw` | État complet après levées en cascade |
 | GET | `/api/records/{id}/explain` | Explication et plan de reprise |
 | POST | `/api/records/{id}/remediate` | État complet après recalcul |
-| POST | `/api/reset` | État initial (efface aussi les documents en attente) |
+| POST | `/api/reset` | État initial du scénario choisi (efface aussi les documents en attente) |
+| GET | `/api/scenarios` | Liste des scénarios |
+| POST | `/api/ingest/epcis?company=<id>` | Records importés d'un document GS1 EPCIS 2.0 + état complet |
 | GET | `/api/audit?company=<id>` | Journal d'audit d'une entreprise |
 | GET | `/api/audit/verify` | Vérification des chaînes de hash |
 | POST | `/api/ingest/document?company=<id>` | Proposition de record lue dans un document |
@@ -90,7 +92,7 @@ curl localhost:8000/api/state
 ```json
 {
   "companies": [
-    {"id": "fournisseur", "name": "Aciers Durand", "role": "Fournisseur d'acier"},
+    {"id": "fournisseur", "name": "Aciers Durand", "role": "Fournisseur d'acier", "gs1_prefix": "3012345"},
     …
   ],
   "records": [
@@ -110,13 +112,21 @@ curl localhost:8000/api/state
     "per_company": {"fournisseur": {"total": 28, …}, …}
   },
   "alerts": [],
-  "declarations": []
+  "declarations": [],
+  "scenario": {
+    "id": "mixed", "label": "Attaque mixte",
+    "description": "Le fournisseur compromis envoie un faux avis d'expédition, …",
+    "compromise": {"company": "fournisseur", "since": "2026-10-10T14:00:00"}
+  }
 }
 ```
 
 - `edges` : `cross: false` = dépendance dans un même registre (`input → record`) ; `cross: true` = envoi d'un record d'une entreprise à une autre (record sortant → copie reçue).
 - `alerts[]` : `{"type", "from", "to", "tokens_count", "verified", "issued_at"}`, dans l'ordre d'émission. `type` = `"taint"` (contamination) ou `"release"` (levée). `verified` = signature acceptée par le destinataire (`false` = alerte falsifiée, rejetée).
 - `declarations[]` : `{"ledger", "source", "since"}` — le registre `ledger` considère `source` comme compromise depuis `since`.
+- `scenario` : scénario chargé par le dernier `POST /api/reset` (voir [Scénarios](#scénarios)). `compromise` donne la déclaration à envoyer à `POST /api/compromise` pour la démo.
+- `companies[].gs1_prefix` : préfixe entreprise GS1, utilisé par l'import EPCIS pour reconnaître le propriétaire d'un lieu (SGLN / GLN).
+- Lots : un record qui représente un lot porte `payload.lot` ; un lancement de production (`kind: "production_lot"`) porte aussi `payload.input_lots`, les lots consommés (comme un TransformationEvent EPCIS). Ses `inputs` sont les records de ces lots : un lot fabriqué avec un lot contaminé est contaminé.
 
 ### `POST /api/compromise`
 
@@ -246,7 +256,25 @@ Erreurs : 404 si l'entreprise est inconnue ; 400 `{"detail": "aucune déclaratio
 
 ### `POST /api/reset`
 
-Reconstruit le scénario de départ (aucune déclaration, aucune alerte, journaux d'audit vides, 145 records `ok`). Réponse : l'état complet.
+Reconstruit un scénario (aucune déclaration, aucune alerte, journaux d'audit vides, tous les records `ok`). Corps optionnel :
+
+```bash
+curl -X POST localhost:8000/api/reset -H 'Content-Type: application/json' -d '{"scenario": "cert"}'
+```
+
+Sans corps : `mixed` (145 records). Réponse : l'état complet, avec `scenario`. Un identifiant inconnu donne 422 `{"detail": "requête invalide — scenario: Input should be 'mixed', 'rib', 'cert' or 'asn'"}`.
+
+### `GET /api/scenarios`
+
+```json
+[
+  {"id": "mixed", "label": "Attaque mixte", "description": "…",
+   "compromise": {"company": "fournisseur", "since": "2026-10-10T14:00:00"}},
+  {"id": "rib", "label": "Fraude au RIB", …},
+  {"id": "cert", "label": "Faux certificat qualité", …},
+  {"id": "asn", "label": "Faux avis d'expédition", …}
+]
+```
 
 ### `GET /api/audit`
 
@@ -273,6 +301,7 @@ Journal d'audit d'une entreprise (paramètre `company` obligatoire), en ajout se
 | `remediation` | `record`, `action`, `taint_path` au moment de la remédiation |
 | `release` | `record`, `reason` : sortie de quarantaine décidée par le moteur (après remédiation en amont, levée reçue ou retrait) |
 | `document_confirmed` | `record`, `proposal`, `origin`, `kind`, `inputs`, `extraction_source` (`mock` ou `bedrock`), `confidence` : document lu puis confirmé (`POST /api/ingest/document/{id}/confirm`) |
+| `epcis_import` | `records` (ids ajoutés), `events` (événements du document), `ignored` (nombre ignoré) : import EPCIS (`POST /api/ingest/epcis`) |
 
 Le journal d'une entreprise ne contient que ses propres records et des jetons opaques : jamais les identifiants ni les données d'un partenaire.
 
@@ -384,6 +413,62 @@ Erreurs : 404 si la proposition est inconnue ; 400 si elle est déjà confirmée
 
 Documents d'exemple dans `assets/samples/` : `facture-rib-modifie.pdf` (facture F-9999 avec nouveau RIB), `avis-expedition.eml` (BC-1009), `bon-de-commande.txt` (BC-7001, du distributeur au fabricant).
 
+### `POST /api/ingest/epcis?company=<id>`
+
+Importe un document **GS1 EPCIS 2.0** (JSON / JSON-LD) dans le registre de `company`. Les données sont structurées : pas d'étape de confirmation, les records sont ajoutés tout de suite puis passent par les mêmes règles que les autres (recalcul et alertes). Exemple : [`assets/samples/epcis-sample.json`](../assets/samples/epcis-sample.json) (11 événements, registre du fabricant).
+
+```bash
+curl -X POST 'localhost:8000/api/ingest/epcis?company=fabricant' \
+  -H 'Content-Type: application/json' --data @assets/samples/epcis-sample.json
+```
+
+```json
+{
+  "events": 11,
+  "imported": [
+    {"id": "m-epcis-01", "company": "fabricant", "origin": "fournisseur", "kind": "asn",
+     "ts": "2026-10-10T09:00:00", "label": "Avis d'expédition Aciers Durand — COIL-12",
+     "inputs": [], "gate": false, "verified": false,
+     "payload": {"epcis": {"event_id": "urn:uuid:…", "type": "ObjectEvent", "biz_step": "shipping", …},
+                 "epc_inputs": ["urn:epc:class:lgtin:3012345.012345.COIL-12"],
+                 "epc_outputs": ["urn:epc:class:lgtin:3012345.012345.COIL-12"], "lot": "COIL-12"},
+     "token": null, "status": "ok", "taint_path": null},
+    …
+    {"id": "m-epcis-08", "kind": "production_lot", "label": "Transformation COIL-77 + COIL-12 → LOT-801",
+     "inputs": ["m-epcis-05", "m-epcis-02"], "gate": true,
+     "payload": {…, "lot": "LOT-801", "input_lots": ["COIL-77", "COIL-12"]}, …},
+    …
+  ],
+  "ignored": [],
+  "state": {…}
+}
+```
+
+Sous-ensemble géré (tout le reste est ignoré et listé dans `ignored`, avec `index`, `type` et `reason`) :
+
+| Élément EPCIS | Traitement |
+|---|---|
+| Document | `type: "EPCISDocument"` et `epcisBody.eventList` obligatoires (sinon 400). 1 000 événements max. |
+| `ObjectEvent` | Objets = `epcList` + `quantityList[].epcClass`, consommés et produits (rien de produit si `action: "DELETE"`). |
+| `AggregationEvent` | Consomme `childEPCs` / `childQuantityList` (et `parentID`), produit `parentID` et les enfants. |
+| `TransformationEvent` | Consomme `inputEPCList` / `inputQuantityList`, produit `outputEPCList` / `outputQuantityList` → `kind: "production_lot"`, `payload.input_lots`. |
+| `AssociationEvent`, `TransactionEvent`, `errorDeclaration` | Ignorés. |
+| `eventTime` | Converti en heure de Paris ; absent ou invalide → ignoré. Les événements sont traités dans l'ordre de `eventTime`. |
+| `bizLocation` (sinon `readPoint`) | `origin` = entreprise dont le `gs1_prefix` commence l'identifiant (`urn:epc:id:sgln:…` ou Digital Link `/414/`). Pas de lieu : l'entreprise qui importe. Lieu inconnu : ignoré. |
+| `bizStep` (URN, URL ou terme seul) | `shipping` → `shipment` (`asn` si fait par un partenaire), `receiving` / `accepting` → `goods_receipt`, `inspecting` → `quality_check`, `storing` → `stock_entry`, `packing` → `packing`, autre → `epcis_event`. |
+| `disposition`, `sourceList`, `destinationList`, `eventID` | Recopiés dans `payload.epcis`. |
+
+Règles :
+
+- `inputs` = le dernier record qui a produit chacun des objets consommés, y compris les records d'un import précédent (`payload.epc_outputs`) ;
+- `gate: true` pour une expédition ou une transformation faite par l'entreprise elle-même ;
+- `verified: true` pour un contrôle (`inspecting`) `conformant` fait par l'entreprise elle-même : il arrête la propagation ;
+- lots : `payload.lot` = lot de la première classe LGTIN produite (`urn:epc:class:lgtin:…` ou Digital Link `/10/`).
+
+Après import de l'exemple puis compromission du fournisseur depuis 14 h : 7 des 11 records importés sont bloqués (`m-epcis-03` à `06`, la transformation `m-epcis-08` → LOT-801, la palettisation et l'expédition). Le contrôle conforme de COIL-78 (`m-epcis-07`) protège LOT-802 (`m-epcis-09`). L'import est inscrit au journal d'audit (`event: "epcis_import"`).
+
+Erreurs : 404 si l'entreprise est inconnue ; 400 si ce n'est pas un document EPCIS.
+
 ## IA : Bedrock et repli mock
 
 L'IA **ne décide jamais d'un blocage**. Elle explique (`/explain`), propose un plan de reprise et extrait les données des documents. Toute donnée extraite n'entre dans le registre qu'après confirmation humaine, puis passe par les règles du graphe.
@@ -410,8 +495,23 @@ Repli automatique sur le mock, avec `source: "mock"` dans la réponse et un aver
 
 Le prompt d'explication ne contient que le record, les records de son `taint_path` et les règles appliquées (seed, propagation, gate…), pas le reste du registre. Le prompt d'extraction contient le texte du document (12 000 caractères max) et la liste des entreprises.
 
-## Scénario par défaut
+## Scénarios
 
-Quatre entreprises : `fournisseur` (Aciers Durand) → `fabricant` (Mécano Précision Loire) → `distributeur` (Logidis Rhône) → `client` (Bâtiments Azur). Le fournisseur est compromis depuis 14 h et envoie un faux avis d'expédition, un faux certificat et une facture avec RIB modifié. Une livraison légitime reçue après 14 h est contrôlée physiquement (`m-gr-08`, `verified: true`) : elle arrête la propagation.
+Quatre entreprises : `fournisseur` (Aciers Durand) → `fabricant` (Mécano Précision Loire) → `distributeur` (Logidis Rhône) → `client` (Bâtiments Azur). Tous les scénarios partagent la même matinée : 7 livraisons propres avant 14 h (de la bobine reçue au paiement du client) et des opérations internes. Le fournisseur est compromis depuis 14 h ; seule l'attaque change. Chiffres après `{"company": "fournisseur", "since": "2026-10-10T14:00:00"}` (vérifiés par `tests/test_scenarios.py`) :
+
+| `id` | Attaque | Records | Bloqués | Actions irréversibles bloquées | Ce qui arrête la propagation |
+|---|---|---|---|---|---|
+| `mixed` (défaut) | Faux ASN, faux certificat et facture au RIB modifié | 145 | 17 | `m-lot-X`, `m-pay-X`, `m-ship-X`, `d-out-X` | Réception BC-1008 contrôlée physiquement (`m-gr-08`) |
+| `rib` | Mail de changement de RIB → fiche fournisseur modifiée → paiement | 137 | 8 | `m-pay-X` | Contre-appel au numéro connu pour la facture F-3008 (`m-call-08`) : son paiement continue |
+| `cert` | Faux certificat qualité sur une bobine réelle (COIL-210) | 145 | 13 | `m-lot-901`, `m-asm-950`, `m-ship-950`, `d-out-950` | Réception pesée de COIL-210 (`m-gr-X`) : la bobine existe, seul le certificat est faux. LOT-902 (autres bobines) et son expédition continuent |
+| `asn` | Faux avis d'expédition (COIL-299 n'existe pas) | 142 | 13 | `m-lot-X`, `m-ship-X`, `d-out-X` | Réception COIL-108 contrôlée physiquement (`m-gr-08`) : LOT-908 continue |
+
+- `rib` reste chez le fabricant : aucun objet physique ne part vers l'aval.
+- `cert` montre la généalogie des lots : LOT-901 est fabriqué avec COIL-210, puis le sous-ensemble ASM-950 avec LOT-901 et LOT-902. ASM-950 est bloqué jusqu'au client ; LOT-902 seul continue.
+- `asn` bloque la production lancée sur un stock fantôme, la réservation chez le distributeur et le planning du chantier client.
+
+### Détail du scénario `mixed`
+
+Le fournisseur est compromis depuis 14 h et envoie un faux avis d'expédition, un faux certificat et une facture avec RIB modifié. Une livraison légitime reçue après 14 h est contrôlée physiquement (`m-gr-08`, `verified: true`) : elle arrête la propagation.
 
 Après `{"company": "fournisseur", "since": "2026-10-10T14:00:00"}` : 17 records bloqués sur 145, 128 continuent, 4 actions irréversibles bloquées (`m-lot-X`, `m-pay-X`, `m-ship-X`, `d-out-X`), contamination jusqu'au client.

@@ -13,6 +13,8 @@
   button { background: #2f6fed; color: #fff; border: 0; border-radius: 6px;
            padding: 8px 14px; cursor: pointer; font-size: 14px; }
   button.secondary { background: #444a55; }
+  select { background: #262b34; color: #e6e8eb; border: 1px solid #444a55;
+           border-radius: 6px; padding: 7px 10px; font-size: 14px; }
   button:hover { filter: brightness(1.15); }
   .counter { background: #262b34; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
   .counter b { color: #ff7043; }
@@ -35,6 +37,7 @@
 <body>
 <div id="topbar">
   <h1>🔥 Firebreak</h1>
+  <select id="sel-scenario" title="Scénario"></select>
   <button id="btn-compromise">Déclarer le fournisseur compromis (depuis 14:00)</button>
   <button id="btn-withdraw" class="secondary">Retirer la déclaration (fausse alerte)</button>
   <button id="btn-reset" class="secondary">Réinitialiser</button>
@@ -69,6 +72,12 @@ async function api(path, method = 'GET', body = null) {
 
 function render(s) {
   state = s;
+  const sel = document.getElementById('sel-scenario');
+  sel.value = s.scenario.id;
+  sel.title = s.scenario.description;
+  const hint = s.scenario.compromise;
+  document.getElementById('btn-compromise').textContent =
+    `Déclarer ${hint.company} compromis (depuis ${hint.since.slice(11, 16)})`;
   const g = s.counters.global;
   document.getElementById('cnt-main').innerHTML =
     `<b>${g.quarantined}</b> opérations bloquées / ${g.ok + g.released} continuent`;
@@ -166,18 +175,25 @@ async function showDetail(r) {
 }
 
 document.getElementById('btn-compromise').onclick = async () => {
-  render(await api('/api/compromise', 'POST',
-    { company: 'fournisseur', since: '2026-10-10T14:00:00' }));
+  render(await api('/api/compromise', 'POST', state.scenario.compromise));
 };
 document.getElementById('btn-withdraw').onclick = async () => {
   try {
-    render(await api('/api/compromise/withdraw', 'POST', { company: 'fournisseur' }));
+    render(await api('/api/compromise/withdraw', 'POST',
+      { company: state.scenario.compromise.company }));
   } catch (e) { alert(e.message); }
 };
 document.getElementById('btn-reset').onclick = async () => {
-  render(await api('/api/reset', 'POST'));
+  render(await api('/api/reset', 'POST', { scenario: state.scenario.id }));
 };
-api('/api/state').then(render).catch(e => alert(e.message));
+document.getElementById('sel-scenario').onchange = async (e) => {
+  render(await api('/api/reset', 'POST', { scenario: e.target.value }));
+};
+api('/api/scenarios').then(list => {
+  document.getElementById('sel-scenario').innerHTML = list.map(sc =>
+    `<option value="${sc.id}">${sc.label}</option>`).join('');
+  return api('/api/state');
+}).then(render).catch(e => alert(e.message));
 </script>
 </body>
 </html>
