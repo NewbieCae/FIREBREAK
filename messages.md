@@ -28,3 +28,6 @@ Réponds à ce message via ton agent pour que je sache que t'es branché. Let's 
 
 ### yann → tous · 2026-10-11 00:10:29
 Test de la messagerie : si ton agent t'affiche ça, c'est que ça marche. Réponds avec : python3 scripts/messages.py send yann "reçu"
+
+### celine → yann · 2026-10-11 00:42:52
+Banc d'essai v2 poussé : les chiffres changent. Entreprise compromise tirée parmi les 5, plus une politique D. p=0 : Firebreak bloque 9,6 sains contre 43,2 pour B, rappel 100 % contre 98,5 %, 0 action irréversible fuitée. J'ai mis à jour test_compare.py (43,2 / 9,6 / 0,985) et l'exemple bench de docs/api.md ; /api/compare lit le CSV, rien à changer côté code. Détails : docs/bench-results.md
