@@ -4,7 +4,7 @@
 
 ## Où j'en suis
 
-Le moteur FIREBREAK est livré : graphe, propagation, fédération signée, journal d'audit, 4 scénarios, import EPCIS, IA Bedrock avec repli simulé. 147 tests verts. Étapes 1 à 5 du plan faites ; reste l'étape 6 (démo).
+Le moteur FIREBREAK est livré : graphe, propagation, fédération signée, journal d'audit, 4 scénarios, import EPCIS, IA Bedrock avec repli simulé. 147 tests verts. Les 6 étapes du plan sont faites. Démo pilotable au clic : `bash scripts/demo.sh`.
 
 ## En cours
 
@@ -12,7 +12,7 @@ Le moteur FIREBREAK est livré : graphe, propagation, fédération signée, jour
 
 ## Prochaine étape
 
-- Étape 6 : prêt pour la démo (mode démo, script, chiffres réels, gel).
+- Effet waouh de la démo, puis gel à 10 h (tag `demo-freeze`) et répétition.
 
 ## Besoin des autres
 
@@ -20,6 +20,7 @@ Le moteur FIREBREAK est livré : graphe, propagation, fédération signée, jour
 
 ## Journal
 
+- **11/10 00 h 10** — Étape 6 livrée : mode démo, `/api/demo/step` (5 clics), `docs/demo.md` avec chiffres reproductibles, `scripts/demo.sh`, test de bout en bout, `/api/state` en 28 ms.
 - **10/10 23 h 45** — Étape 4 livrée : `/api/timeline`, flux SSE `/api/events`, bouton « Rejouer » animé, compteurs d'euros. Corrigé un triple comptage : seuls les paiements comptent (5 210 € bloqués, 80 402 € continuent).
 - **10/10 20 h 30** — Structure d'équipe : `goal.md` partagé, une session par membre, protocole et hook de synchronisation (pull au début, mise à jour des sessions et de `goal.md`, push à la fin).
 - **10/10 20 h 10** — Étape 3 livrée (scénarios rib/cert/asn/mixed, généalogie des lots, import EPCIS 2.0). 138 tests verts.

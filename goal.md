@@ -32,7 +32,7 @@ L'interface finale est faite par une collègue de l'équipe, à partir de `docs/
 | 3 | Scénarios réalistes et import EPCIS | Fait | `6560a9c`, `76711ec` |
 | 4 | Timeline et événements live (SSE) | Fait | `fe5ff07`, `c0476e5` (compteurs € = paiements uniquement) |
 | 5 | IA : Bedrock et lecture de documents | Fait | `434abde` |
-| 6 | Prêt pour la démo | En cours | lancé le 10/10 à 23 h 50, gel à 10 h |
+| 6 | Prêt pour la démo | Fait | `9307ad8` — `bash scripts/demo.sh`, script `docs/demo.md`, chiffres `uv run python -m firebreak.demo_figures` |
 
 Tests : 183 verts (`uv run pytest -q`), état au 10 octobre à 23 h 59.
 
@@ -42,7 +42,8 @@ Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérat
 
 - [x] Étape 4 : timeline et flux SSE (`/api/timeline`, `/api/events`, bouton « Rejouer »).
 - [ ] Interface finale branchée sur l'API (`docs/api.md`).
-- [ ] Étape 6 : mode démo, script de démo avec chiffres réels, gel.
+- [x] Étape 6 : mode démo (`FIREBREAK_DEMO=1`, `/api/demo/step`, flèche droite), script `docs/demo.md`, test de bout en bout.
+- [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
 - [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
 
