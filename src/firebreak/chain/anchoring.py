@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime
 
 from .client import AnchorRecord, ChainClient, ChainOp
@@ -43,12 +44,16 @@ class Anchorer:
         """Ancre les têtes de tous les journaux (POST /api/chain/anchor)."""
         return self._audits(sim, force=True)
 
+    def _alert_id(self, alert) -> bytes:
+        # Le contrat refuse un hash déjà ancré : sans le run_id, rejouer la démo échouerait.
+        return hashlib.sha256(self.run_id + alert_hash(alert)).digest()
+
     def _alerts(self, sim) -> list[AnchorRecord]:
         out = []
         alerts = sim.federation.alerts
         for i in range(self._alerts_seen, len(alerts)):
             a = alerts[i]
-            h = alert_hash(a)
+            h = self._alert_id(a)
             out.append(self.client.submit(ChainOp(
                 "alert", a.sender, "anchorAlert",
                 (self.run_id, h, company_id(a.recipient), ALERT_TYPE[a.type]),
@@ -58,7 +63,7 @@ class Anchorer:
             if i in self._acked or not a.verified:
                 continue
             self._acked.add(i)
-            h = alert_hash(a)
+            h = self._alert_id(a)
             out.append(self.client.submit(ChainOp(
                 "ack", a.recipient, "acknowledgeAlert", (h,), hex32(h))))
         return out
