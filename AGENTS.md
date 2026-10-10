@@ -37,6 +37,16 @@ Le membre est identifié par `scripts/team-sync.sh whoami`. Il regarde, dans cet
 - Lire `goal.md`, `docs/firebreak.md` et `docs/plan.md` avant de coder. Le contrat de l'API est dans `docs/api.md` : on ne casse pas un endpoint existant.
 - `uv run pytest -q` doit rester vert avant chaque push.
 - Aucun secret dans le dépôt : les clés vont dans `.env.local`, qui est ignoré.
+
+### Conflits Git — pas de branches, l'agent arbitre
+
+Décision du 11/10 : tout le monde pousse sur `main`, pas de branches ni de pull requests. Les conflits sont résolus par l'agent de celui qui pousse en second.
+
+- **Éviter le conflit plutôt que le résoudre.** Chacun travaille dans sa zone (moteur dans `src/firebreak/`, interface dans son dossier). Deux personnes sur le même fichier en même temps, c'est là que ça casse. Pousser souvent, par petits commits : un conflit de 3 lignes se règle seul, un conflit de 200 lignes après 2 h sans pousser, non.
+- **Fichiers partagés (`goal.md`, `docs/`)** : on ajoute des lignes, on ne réécrit pas. En cas de conflit, on garde les deux contributions.
+- **Quand le hook dit « conflit, pas poussé »** : demander à son agent de faire `git fetch && git rebase @{u}`, résoudre, lancer `uv run pytest -q`, puis pousser. Tests verts = fusion bonne. Tests rouges = fusion ratée, pas forcément le code.
+- **L'agent ne tranche pas seul** quand ce n'est pas un conflit de texte mais un choix produit : deux versions d'une même fonction, ou un changement d'endpoint dans `docs/api.md` que l'interface utilise. Il pose la question, on décide à deux.
+- **Jamais de `git push --force`** sur `main`. C'est la seule manière de perdre le travail d'un autre.
 - Le root reste propre : chaque fichier va dans le bon dossier (`docs/`, `assets/`, `scripts/`, `src/`, `tests/`, `web/`).
 
 ## Notion — état actuel
