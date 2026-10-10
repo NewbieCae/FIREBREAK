@@ -86,7 +86,8 @@ secret_files() { # stdin : diff git → fichiers dont une ligne AJOUTÉE porte u
 # Un « ======= » seul est volontairement ignoré (soulignement setext Markdown).
 # Une ligne voulue se marque « team-sync:allow ».
 
-MARKER_RE='^(<{7}|>{7}|\|{7})( |$)'
+MARKER_RE='(<{7}|>{7}|\|{7})( |$)'   # marqueur en TÊTE de ligne ajoutée
+MARKER_TAB=$(printf '\t')           # l'extraction awk produit « fichier<TAB>ligne »
 
 unmerged_files() { # fichiers en conflit réel dans l'index (avant tout git add)
   git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' '
@@ -94,7 +95,7 @@ unmerged_files() { # fichiers en conflit réel dans l'index (avant tout git add)
 
 marker_files() { # stdin : diff git → fichiers dont une ligne AJOUTÉE porte un marqueur
   awk '/^\+\+\+ /{f=substr($0,7); next} /^\+/{print f "\t" substr($0,2)}' \
-    | grep -v 'team-sync:allow' | grep -E "$MARKER_RE" \
+    | grep -v 'team-sync:allow' | grep -E "${MARKER_TAB}${MARKER_RE}" \
     | cut -f1 | sort -u | tr '\n' ' '
 }
 
@@ -240,10 +241,15 @@ if [ "$CMD" = "stop" ]; then
 
   if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
     unmerged=$(unmerged_files)          # AVANT git add -A : l'add « résoudrait »
-    git add -A >/dev/null 2>&1
-    conflicts=$(conflict_files "$unmerged")
+    conflicts=""
+    if [ -n "${unmerged% }" ]; then
+      conflicts="${unmerged% }"         # pas d'add : garder l'état de merge intact
+    else
+      git add -A >/dev/null 2>&1
+      conflicts=$(conflict_files "")
+      [ -n "$conflicts" ] && git reset -q >/dev/null 2>&1
+    fi
     if [ -n "$conflicts" ]; then
-      git reset -q >/dev/null 2>&1
       msg="Conflit non résolu dans $conflicts (marqueurs <<<<<<< / >>>>>>> ou fichier en conflit) : rien commité ni poussé. Résous-les (garde les deux contributions si c'est goal.md ou un doc), relance uv run pytest -q, puis termine."
       if [ "$stop_active" = "true" ]; then
         echo "team-sync: $msg" >&2
@@ -313,10 +319,15 @@ if [ "$CMD" = "sync" ]; then
   fi
   if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
     unmerged=$(unmerged_files)          # AVANT git add -A : l'add « résoudrait »
-    git add -A >/dev/null 2>&1
-    conflicts=$(conflict_files "$unmerged")
+    conflicts=""
+    if [ -n "${unmerged% }" ]; then
+      conflicts="${unmerged% }"         # pas d'add : garder l'état de merge intact
+    else
+      git add -A >/dev/null 2>&1
+      conflicts=$(conflict_files "")
+      [ -n "$conflicts" ] && git reset -q >/dev/null 2>&1
+    fi
     if [ -n "$conflicts" ]; then
-      git reset -q >/dev/null 2>&1
       echo "team-sync: Conflit non résolu dans $conflicts (marqueurs <<<<<<< / >>>>>>> ou fichier en conflit) : rien commité ni poussé. Résous-les (garde les deux contributions si c'est goal.md ou un doc), relance uv run pytest -q, puis termine."
       exit 0
     fi
