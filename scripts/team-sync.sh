@@ -239,7 +239,19 @@ if [ "$CMD" = "stop" ]; then
   fi
 
   if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    unmerged=$(unmerged_files)          # AVANT git add -A : l'add « résoudrait »
     git add -A >/dev/null 2>&1
+    conflicts=$(conflict_files "$unmerged")
+    if [ -n "$conflicts" ]; then
+      git reset -q >/dev/null 2>&1
+      msg="Conflit non résolu dans $conflicts (marqueurs <<<<<<< / >>>>>>> ou fichier en conflit) : rien commité ni poussé. Résous-les (garde les deux contributions si c'est goal.md ou un doc), relance uv run pytest -q, puis termine."
+      if [ "$stop_active" = "true" ]; then
+        echo "team-sync: $msg" >&2
+      else
+        json_block "$msg"
+      fi
+      exit 0
+    fi
     leaks=$(git diff --cached -U0 --no-color --no-ext-diff 2>/dev/null | secret_files)
     if [ -n "$leaks" ]; then
       git reset -q >/dev/null 2>&1
@@ -274,6 +286,17 @@ if [ "$CMD" = "stop" ]; then
       echo "team-sync: SECRET dans un commit local pas encore poussé (${leaks% }) — PAS de push." >&2
       exit 0
     fi
+    # ni un conflit non résolu commité à la main
+    markers=$(git log -p -U0 --format= --no-color --no-ext-diff "$upstream"..HEAD 2>/dev/null | marker_files)
+    if [ -n "$markers" ]; then
+      msg="Conflit non résolu commité dans ${markers% } (marqueurs <<<<<<< / >>>>>>>) — PAS de push. Résous-les, relance uv run pytest -q, puis termine."
+      if [ "$stop_active" = "true" ]; then
+        echo "team-sync: $msg" >&2
+      else
+        json_block "$msg"
+      fi
+      exit 0
+    fi
     git push >/dev/null 2>&1 || \
       echo "team-sync: push échoué (réseau/remote ?) — commit local conservé." >&2
   fi
@@ -289,7 +312,14 @@ if [ "$CMD" = "sync" ]; then
     exit 0
   fi
   if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    unmerged=$(unmerged_files)          # AVANT git add -A : l'add « résoudrait »
     git add -A >/dev/null 2>&1
+    conflicts=$(conflict_files "$unmerged")
+    if [ -n "$conflicts" ]; then
+      git reset -q >/dev/null 2>&1
+      echo "team-sync: Conflit non résolu dans $conflicts (marqueurs <<<<<<< / >>>>>>> ou fichier en conflit) : rien commité ni poussé. Résous-les (garde les deux contributions si c'est goal.md ou un doc), relance uv run pytest -q, puis termine."
+      exit 0
+    fi
     leaks=$(git diff --cached -U0 --no-color --no-ext-diff 2>/dev/null | secret_files)
     if [ -n "$leaks" ]; then
       git reset -q >/dev/null 2>&1
@@ -313,6 +343,11 @@ if [ "$CMD" = "sync" ]; then
     leaks=$(git log -p -U0 --format= --no-color --no-ext-diff "$(upstream_ref)"..HEAD 2>/dev/null | secret_files)
     if [ -n "$leaks" ]; then
       echo "team-sync: SECRET dans un commit local pas encore poussé (${leaks% }) — PAS de push."
+      exit 0
+    fi
+    markers=$(git log -p -U0 --format= --no-color --no-ext-diff "$(upstream_ref)"..HEAD 2>/dev/null | marker_files)
+    if [ -n "$markers" ]; then
+      echo "team-sync: Conflit non résolu commité dans ${markers% } (marqueurs <<<<<<< / >>>>>>>) — PAS de push."
       exit 0
     fi
     if git push >/dev/null 2>&1; then
