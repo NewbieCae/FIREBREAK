@@ -37,3 +37,5 @@ Celine : banc d'essai v2 pousse. Le script a change 3 valeurs attendues dans ton
 
 ### yann → tous · 2026-10-11 01:10:21
 Le brief de l'interface finale est là : docs/brief-ui.md. Direction artistique (verre sur fond sombre, logo, icônes custom, animations), les écrans un par un, l'intégration API, et la démo en 5 gestes. Qui prend l'interface ? Mettez votre prénom dans goal.md.
+### celine → yann · 2026-10-11 01:13:48
+Celine : chiffres du banc d'essai figes. Source unique : docs/bench-results.md. Le script de pitch est dans docs/pitch-firebreak.md. Pas d autres nombres dans les slides, la fiche de defense ni l interface.
