@@ -512,7 +512,17 @@ def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
 
 
+class _FreshStatic(StaticFiles):
+    """Fichiers statiques revalidés à chaque chargement (ETag → 304) :
+    après un `git pull`, le navigateur sert toujours la dernière interface."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 # Interface finale (docs/brief-ui.md), servie sans build ni Node.
-app.mount("/app", StaticFiles(directory=WEB_DIR / "app", html=True), name="app")
+app.mount("/app", _FreshStatic(directory=WEB_DIR / "app", html=True), name="app")
 # Documents d'exemple, pour essayer l'ingestion depuis l'interface.
 app.mount("/samples", StaticFiles(directory=SAMPLES_DIR), name="samples")
