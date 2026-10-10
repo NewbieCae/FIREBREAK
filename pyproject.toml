@@ -9,7 +9,9 @@ dependencies = [
     "fastapi>=0.143.0",
     "networkx>=3.7",
     "pypdf>=6.20.0",
+    "tzdata>=2026.5 ; sys_platform == 'win32'",
     "uvicorn>=0.54.0",
+    "web3>=7.6",
 ]
 
 [build-system]
@@ -21,9 +23,18 @@ packages = ["src/firebreak"]
 
 [dependency-groups]
 dev = [
+    "eth-tester[py-evm]>=0.14.0b1",
     "httpx2>=2.13.1",
+    "py-evm>=0.12.1b1",
+    "py-solc-x>=2.0.5",
+    "pycryptodome>=3.24.0",
     "pytest>=9.1.1",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.uv]
+# safe-pysha3 (tiré par eth-hash[pysha3]) n'a pas de wheel Windows et exige
+# un compilateur Visual Studio. eth-hash bascule seul sur pycryptodome.
+override-dependencies = ["safe-pysha3 ; sys_platform == 'never'"]
