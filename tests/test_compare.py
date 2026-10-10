@@ -163,3 +163,16 @@ def test_compare_all_scenarios():
         steps = client.get("/api/timeline").json()["steps"]
         g = client.get("/api/state").json()["counters"]["global"]
         assert steps[-1]["counters"]["quarantined"] == g["quarantined"], scenario
+
+
+def test_truth_ids_listed():
+    """`truth.ids` liste le vrai périmètre : l'interface hachure les
+    bloqués sains (`blocked_ids` hors `ids`) sans rien recalculer."""
+    client.post("/api/reset", json={"scenario": "mixed"})
+    client.post("/api/compromise",
+                json={"company": "fournisseur", "since": "2026-10-10T14:00:00"})
+    body = client.get("/api/compare").json()
+    assert set(body["truth"]["ids"]) == TRUTH_MIXED
+    assert body["truth"]["contaminated"] == len(body["truth"]["ids"])
+    healthy = set(body["without"]["blocked_ids"]) - set(body["truth"]["ids"])
+    assert len(healthy) == body["without"]["healthy_blocked"]

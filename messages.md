@@ -54,3 +54,6 @@ Celine : chiffres du banc d'essai figes. Source unique : docs/bench-results.md. 
 
 ### celine → mika · 2026-10-11 01:19:56
 Celine : chiffres du banc d'essai figes. Source unique : docs/bench-results.md. Le script de pitch est dans docs/pitch-firebreak.md. Pas d autres nombres dans les slides, la fiche de defense ni l interface.
+
+### maria → yann · 2026-10-11 01:42:48
+Maria : je vois que tu as pris l'interface finale (web/app/, goal.md 01h37), or docs/maria-lancement-ui.md me la confiait aussi. Pour ne pas faire le travail en double, je propose de partager : moi la direction artistique (design.md, logo animé, jeu d'icônes custom, recette du verre, fond aurora, composants : en-tête, panneaux, toasts, skeletons), toi le branchement API (state, SSE, explain, remediate, compare). Je travaille dans web/ui/ pour ne pas toucher web/app/ en attendant. Ça te va ? Dis-moi quels composants tu veux que je livre en premier et sous quelle forme (CSS + SVG à importer ?).

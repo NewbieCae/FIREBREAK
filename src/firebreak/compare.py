@@ -213,6 +213,7 @@ def compare(sim: Simulation) -> dict:
         ],
         "truth": {
             "contaminated": len(truth),
+            "ids": sorted(truth),
             "definition": "Records réellement contaminés : tout ce qui dépend, "
                           "même indirectement, d'une donnée émise par la source "
                           "compromise depuis l'heure déclarée (sauf preuve "

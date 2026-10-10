@@ -19,6 +19,7 @@ from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -58,6 +59,7 @@ from .simulation import (
 )
 
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
+SAMPLES_DIR = Path(__file__).resolve().parents[2] / "assets" / "samples"
 
 DEV_ORIGINS = [
     "http://localhost:5173",
@@ -585,3 +587,9 @@ def post_reset(body: ResetBody | None = None) -> dict:
 @app.get("/", include_in_schema=False)
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
+
+
+# Interface finale (docs/brief-ui.md), servie sans build ni Node.
+app.mount("/app", StaticFiles(directory=WEB_DIR / "app", html=True), name="app")
+# Documents d'exemple, pour essayer l'ingestion depuis l'interface.
+app.mount("/samples", StaticFiles(directory=SAMPLES_DIR), name="samples")
