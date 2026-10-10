@@ -17,7 +17,7 @@ Constat du 11/10 : `uv`, `forge` et Python ≥ 3.12 sont absents ; seul Python 3
 
 | Info | Valeur |
 |---|---|
-| EVM chainId | `569712` |
+| EVM chainId | `569712` (vérifié le 11/10 : `eth_chainId` → `0x8b170`) |
 | URL RPC | `https://nodes-prod.43.207.73.245.sslip.io/ext/bc/2HxMVTcRc1ZmgN18oemXZPSMnarWoWMA8H1g48orwbEuqxSBks/rpc` (nœud géré par le Builder Hub) |
 | Explorer | `https://2hxmvtcr.firn.gg` |
 | Blockchain ID | `2HxMVTcRc1ZmgN18oemXZPSMnarWoWMA8H1g48orwbEuqxSBks` |
@@ -26,7 +26,7 @@ Constat du 11/10 : `uv`, `forge` et Python ≥ 3.12 sont absents ; seul Python 3
 | Nœud validateur | `NodeID-DfVkATxNoiQcbqCwJoy4nApEqJWnRhN7D` (un seul : si ce nœud tombe, la L1 s'arrête) |
 | Créée avec | console Builder Hub |
 | Symbole du jeton natif | à confirmer |
-| `TxAllowList` activé ? admin = ? | à confirmer (genèse, ou lecture du precompile par `scripts/chain_smoke.py`) |
+| `TxAllowList` activé ? | **Non** (vérifié le 11/10 : `readAllowList` sur `0x02…02` → `0x`). N'importe quel compte qui a du gaz peut envoyer des transactions ; le contrôle d'accès se fait dans le contrat (`onlyMember`). |
 | `ContractDeployerAllowList` activé ? admin = ? | à confirmer (idem) |
 | Adresse publique du compte 0 (admin, celui qui a les jetons) | à confirmer : 0x… |
 
