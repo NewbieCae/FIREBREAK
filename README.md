@@ -25,7 +25,7 @@ les règles — elle ne bloque rien.
 - `tests/` — suite pytest (moteur, fédération, scénarios, timeline, démo).
 - `docs/` — [produit](docs/firebreak.md), [contrat API](docs/api.md),
   [script de démo](docs/demo.md), [plan](docs/plan.md),
-  [benchmark](docs/benchmark-firebreak.md).
+  [benchmark](docs/benchmark-firebreak.md), [brief de l'interface](docs/brief-ui.md).
 
 ## Lancer la démo
 
