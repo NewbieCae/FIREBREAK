@@ -42,7 +42,12 @@ class Ledger:
         self.alert_tokens: set[str] = set()
 
     def add(self, record: Record) -> Record:
-        assert record.company == self.company_id
+        if record.company != self.company_id:
+            raise ValueError(
+                f"record {record.id} appartient à {record.company}, pas à {self.company_id}"
+            )
+        if record.id in self.records:
+            raise ValueError(f"record déjà présent: {record.id}")
         self.records[record.id] = record
         self.graph.add_node(record.id)
         for parent in record.inputs:

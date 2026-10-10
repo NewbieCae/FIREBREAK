@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 import pytest
@@ -62,3 +63,23 @@ def test_alert_contains_no_business_data(setup):
     assert set(payload) == {"from", "to", "tokens", "reason", "issued_at"}
     for tok in payload["tokens"]:
         assert "a-out" not in tok  # jamais l'id du record d'origine
+
+
+def test_alert_from_unknown_sender_rejected(setup):
+    fed, la, lb = setup
+    taint_a_out(la)
+    alert = fed.emit_alerts({"a": la, "b": lb}, NOW)[0]
+    alert.sender = "intrus"
+    assert fed.deliver(alert, {"a": la, "b": lb}) is False
+    lb.recompute()
+    assert all(r.status == "ok" for r in lb.records.values())
+
+
+def test_alert_signed_by_other_company_rejected(setup):
+    fed, la, lb = setup
+    taint_a_out(la)
+    alert = fed.emit_alerts({"a": la, "b": lb}, NOW)[0]
+    alert.signature = fed._priv["b"].sign(
+        json.dumps(alert.payload(), sort_keys=True, separators=(",", ":")).encode()
+    ).hex()
+    assert fed.deliver(alert, {"a": la, "b": lb}) is False

@@ -15,17 +15,19 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
-    NoEncryption,
-    PrivateFormat,
     PublicFormat,
 )
+
+if TYPE_CHECKING:
+    from .engine import Ledger
 
 PAIR_SECRET = "firebreak-demo-pair-secret"
 
@@ -97,14 +99,17 @@ class Federation:
     def verify(self, company: str, payload: dict, signature_hex: str) -> bool:
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-        pub = Ed25519PublicKey.from_public_bytes(self.public_keys[company])
+        key = self.public_keys.get(company)
+        if key is None:
+            return False
+        pub = Ed25519PublicKey.from_public_bytes(key)
         try:
             pub.verify(bytes.fromhex(signature_hex), _canonical(payload))
             return True
         except (InvalidSignature, ValueError):
             return False
 
-    def emit_alerts(self, ledgers: dict[str, "Ledger"], issued_at: datetime) -> list[Alert]:
+    def emit_alerts(self, ledgers: dict[str, Ledger], issued_at: datetime) -> list[Alert]:
         """Une alerte par (expéditeur, destinataire) pour les records sortants
         nouvellement contaminés. Ne fuite que des jetons."""
         new_alerts: list[Alert] = []
@@ -134,9 +139,11 @@ class Federation:
             new_alerts.append(alert)
         return new_alerts
 
-    def deliver(self, alert: Alert, ledgers: dict[str, "Ledger"]) -> bool:
+    def deliver(self, alert: Alert, ledgers: dict[str, Ledger]) -> bool:
         """Remet l'alerte au destinataire. Retourne True si acceptée."""
-        ok = self.verify(alert.sender, alert.payload(), alert.signature)
+        ok = alert.recipient in ledgers and self.verify(
+            alert.sender, alert.payload(), alert.signature
+        )
         alert.verified = ok
         if not ok:
             return False

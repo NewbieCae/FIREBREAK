@@ -1,3 +1,5 @@
+import json
+
 from firebreak.scenario import COMPROMISED_SINCE, build_simulation
 
 EXPECTED_QUARANTINED = {
@@ -89,3 +91,33 @@ def test_remediate_frees_descendants():
     assert sim.ledgers["client"].records["c-ship-X"].status == "quarantined"
     # le paiement au RIB frauduleux reste bloqué (seed m-inv-X)
     assert led.records["m-pay-X"].status == "quarantined"
+
+
+def test_recompute_idempotent_on_scenario():
+    sim = _sim_declared()
+    before = sim.state()
+    sim.run()
+    assert sim.state() == before
+
+
+def test_alerts_carry_only_opaque_tokens():
+    sim = _sim_declared()
+    labels = {r.label for led in sim.ledgers.values() for r in led.records.values()}
+    for alert in sim.federation.alerts:
+        payload = alert.payload()
+        assert set(payload) == {"from", "to", "tokens", "reason", "issued_at"}
+        for tok in payload["tokens"]:
+            assert len(tok) == 64 and int(tok, 16) >= 0
+        blob = json.dumps(payload)
+        assert not any(label in blob for label in labels)
+        assert "5210" not in blob and "FR76" not in blob
+
+
+def test_ledgers_only_know_partner_data_through_tokens():
+    sim = _sim_declared()
+    for cid, led in sim.ledgers.items():
+        for r in led.records.values():
+            assert r.company == cid
+            assert all(i in led.records for i in r.inputs)
+            if r.origin != cid:
+                assert r.token is not None

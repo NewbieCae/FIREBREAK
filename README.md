@@ -7,10 +7,27 @@ Dépôt privé du projet finswag, Team 14 au hackathon Secure Horizons, Track 1 
 - [Piste FIREBREAK — pare-feu des supply chains (Track 3)](docs/firebreak.md)
 - [Benchmark des concurrents FIREBREAK](docs/benchmark-firebreak.md)
 - [Plan de build en 6 étapes](docs/plan.md)
+- [Contrat de l'API FIREBREAK](docs/api.md)
+
+## Lancer le projet
+
+Prérequis : Python 3.12 ou plus et [uv](https://docs.astral.sh/uv/).
+
+```bash
+uv sync                                                  # installe les dépendances
+uv run uvicorn firebreak.api:app --reload --port 8000    # lance le serveur
+uv run pytest -q                                         # lance les tests
+```
+
+- Dashboard de debug : http://localhost:8000
+- Documentation interactive de l'API : http://localhost:8000/docs
+- Contrat détaillé : [docs/api.md](docs/api.md)
 
 ## Organisation
 
-- `src/` : code source.
+- `src/firebreak/` : moteur FIREBREAK (graphe, fédération, scénario, API).
+- `tests/` : tests pytest.
+- `web/` : dashboard de debug.
 - `assets/` : ressources du projet.
 - `scripts/` : scripts utilitaires.
 - `docs/` : documentation.

@@ -3,12 +3,40 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from .engine import Ledger
 from .federation import Federation
 from .model import Company, Record
 
 REMEDIATION_ACTIONS = {"revalidate", "human_approval", "trusted_source"}
+SCENARIO_TZ = ZoneInfo("Europe/Paris")
+
+
+def to_scenario_time(dt: datetime) -> datetime:
+    """Les horodatages du scénario sont naïfs, en heure de Paris. Une date
+    avec fuseau (ex. « …Z ») est convertie, sinon la comparaison échoue."""
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone(SCENARIO_TZ).replace(tzinfo=None)
+
+
+def serialize_record(r: Record) -> dict:
+    return {
+        "id": r.id,
+        "company": r.company,
+        "origin": r.origin,
+        "kind": r.kind,
+        "ts": r.ts.isoformat(),
+        "label": r.label,
+        "inputs": list(r.inputs),
+        "gate": r.gate,
+        "verified": r.verified,
+        "payload": dict(r.payload),
+        "token": r.token,
+        "status": r.status,
+        "taint_path": list(r.taint_path) if r.taint_path is not None else None,
+    }
 
 
 class Simulation:
@@ -26,8 +54,11 @@ class Simulation:
     # -- propagation ------------------------------------------------------
 
     def run(self) -> None:
-        """Recompute tous les registres puis alertes, jusqu'à point fixe."""
-        for _ in range(10):
+        """Recompute tous les registres puis alertes, jusqu'à point fixe.
+
+        Chaque tour qui émet au moins une alerte consomme au moins un lien
+        non encore alerté : le point fixe est atteint en ≤ len(links) + 1 tours."""
+        for _ in range(len(self.federation.links) + 1):
             for ledger in self.ledgers.values():
                 ledger.recompute()
             alerts = self.federation.emit_alerts(self.ledgers, self._alert_time)
@@ -40,6 +71,7 @@ class Simulation:
     def declare_compromise(self, company: str, since: datetime) -> None:
         """L'entreprise compromise se déclare elle-même et ses partenaires
         directs (ceux qui ont reçu ses données) la déclarent aussi."""
+        since = to_scenario_time(since)
         self.ledgers[company].declare_compromised(company, since)
         partners = {
             link.recipient
@@ -83,21 +115,7 @@ class Simulation:
 
     def state(self) -> dict:
         records = [
-            {
-                "id": r.id,
-                "company": r.company,
-                "origin": r.origin,
-                "kind": r.kind,
-                "ts": r.ts.isoformat(),
-                "label": r.label,
-                "inputs": r.inputs,
-                "gate": r.gate,
-                "verified": r.verified,
-                "payload": r.payload,
-                "token": r.token,
-                "status": r.status,
-                "taint_path": r.taint_path,
-            }
+            serialize_record(r)
             for ledger in self.ledgers.values()
             for r in ledger.records.values()
         ]

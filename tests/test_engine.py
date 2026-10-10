@@ -88,3 +88,57 @@ def test_counters(ledger):
     assert c["ok"] == 4
     assert c["released"] == 0
     assert c["gates_blocked"] == 0
+
+
+def test_any_tainted_input_taints_even_if_other_input_verified():
+    led = Ledger("test")
+    led.add(_rec("bad"))
+    led.add(_rec("good", origin="test", verified=True))
+    led.add(_rec("mix", origin="test", inputs=["good", "bad"]))
+    led.declare_compromised("evil", SINCE)
+    led.recompute()
+    assert q(led) == {"bad", "mix"}
+    assert led.records["mix"].taint_path == ["bad", "mix"]
+
+
+def test_verified_seed_is_never_tainted():
+    led = Ledger("test")
+    led.add(_rec("seed", verified=True))
+    led.add(_rec("child", origin="test", inputs=["seed"]))
+    led.declare_compromised("evil", SINCE)
+    led.recompute()
+    assert q(led) == set()
+
+
+def test_since_boundary_is_inclusive():
+    led = Ledger("test")
+    led.add(_rec("at", ts=SINCE))
+    led.declare_compromised("evil", SINCE)
+    led.recompute()
+    assert q(led) == {"at"}
+
+
+def test_taint_path_is_shortest_and_deterministic():
+    def build():
+        led = Ledger("test")
+        led.add(_rec("s"))
+        led.add(_rec("a", origin="test", inputs=["s"]))
+        led.add(_rec("b", origin="test", inputs=["a"]))
+        led.add(_rec("z", origin="test", inputs=["b", "s"]))
+        led.declare_compromised("evil", SINCE)
+        led.recompute()
+        return led
+    led = build()
+    assert led.records["z"].taint_path == ["s", "z"]
+    assert build().records["z"].taint_path == led.records["z"].taint_path
+
+
+def test_add_rejects_foreign_or_duplicate_record():
+    led = Ledger("test")
+    led.add(_rec("x"))
+    with pytest.raises(ValueError):
+        led.add(_rec("x"))
+    foreign = _rec("y")
+    foreign.company = "other"
+    with pytest.raises(ValueError):
+        led.add(foreign)
