@@ -149,3 +149,87 @@ Cellule : rappel moyen · sains bloqués · actions irréversibles fuitées (moy
 - **Dépendances manquantes.** Firebreak ne voit que ce qui est tracé. Le rappel de C passe de 100.0% à p = 0 à 93.4% à p = 0.3 (5e centile 79.2%, pire cas 66.0%) ; à p = 0.3, 28.4% des mondes laissent passer au moins une action irréversible contaminée.
 - **D exploite le signal « provenance manquante ».** À p = 0.3, D récupère +4.4 points de rappel sur C pour +5.1 opérations saines bloquées par monde ; à p = 0, où rien n'est caché, D ne coûte que le bruit (+2.1) des réceptions légitimes d'hors fédération. Son gain repose sur une hypothèse du simulateur : une dépendance d'envoi manquante laisse toujours une trace visible (une réception non attribuée). Une dépendance interne manquante ne laisse aucune trace, et D ne la rattrape pas. Les chiffres de D sont donc une **borne haute** pour ce signal.
 - Tout est simulé : les chiffres décrivent notre modèle de supply chain, pas une entreprise réelle.
+
+## Sensibilité
+
+Mêmes graines que le banc principal (500 par configuration), entreprise compromise tirée parmi toutes, p = 0 et 0.3. Données : `bench/sensitivity.csv`.
+
+### Taille de la chaîne
+
+60 opérations par entreprise : 5 entreprises → 300 opérations, 8 entreprises → 480 opérations, 12 entreprises → 720 opérations. Bruit hors fédération : 10%.
+
+- 5 entreprises : chaque entreprise compromise de 92 à 111 fois, y compris la dernière (`e4`).
+- 8 entreprises : chaque entreprise compromise de 51 à 72 fois, y compris la dernière (`e7`).
+- 12 entreprises : chaque entreprise compromise de 32 à 50 fois, y compris la dernière (`e11`).
+
+#### Fuites (contaminés non bloqués)
+
+| | A — Alerte seule | B — Blocage fournisseur + partenaires | C — Firebreak | D — Firebreak + prudence |
+|---|---|---|---|---|
+| 5 entr. · p = 0 | 30.4 | 0.7 | 0.0 | 0.0 |
+| 5 entr. · p = 0.3 | 30.4 | 0.7 | 2.5 | 0.8 |
+| 8 entr. · p = 0 | 28.3 | 0.7 | 0.0 | 0.0 |
+| 8 entr. · p = 0.3 | 28.3 | 0.7 | 2.3 | 0.8 |
+| 12 entr. · p = 0 | 29.3 | 0.7 | 0.0 | 0.0 |
+| 12 entr. · p = 0.3 | 29.3 | 0.7 | 2.9 | 1.1 |
+
+#### Dégâts collatéraux (sains bloqués)
+
+| | A — Alerte seule | B — Blocage fournisseur + partenaires | C — Firebreak | D — Firebreak + prudence |
+|---|---|---|---|---|
+| 5 entr. · p = 0 | 0.0 | 43.2 | 9.6 | 11.7 |
+| 5 entr. · p = 0.3 | 0.0 | 43.2 | 7.9 | 13.0 |
+| 8 entr. · p = 0 | 0.0 | 58.1 | 10.6 | 13.3 |
+| 8 entr. · p = 0.3 | 0.0 | 58.1 | 8.7 | 16.2 |
+| 12 entr. · p = 0 | 0.0 | 85.2 | 12.1 | 16.6 |
+| 12 entr. · p = 0.3 | 0.0 | 85.2 | 9.4 | 21.2 |
+
+#### Rappel
+
+| | A — Alerte seule | B — Blocage fournisseur + partenaires | C — Firebreak | D — Firebreak + prudence |
+|---|---|---|---|---|
+| 5 entr. · p = 0 | 0.0% | 98.5% | 100.0% | 100.0% |
+| 5 entr. · p = 0.3 | 0.0% | 98.5% | 93.4% | 97.9% |
+| 8 entr. · p = 0 | 0.0% | 98.4% | 100.0% | 100.0% |
+| 8 entr. · p = 0.3 | 0.0% | 98.4% | 93.8% | 97.9% |
+| 12 entr. · p = 0 | 0.0% | 98.3% | 100.0% | 100.0% |
+| 12 entr. · p = 0.3 | 0.0% | 98.3% | 92.2% | 97.0% |
+
+#### Mondes avec au moins une fuite (toute opération / action irréversible)
+
+| | A — Alerte seule | B — Blocage fournisseur + partenaires | C — Firebreak | D — Firebreak + prudence |
+|---|---|---|---|---|
+| 5 entr. · p = 0 | 100.0% / 100.0% | 24.6% / 5.0% | 0.0% / 0.0% | 0.0% / 0.0% |
+| 5 entr. · p = 0.3 | 100.0% / 100.0% | 24.6% / 5.0% | 62.0% / 28.4% | 35.6% / 20.6% |
+| 8 entr. · p = 0 | 100.0% / 100.0% | 22.2% / 5.0% | 0.0% / 0.0% | 0.0% / 0.0% |
+| 8 entr. · p = 0.3 | 100.0% / 100.0% | 22.2% / 5.0% | 57.4% / 22.6% | 30.6% / 16.0% |
+| 12 entr. · p = 0 | 100.0% / 100.0% | 25.8% / 5.4% | 0.0% / 0.0% | 0.0% / 0.0% |
+| 12 entr. · p = 0.3 | 100.0% / 100.0% | 25.8% / 5.4% | 63.4% / 27.8% | 38.8% / 22.2% |
+
+### Bruit des réceptions hors fédération (politique D)
+
+5 entreprises, 300 opérations. Part des réceptions venues d'hors fédération (légitimes, sans jeton) : 0%, 10%, 30%. C sert de référence : le bruit ne la trompe que si la réception arrive chez l'entreprise compromise. Changer le bruit change aussi les tirages suivants du générateur : les mondes ne sont pas strictement identiques d'une ligne à l'autre, d'où les petites variations de C.
+
+| Bruit · p | Sains bloqués C / D | Précision C / D | Rappel C / D | Mondes avec fuite C / D |
+|---|---|---|---|---|
+| 0% · p = 0 | 8.9 / 8.9 | 81.0% / 81.0% | 100.0% / 100.0% | 0.0% / 0.0% |
+| 0% · p = 0.3 | 7.4 / 11.0 | 80.1% / 75.0% | 92.6% / 97.5% | 64.6% / 41.0% |
+| 10% · p = 0 | 9.6 / 11.7 | 78.5% / 75.2% | 100.0% / 100.0% | 0.0% / 0.0% |
+| 10% · p = 0.3 | 7.9 / 13.0 | 78.2% / 70.8% | 93.4% / 97.9% | 62.0% / 35.6% |
+| 30% · p = 0 | 9.3 / 15.3 | 76.2% / 67.3% | 100.0% / 100.0% | 0.0% / 0.0% |
+| 30% · p = 0.3 | 8.0 / 15.5 | 76.5% / 65.3% | 95.1% / 98.3% | 50.0% / 28.8% |
+
+### Limites et conclusions de la sensibilité
+
+- **Les relations entre entreprises se densifient avec la taille** (générateur inchangé) : 1.16 client(s) direct(s) par entreprise à 5, 1.67 client(s) direct(s) par entreprise à 8, 2.29 client(s) direct(s) par entreprise à 12. Le blocage des partenaires (B) touche donc plus d'entreprises quand la chaîne grandit ; part des opérations réellement contaminées : 10.1% à 5, 5.9% à 8, 4.1% à 12.
+- **Collatéraux B / C** : 4.5× à 5 entr., p = 0, 5.4× à 5 entr., p = 0.3, 5.5× à 8 entr., p = 0, 6.7× à 8 entr., p = 0.3, 7.1× à 12 entr., p = 0, 9.0× à 12 entr., p = 0.3.
+- **Dépendances manquantes selon la taille** (p = 0.3) : rappel C 93.4% à 5, 93.8% à 8, 92.2% à 12 ; rappel B 98.5% à 5, 98.4% à 8, 98.3% à 12 ; mondes où C laisse passer une action irréversible 28.4% à 5, 22.6% à 8, 27.8% à 12.
+- **Prix du signal « provenance manquante »** (p = 0.3) : à 0% de bruit, D rattrape 1.9 fuite(s) pour +3.6 sain(s) bloqué(s), soit 1.8 sain(s) bloqué(s) par fuite rattrapée ; à 10% de bruit, D rattrape 1.6 fuite(s) pour +5.1 sain(s) bloqué(s), soit 3.1 sain(s) bloqué(s) par fuite rattrapée ; à 30% de bruit, D rattrape 1.1 fuite(s) pour +7.5 sain(s) bloqué(s), soit 7.0 sain(s) bloqué(s) par fuite rattrapée.
+- À 0% de bruit et p = 0, D bloque +0.0 sain(s) de plus que C : sans réception hors fédération, le signal n'a aucun faux positif, ce qui n'arrive pas dans une vraie supply chain. D reste une borne haute.
+
+Conclusions de `docs/fiche-defense.md` mises à l'épreuve :
+
+- ✅ inchangée : Firebreak bloque moins d'opérations saines que le blocage des partenaires, à toutes les tailles et tous les p.
+- ✅ inchangée : le rappel de Firebreak vaut 100 % à p = 0 à toutes les tailles.
+- ✅ inchangée : à p = 0.3, le rappel moyen de Firebreak reste sous celui du blocage des partenaires (compromis assumé).
+- ✅ inchangée : D rattrape des fuites de C à p = 0.3 quel que soit le bruit.
