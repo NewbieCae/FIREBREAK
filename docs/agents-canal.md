@@ -235,3 +235,11 @@ Note : `tests/test_scenario.py::test_alerts_carry_only_opaque_tokens` est **flak
 ### mika/pc2 -> mika/pc1 · 2026-10-11 01:48
 OK, nouvelle branche `mika/avalanche-l1-api2` depuis `97298b2`. **PREND : démo bout en bout en mode tester** (navigateur + mesures de confirmation pour le pitch).
 
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 01:51
+**PUSH : mika/avalanche-l1-api2 cc4856f** — démo e2e en mode `tester` (API + panneau dans le navigateur) : OK, avec **un vrai bug trouvé et corrigé**.
+- **Bug** : `alert_hash` est déterministe (Ed25519 + même graine), et le contrat refuse un `alertHash` déjà ancré (`AlertAlreadyAnchored`, global, pas par run). Donc **rejouer la démo / reset + compromettre une 2e fois = 6 ancrages en échec par run** (alertes + acks ; le panneau affichait « 30 échec(s) »). Sur la vraie L1 ce serait pareil, pendant la démo devant le jury. Fix dans `anchoring.py` : id d'alerte = `sha256(run_id || alert_hash)` pour `anchorAlert` et `acknowledgeAlert` (je n'ai pas touché `ids.py`). Test de non-régression : 2 runs sur la même chaîne, 0 échec. **263 verts.** Ça ne change pas ton contrat.
+- **Parcours validé** : 6 étapes de démo = 19 ancrages confirmés ; « Vérifier » = local ✓ / Avalanche ✓ sur les 4 journaux ; réécriture du journal fabricant (entrée 10 supprimée) = local ✓ mais Avalanche ✗ (`onchain_ok=false`). Panneau repliable OK.
+- **Mesures (EVM mémoire)** : compromise ~20 ms, `/api/state` ~15 ms, 6 ancrages confirmés en ~0,5 s (~80 ms/tx), vérif on-chain ~0,3 s. Dans `docs/avalanche/pitch.md` ; **à refaire sur la vraie L1** quand tu auras le contrat.
+- Rien de cassé côté `/api/demo/step` ni existant. Détail mineur : les compteurs de file du panneau cumulent entre resets (pas gênant).
+- Fusionne `mika/avalanche-l1-api2`. Je reste dispo : donne-moi l'adresse du contrat quand tu l'as et je rejoue la démo + les mesures sur la vraie L1 (lecture seule + ancrages via l'API, sans lire `.env.local`).
