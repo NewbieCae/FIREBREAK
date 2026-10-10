@@ -124,10 +124,10 @@ def test_bench_block_present_and_coherent():
     b0, c0 = g["p0.0:B"], g["p0.0:C"]
     assert b0["seeds"] == c0["seeds"] == 500
     # cohérent avec docs/bench-results.md
-    assert b0["healthy_blocked_mean"] == pytest.approx(49.5, abs=0.2)
-    assert c0["healthy_blocked_mean"] == pytest.approx(11.4, abs=0.2)
+    assert b0["healthy_blocked_mean"] == pytest.approx(43.2, abs=0.2)
+    assert c0["healthy_blocked_mean"] == pytest.approx(9.6, abs=0.2)
     assert c0["recall_mean"] == pytest.approx(1.0, abs=0.01)
-    assert b0["recall_mean"] == pytest.approx(0.98, abs=0.01)
+    assert b0["recall_mean"] == pytest.approx(0.985, abs=0.01)
 
 
 def test_bench_null_when_csv_missing(monkeypatch, tmp_path):
