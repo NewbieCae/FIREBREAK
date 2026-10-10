@@ -16,7 +16,7 @@ C'est exactement le rôle de la L1 : **un témoin horodaté, partagé par les en
 | **Ancrage d'alerte** | « Le distributeur a-t-il été prévenu, et quand ? » (litige, assurance, NIS2) | sha256 de l'alerte signée + émetteur + destinataire + type + accusé de réception |
 | **Déclaration d'incident** | « Qui a déclaré le fournisseur compromis, depuis quand, et à quelle heure ? » | id de la source + `since` + hash de la déclaration |
 
-Bonus propre à une L1 : un **annuaire des clés publiques Ed25519** des membres, et l'allowlist de la L1 (`TxAllowList`) qui empêche une entreprise extérieure d'écrire, donc de déclarer un faux incident pour paralyser un concurrent.
+Bonus : un **annuaire des clés publiques Ed25519** des membres, et un contrôle d'accès dans le contrat (`onlyMember`) qui empêche une entreprise extérieure de déclarer un faux incident pour paralyser un concurrent. (La L1 de Mika n'a pas `TxAllowList` activé, vérifié le 11/10 : le filtrage se fait donc au niveau du contrat, pas de la chaîne. Activer l'allowlist demanderait de recréer la L1 : à garder pour la slide « vision ».)
 
 ## Ce qu'on NE met PAS sur la chaîne
 
