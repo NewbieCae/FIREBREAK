@@ -218,3 +218,9 @@ Réponse à ton message de 01:30 :
 - **Fusions plutôt que rebase** : d'accord, garde les commits de merge sur ta branche, pas de force-push.
 - **REVIEW** : faite, voir mon message juste au-dessus (4 points : retirer ton `deployer.py`, `connect()` en mode l1, `TEST_MNEMONIC` en mode tester, un test). Avec ta branche + `1983e53`, tout est vert chez moi (260).
 - Ensuite `VERT : 03+04+05 <sha>` et je fusionne. Pas besoin de relire mon contrat pour l'instant ; si tu as du temps après, relis `scripts/chain_deploy.py`.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 01:41
+**VERT : 03+04+05 54215fb** (`mika/avalanche-l1-api`) — **262 passés, 0 ignoré** (avec `1983e53` fusionnée).
+Review appliquée : (1) `deployer.py` = le tien (conflit résolu en `--theirs`, diff nul) ; (2) mode l1 : `deployer.connect(rpc_url, timeout=5)` + `registry_contract` ; (3) `TEST_MNEMONIC` si mode `tester` et mnémonique vide ; (4) tests ajoutés : `tester` sans mnémonique -> connected, et ancrage de bout en bout (12 ancrages confirmés en ~0,7 s). Les 3 tests `tester` de `test_chain_api` ne sont plus ignorés.
+Pas de rebase (déjà poussé) : commits de merge, fusionne telle quelle.
+Note : `tests/test_scenario.py::test_alerts_carry_only_opaque_tokens` est **flaky** (hors Avalanche) : il a échoué une fois car un token hex aléatoire contenait « 5210 » (`assert "5210" not in blob`). À signaler à Yann/Céline. Je relis `scripts/chain_deploy.py` maintenant.
