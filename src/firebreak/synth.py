@@ -153,10 +153,12 @@ def _truth(records: tuple[SynthRecord, ...], compromised: str,
 
 
 def generate(seed: int, n_companies: int = 5, n_ops: int = 300,
-             p_hidden: float = 0.0) -> World:
+             p_hidden: float = 0.0, p_external: float = P_EXTERNAL) -> World:
     """Monde déterministe pour (seed, n_companies, n_ops). Le monde réel ne
     dépend pas de p_hidden ; seules les dépendances cachées en dépendent, et
-    elles sont emboîtées : ce qui est caché à p l'est aussi à p' > p."""
+    elles sont emboîtées : ce qui est caché à p l'est aussi à p' > p.
+    `p_external` : part des réceptions venues d'hors fédération (bruit pour
+    le signal « provenance manquante » de la politique D)."""
     if n_companies < 2:
         raise ValueError("il faut au moins 2 entreprises")
     rng = random.Random(seed)
@@ -180,7 +182,7 @@ def generate(seed: int, n_companies: int = 5, n_ops: int = 300,
         rid = f"{owner}-{i:04d}"
         sent_from = None
         receive = rng.random() < P_RECEIVE
-        external = receive and rng.random() < P_EXTERNAL
+        external = receive and rng.random() < p_external
         if receive and not external and suppliers[owner]:
             sender = rng.choice(suppliers[owner])
             candidates = [x for x in by_company[sender][-WINDOW:]

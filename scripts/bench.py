@@ -86,15 +86,212 @@ def run(seeds: int, ps: list[float], n_companies: int, n_ops: int) -> list[dict]
     return rows
 
 
-def write_csv(rows: list[dict], path: Path) -> None:
+def write_csv(rows: list[dict], path: Path, fields: list[str] = FIELDS) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
         for row in rows:
             w.writerow({k: ("" if isinstance(v, float) and math.isnan(v) else
                             round(v, 6) if isinstance(v, float) else v)
                         for k, v in row.items()})
+
+
+# -- sensibilité ---------------------------------------------------------------
+
+OPS_PER_COMPANY = 60  # balayage de taille : même densité par registre
+SENS_FIELDS = ["sweep", "n_companies", "n_ops", "p_external", "mean_clients", *FIELDS]
+
+
+def run_sensitivity(seeds: int, sizes: list[int], noises: list[float],
+                    ps: list[float]) -> list[dict]:
+    """Deux balayages, mêmes graines que le banc principal :
+    - « taille » : n entreprises, OPS_PER_COMPANY × n opérations, bruit par défaut ;
+    - « bruit » : 5 entreprises, 300 opérations, part p_external de réceptions
+      hors fédération."""
+    configs = [("taille", n, OPS_PER_COMPANY * n, P_EXTERNAL) for n in sizes]
+    configs += [("bruit", 5, 300, x) for x in noises]
+    rows = []
+    for sweep, n, ops, ext in configs:
+        for p in ps:
+            for seed in range(seeds):
+                world = generate(seed, n_companies=n, n_ops=ops, p_hidden=p,
+                                 p_external=ext)
+                clients = sum(len(v) for v in world.partners.values()) / n
+                for policy, metrics in run_policies(world).items():
+                    rows.append({"sweep": sweep, "n_companies": n, "n_ops": ops,
+                                 "p_external": ext, "mean_clients": clients,
+                                 "seed": seed, "p_hidden": p, "policy": policy,
+                                 "compromised": world.compromised,
+                                 "fp_origin_rule": NAN, **metrics})
+    return rows
+
+
+def render_sensitivity(rows: list[dict], sizes: list[int], noises: list[float],
+                       ps: list[float]) -> list[str]:
+    def vals(sweep, key, p, policy, metric):
+        field = "n_companies" if sweep == "taille" else "p_external"
+        return [float(r[metric]) for r in rows
+                if r["sweep"] == sweep and r[field] == key
+                and r["p_hidden"] == p and r["policy"] == policy]
+
+    def avg(*a):
+        return mean_ci(vals(*a))[0]
+
+    def leak_share(sweep, key, p, policy, metric="leaks"):
+        return share(vals(sweep, key, p, policy, metric), lambda v: v > 0)
+
+    pols = list(POLICIES)
+    head = "| | " + " | ".join(f"{k} — {POLICIES[k]}" for k in pols) + " |"
+    sep = "|---|" + "---|" * len(pols)
+    seeds = len(vals("taille", sizes[0], ps[0], "A", "leaks")) if sizes else 0
+    lines = [
+        "## Sensibilité",
+        "",
+        f"Mêmes graines que le banc principal ({seeds} par configuration), "
+        "entreprise compromise tirée parmi toutes, p = "
+        + " et ".join(f"{p:g}" for p in ps) + ". Données : `bench/sensitivity.csv`.",
+        "",
+    ]
+    if sizes:
+        lines += [
+            "### Taille de la chaîne",
+            "",
+            f"{OPS_PER_COMPANY} opérations par entreprise : "
+            + ", ".join(f"{n} entreprises → {OPS_PER_COMPANY * n} opérations"
+                        for n in sizes)
+            + f". Bruit hors fédération : {P_EXTERNAL:.0%}.",
+            "",
+        ]
+        drawn = []
+        for n in sizes:
+            comp = [r["compromised"] for r in rows
+                    if r["sweep"] == "taille" and r["n_companies"] == n
+                    and r["p_hidden"] == ps[0] and r["policy"] == "A"]
+            counts = {f"e{i}": comp.count(f"e{i}") for i in range(n)}
+            missing = [c for c, k in counts.items() if k == 0]
+            drawn.append(
+                f"- {n} entreprises : chaque entreprise compromise de "
+                f"{min(counts.values())} à {max(counts.values())} fois"
+                + (f" ; ⚠️ jamais tirées : {', '.join(missing)}" if missing
+                   else f", y compris la dernière (`e{n - 1}`)") + ".")
+        lines += drawn + [""]
+        tables = [
+            ("Fuites (contaminés non bloqués)",
+             lambda n, p, k: num(avg("taille", n, p, k, "leaks"))),
+            ("Dégâts collatéraux (sains bloqués)",
+             lambda n, p, k: num(avg("taille", n, p, k, "collateral"))),
+            ("Rappel", lambda n, p, k: pct(avg("taille", n, p, k, "recall"))),
+            ("Mondes avec au moins une fuite (toute opération / action irréversible)",
+             lambda n, p, k: f"{pct(leak_share('taille', n, p, k))} / "
+                             f"{pct(leak_share('taille', n, p, k, 'leaked_gates'))}"),
+        ]
+        for title, cell in tables:
+            lines += [f"#### {title}", "", head, sep]
+            for n in sizes:
+                for p in ps:
+                    lines.append(f"| {n} entr. · p = {p:g} | "
+                                 + " | ".join(cell(n, p, k) for k in pols) + " |")
+            lines.append("")
+
+    if noises:
+        lines += [
+            "### Bruit des réceptions hors fédération (politique D)",
+            "",
+            "5 entreprises, 300 opérations. Part des réceptions venues d'hors "
+            "fédération (légitimes, sans jeton) : "
+            + ", ".join(f"{x:.0%}" for x in noises)
+            + ". C sert de référence : le bruit ne la trompe que si la réception "
+            "arrive chez l'entreprise compromise. Changer le bruit change aussi les "
+            "tirages suivants du générateur : les mondes ne sont pas strictement "
+            "identiques d'une ligne à l'autre, d'où les petites variations de C.",
+            "",
+            "| Bruit · p | Sains bloqués C / D | Précision C / D | Rappel C / D "
+            "| Mondes avec fuite C / D |",
+            "|---|---|---|---|---|",
+        ]
+        for x in noises:
+            for p in ps:
+                c = lambda m: avg("bruit", x, p, "C", m)  # noqa: E731
+                d = lambda m: avg("bruit", x, p, "D", m)  # noqa: E731
+                lines.append(
+                    f"| {x:.0%} · p = {p:g} | {num(c('collateral'))} / "
+                    f"{num(d('collateral'))} | {pct(c('precision'))} / "
+                    f"{pct(d('precision'))} | {pct(c('recall'))} / {pct(d('recall'))} "
+                    f"| {pct(leak_share('bruit', x, p, 'C'))} / "
+                    f"{pct(leak_share('bruit', x, p, 'D'))} |")
+        lines.append("")
+
+    # -- limites et conclusions, chiffrées par le script --
+    lines += ["### Limites et conclusions de la sensibilité", ""]
+    p0, pmax = ps[0], ps[-1]
+    checks: list[tuple[str, bool]] = []
+    if sizes:
+        lines.append(
+            "- **Les relations entre entreprises se densifient avec la taille** "
+            "(générateur inchangé) : "
+            + ", ".join(f"{avg('taille', n, p0, 'A', 'mean_clients'):.2f} client(s) "
+                        f"direct(s) par entreprise à {n}" for n in sizes)
+            + ". Le blocage des partenaires (B) touche donc plus d'entreprises "
+            "quand la chaîne grandit ; part des opérations réellement contaminées : "
+            + ", ".join(
+                f"{pct(avg('taille', n, p0, 'A', 'contaminated') / avg('taille', n, p0, 'A', 'records'))}"
+                f" à {n}" for n in sizes) + ".")
+        ratios = []
+        for n in sizes:
+            for p in ps:
+                cb, cc = avg("taille", n, p, "B", "collateral"), avg("taille", n, p, "C", "collateral")
+                ratios.append((n, p, cb, cc))
+        lines.append(
+            "- **Collatéraux B / C** : "
+            + ", ".join(f"{cb / cc:.1f}× à {n} entr., p = {p:g}" if cc else
+                        f"C = 0 à {n} entr., p = {p:g}" for n, p, cb, cc in ratios) + ".")
+        checks.append(("Firebreak bloque moins d'opérations saines que le blocage "
+                       "des partenaires, à toutes les tailles et tous les p",
+                       all(cc < cb for _, _, cb, cc in ratios)))
+        checks.append((f"le rappel de Firebreak vaut 100 % à p = {p0:g} à toutes les tailles",
+                       all(abs(avg("taille", n, p0, "C", "recall") - 1) < 1e-9
+                           for n in sizes)))
+        if pmax != p0:
+            lines.append(
+                f"- **Dépendances manquantes selon la taille** (p = {pmax:g}) : rappel C "
+                + ", ".join(f"{pct(avg('taille', n, pmax, 'C', 'recall'))} à {n}"
+                            for n in sizes)
+                + " ; rappel B "
+                + ", ".join(f"{pct(avg('taille', n, pmax, 'B', 'recall'))} à {n}"
+                            for n in sizes)
+                + " ; mondes où C laisse passer une action irréversible "
+                + ", ".join(f"{pct(leak_share('taille', n, pmax, 'C', 'leaked_gates'))}"
+                            f" à {n}" for n in sizes) + ".")
+            checks.append((f"à p = {pmax:g}, le rappel moyen de Firebreak reste sous "
+                           "celui du blocage des partenaires (compromis assumé)",
+                           all(avg("taille", n, pmax, "C", "recall")
+                               < avg("taille", n, pmax, "B", "recall") for n in sizes)))
+    if noises and pmax != p0:
+        parts, gains = [], []
+        for x in noises:
+            dc = avg("bruit", x, pmax, "D", "collateral") - avg("bruit", x, pmax, "C", "collateral")
+            dl = avg("bruit", x, pmax, "C", "leaks") - avg("bruit", x, pmax, "D", "leaks")
+            gains.append(dl > 0)
+            parts.append(f"à {x:.0%} de bruit, D rattrape {dl:.1f} fuite(s) pour "
+                         f"{dc:+.1f} sain(s) bloqué(s)"
+                         + (f", soit {dc / dl:.1f} sain(s) bloqué(s) par fuite rattrapée"
+                            if dl > 0 else ""))
+        lines.append(f"- **Prix du signal « provenance manquante »** (p = {pmax:g}) : "
+                     + " ; ".join(parts) + ".")
+        x0 = noises[0]
+        lines.append(
+            f"- À {x0:.0%} de bruit et p = {p0:g}, D bloque "
+            f"{avg('bruit', x0, p0, 'D', 'collateral') - avg('bruit', x0, p0, 'C', 'collateral'):+.1f} "
+            "sain(s) de plus que C : sans réception hors fédération, le signal "
+            "n'a aucun faux positif, ce qui n'arrive pas dans une vraie supply chain. "
+            "D reste une borne haute.")
+        checks.append((f"D rattrape des fuites de C à p = {pmax:g} quel que soit le bruit",
+                       all(gains)))
+    lines += ["", "Conclusions de `docs/fiche-defense.md` mises à l'épreuve :", ""]
+    lines += [f"- {'✅ inchangée' if ok else '⚠️ MODIFIÉE'} : {text}." for text, ok in checks]
+    lines.append("")
+    return lines
 
 
 # -- rapport -----------------------------------------------------------------
@@ -142,7 +339,7 @@ class Report:
 
 
 def render(rows: list[dict], seeds: int, ps: list[float], n_companies: int,
-           n_ops: int, command: str) -> str:
+           n_ops: int, command: str, sensitivity: list[str] | None = None) -> str:
     rep = Report(rows, ps)
     all_ids = [f"e{i}" for i in range(n_companies)]
     n_by_company = {c: len(rep.vals(ps[0], "A", "leaks", c)) for c in all_ids}
@@ -296,7 +493,7 @@ def render(rows: list[dict], seeds: int, ps: list[float], n_companies: int,
         "pas une entreprise réelle.",
         "",
     ]
-    return "\n".join(lines)
+    return "\n".join(lines + (sensitivity or []))
 
 
 def main() -> None:
@@ -308,8 +505,17 @@ def main() -> None:
     ap.add_argument("--ops", type=int, default=300)
     ap.add_argument("--csv", type=Path, default=ROOT / "bench" / "results.csv")
     ap.add_argument("--md", type=Path, default=ROOT / "docs" / "bench-results.md")
+    ap.add_argument("--sizes", default="5,8,12",
+                    help=f"sensibilité : nombres d'entreprises ({OPS_PER_COMPANY} op. chacune)")
+    ap.add_argument("--noise", default="0,0.1,0.3",
+                    help="sensibilité : parts de réceptions hors fédération")
+    ap.add_argument("--sens-p", default="0,0.3", help="sensibilité : valeurs de p")
+    ap.add_argument("--sens-csv", type=Path, default=None,
+                    help="défaut : sensitivity.csv à côté de --csv")
+    ap.add_argument("--no-sensitivity", action="store_true")
     args = ap.parse_args()
     ps = [float(x) for x in args.p.split(",")]
+    floats = lambda txt: [float(x) for x in txt.split(",") if x]  # noqa: E731
 
     t0 = time.perf_counter()
     rows = run(args.seeds, ps, args.companies, args.ops)
@@ -317,8 +523,18 @@ def main() -> None:
     command = (f"uv run python scripts/bench.py --seeds {args.seeds} --p {args.p}"
                + (f" --companies {args.companies}" if args.companies != 5 else "")
                + (f" --ops {args.ops}" if args.ops != 300 else ""))
+    sensitivity = None
+    if not args.no_sensitivity:
+        sizes = [int(x) for x in args.sizes.split(",") if x]
+        noises, sens_ps = floats(args.noise), floats(args.sens_p)
+        sens_rows = run_sensitivity(args.seeds, sizes, noises, sens_ps)
+        sens_csv = args.sens_csv or args.csv.with_name("sensitivity.csv")
+        write_csv(sens_rows, sens_csv, SENS_FIELDS)
+        sensitivity = render_sensitivity(sens_rows, sizes, noises, sens_ps)
+        print(f"sensibilité : {len(sens_rows)} lignes → {sens_csv}")
     args.md.parent.mkdir(parents=True, exist_ok=True)
-    args.md.write_text(render(rows, args.seeds, ps, args.companies, args.ops, command))
+    args.md.write_text(render(rows, args.seeds, ps, args.companies, args.ops, command,
+                              sensitivity))
     print(f"{len(rows)} lignes en {time.perf_counter() - t0:.1f} s → {args.csv}, {args.md}")
 
 

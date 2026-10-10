@@ -258,3 +258,65 @@ def test_bench_deterministic_and_reports_limits(tmp_path):
                    "provenance manquante", "borne haute", "5e centile",
                    "Ventilation par entreprise compromise", "au moins une fuite"):
         assert needle in md, needle
+
+
+# -- sensibilité : taille de la chaîne et bruit hors fédération --------------
+
+
+def test_default_noise_keeps_main_worlds_unchanged():
+    for seed in range(5):
+        assert generate(seed) == generate(seed, p_external=0.1)
+
+
+def test_external_noise_parameter():
+    def n_ext(x):
+        return sum(r.external for s in SEEDS for r in generate(s, p_external=x).records)
+
+    assert n_ext(0.0) == 0
+    assert n_ext(0.1) < n_ext(0.3)
+
+
+def test_twelve_companies_all_drawn_and_full_recall_at_p0():
+    drawn = Counter(generate(s, n_companies=12, n_ops=720).compromised for s in range(500))
+    assert set(drawn) == {f"e{i}" for i in range(12)}
+    for seed in range(5):
+        w = generate(seed, n_companies=12, n_ops=720)
+        assert evaluate(w, policy_firebreak(w))["recall"] == 1.0
+
+
+def _bench(tmp_path, tag, *extra):
+    csv_path, md_path = tmp_path / f"{tag}.csv", tmp_path / f"{tag}.md"
+    subprocess.run(
+        [sys.executable, "scripts/bench.py", "--seeds", "4", "--p", "0,0.3",
+         "--sizes", "5,12", "--noise", "0,0.3", "--sens-p", "0,0.3",
+         "--csv", str(csv_path), "--md", str(md_path),
+         "--sens-csv", str(tmp_path / f"{tag}-sens.csv"), *extra],
+        check=True, capture_output=True,
+    )
+    sens = tmp_path / f"{tag}-sens.csv"
+    return csv_path.read_text(), md_path.read_text(), sens.read_text() if sens.exists() else None
+
+
+def test_sensitivity_deterministic_separate_and_reported(tmp_path):
+    a, b = _bench(tmp_path, "a"), _bench(tmp_path, "b")
+    assert a == b
+    main_csv, md, sens_csv = a
+    assert "sweep" not in main_csv.splitlines()[0], "results.csv reste lu par /api/compare"
+    header = sens_csv.splitlines()[0].split(",")
+    assert header[:5] == ["sweep", "n_companies", "n_ops", "p_external", "mean_clients"]
+    sweeps = {(line.split(",")[0], line.split(",")[1], line.split(",")[2])
+              for line in sens_csv.splitlines()[1:]}
+    assert ("taille", "12", "720") in sweeps and ("bruit", "5", "300") in sweeps
+    for needle in ("## Sensibilité", "### Taille de la chaîne",
+                   "### Bruit des réceptions hors fédération",
+                   "### Limites et conclusions de la sensibilité",
+                   "se densifient avec la taille", "Prix du signal",
+                   "borne haute", "mises à l'épreuve"):
+        assert needle in md, needle
+
+
+def test_sensitivity_does_not_change_main_results(tmp_path):
+    with_sens = _bench(tmp_path, "w")
+    without = _bench(tmp_path, "n", "--no-sensitivity")
+    assert with_sens[0] == without[0]
+    assert without[2] is None and "## Sensibilité" not in without[1]
