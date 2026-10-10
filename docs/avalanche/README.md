@@ -68,6 +68,9 @@ src/firebreak/chain/
   __init__.py
   config.py                      # lecture env + .env.local, sans nouvelle dépendance
   ids.py                         # company_id → bytes32, hash d'alerte, hash de déclaration
+  accounts.py                    # comptes EVM dérivés du mnémonique (admin + 4 entreprises)
+  artifact.py                    # charge contracts/build/FirebreakRegistry.json
+  deployer.py                    # déploie + enregistre les membres (scripts, tests, mode tester)
   client.py                      # interface ChainClient + NullChain + Web3Chain + worker
   anchoring.py                   # ce qu'on ancre après chaque action
 scripts/
@@ -128,3 +131,12 @@ Chaque fiche est autonome : un agent la lit avec ce README et [les règles commu
 - Precompiles activés : `TxAllowList` ? `ContractDeployerAllowList` ? Le compte admin y est-il admin ?
 - Le mnémonique du `.env` est-il celui à utiliser (compte 0 = celui qui a les AVAX) ?
 - Fusion dans `main` : avant le gel de 10 h, ou présenter la L1 comme une démo séparée si la fusion est trop risquée ?
+
+## Répartition entre agents (validée le 11/10 à 01 h 05, voir `docs/agents-canal.md` sur `main`)
+
+| Agent | Branche | Fichiers |
+|---|---|---|
+| `mika/pc1` (intégrateur, décide en dernier) | `mika/avalanche-l1` | `pyproject.toml`, `uv.lock`, `src/firebreak/chain/{__init__,config,ids,accounts,artifact,deployer}.py`, `contracts/`, `scripts/chain_*.py`, `tests/test_chain_{contract,deploy,ids}.py` — tâches 01 et 02 |
+| `mika/pc2` | `mika/avalanche-l1-api` | `src/firebreak/chain/{client,anchoring,tamper}.py`, `src/firebreak/api.py`, `schemas.py`, `docs/api.md`, `web/index.html`, `docs/demo.md`, `tests/test_chain_{client,api}.py` — tâches 03, 04, 05 |
+
+Le contrat d'interface exact des modules de pc1 est dans le message `mika/pc1 → mika/pc2 · 01:05` du canal.
