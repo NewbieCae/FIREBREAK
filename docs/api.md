@@ -51,10 +51,10 @@ Les exemples ci-dessous sont de vraies réponses du serveur, tronquées (`…`).
 | `ok` | Records qui continuent normalement (`total - quarantined - released`). |
 | `released` | Records débloqués par remédiation. |
 | `gates_blocked` | Actions irréversibles bloquées. |
-| `amount_blocked` | Somme des `payload.amount` (€) des records en quarantaine. |
-| `amount_flowing` | Montant cumulé (€) des opérations qui continuent (`ok` + `released`). |
+| `amount_blocked` | Montant des **paiements** bloqués (€) : somme des `payload.amount` des records `kind == "payment"` en quarantaine. |
+| `amount_flowing` | Montant des **paiements qui continuent** (€) : records `kind == "payment"` en `ok` + `released`. |
 
-« Opérations qui continuent » à l'écran = `ok + released`. Les records sans `payload.amount` ne participent à aucun des deux totaux.
+« Opérations qui continuent » à l'écran = `ok + released`. Seuls les records `kind == "payment"` participent aux totaux `amount_*` — une facture et sa copie reçue portent le même montant, les compter compterait les mêmes euros plusieurs fois ; le paiement est l'opération où l'argent bouge réellement.
 
 ## Erreurs
 
@@ -398,6 +398,7 @@ es.onmessage = (e) => {
   const step = JSON.parse(e.data);
   console.log(step.n, step.type, step.text);
   // step.counters = {quarantined, gates_blocked, amount_blocked, amount_flowing}
+  // amount_* = montant des paiements (kind == "payment") bloqués / qui continuent
   // step.alert.links = [[record_emis, record_recu], …] → arêtes cross à animer
 };
 // le flux se ferme tout seul en fin de séquence

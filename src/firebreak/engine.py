@@ -21,7 +21,7 @@ from datetime import datetime
 import networkx as nx
 
 from .audit import AuditLog
-from .model import Record
+from .model import Record, payment_amount
 
 RULE_SOURCE = "source_compromise"
 RULE_ALERT = "alerte_verifiee"
@@ -163,11 +163,11 @@ class Ledger:
             1 for r in self.records.values() if r.status == "quarantined" and r.gate
         )
         amount_blocked = sum(
-            r.payload.get("amount", 0)
+            payment_amount(r)
             for r in self.records.values() if r.status == "quarantined"
         )
         amount_flowing = sum(
-            r.payload.get("amount", 0)
+            payment_amount(r)
             for r in self.records.values() if r.status != "quarantined"
         )
         return {

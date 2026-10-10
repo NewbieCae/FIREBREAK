@@ -116,7 +116,11 @@ def test_running_counters_end_at_state():
     assert last["gates_blocked"] == g["gates_blocked"]
     assert last["amount_blocked"] == g["amount_blocked"]
     assert last["amount_flowing"] == g["amount_flowing"]
-    assert g["amount_blocked"] > 0
+    # mixed : seul le paiement au RIB frauduleux est bloqué (5 210 €).
+    # Les 14 autres paiements continuent : m-pay-01..07 = Σ(4000+317·i)
+    # = 36 876 € et c-pay-01..07 = Σ(amount+950) = 43 526 €.
+    assert g["amount_blocked"] == 5210
+    assert g["amount_flowing"] == 36876 + 43526 == 80402
     # compteurs d'étape monotones pendant la contamination
     for a, b in zip(steps, steps[1:]):
         assert b["counters"]["quarantined"] >= a["counters"]["quarantined"]

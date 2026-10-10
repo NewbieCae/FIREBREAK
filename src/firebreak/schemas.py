@@ -57,9 +57,9 @@ class CountersOut(BaseModel):
     released: int
     gates_blocked: int = Field(description="Actions irréversibles en quarantaine.")
     amount_blocked: float = Field(
-        default=0, description="Montant cumulé (€) des opérations en quarantaine.")
+        default=0, description="Montant cumulé (€) des paiements en quarantaine.")
     amount_flowing: float = Field(
-        default=0, description="Montant cumulé (€) des opérations qui continuent.")
+        default=0, description="Montant cumulé (€) des paiements qui continuent.")
 
 
 class CountersBlock(BaseModel):
@@ -130,8 +130,8 @@ StepType = Literal[
 class StepCountersOut(BaseModel):
     quarantined: int = Field(description="Opérations en quarantaine à cette étape.")
     gates_blocked: int = Field(description="Actions irréversibles bloquées à cette étape.")
-    amount_blocked: float = Field(description="Montant bloqué cumulé (€) à cette étape.")
-    amount_flowing: float = Field(description="Montant qui continue de circuler (€) à cette étape.")
+    amount_blocked: float = Field(description="Montant des paiements bloqués cumulé (€) à cette étape.")
+    amount_flowing: float = Field(description="Montant des paiements qui continuent (€) à cette étape.")
 
 
 class StepOut(BaseModel):

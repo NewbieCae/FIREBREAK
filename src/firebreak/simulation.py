@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from .audit import Actor
 from .engine import Ledger
 from .federation import Alert, Federation
-from .model import Company, Record
+from .model import Company, Record, payment_amount
 
 REMEDIATION_ACTIONS = {"revalidate", "human_approval", "trusted_source"}
 SCENARIO_TZ = ZoneInfo("Europe/Paris")
@@ -194,8 +194,7 @@ class Simulation:
 
     def _amount(self, rid: str) -> float:
         r = self._record(rid)
-        amount = (r.payload.get("amount") if r else 0) or 0
-        return amount if isinstance(amount, (int, float)) else 0
+        return payment_amount(r) if r is not None else 0
 
     def collect_timeline(self, marks: dict[str, int] | None = None) -> list[dict]:
         """Convertit les entrées d'audit ajoutées depuis `marks` (toutes si
@@ -246,10 +245,9 @@ class Simulation:
                   if e["event"] in ("release", "remediation")}
         qset = (current_q | exited) - entered
         total_amount = sum(
-            r.payload.get("amount", 0)
+            payment_amount(r)
             for led in self.ledgers.values()
             for r in led.records.values()
-            if isinstance(r.payload.get("amount"), (int, float))
         )
         token_links = {link.token: link for link in self.federation.links}
 

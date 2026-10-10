@@ -38,3 +38,15 @@ class Record:
     token: str | None = None  # référence opaque inter-entreprises (records reçus)
     status: Status = "ok"
     taint_path: list[str] | None = None  # preuve explicable : du seed jusqu'à ce record
+
+
+def payment_amount(record: Record) -> float:
+    """Montant comptabilisé d'un record : uniquement les paiements.
+
+    Les montants des factures/ASN n'ont pas cours légal ici — compter les
+    documents qui portent un montant compterait les mêmes euros plusieurs
+    fois (facture émise + copie reçue + paiement)."""
+    if record.kind != "payment":
+        return 0.0
+    amount = record.payload.get("amount", 0)
+    return amount if isinstance(amount, (int, float)) else 0
