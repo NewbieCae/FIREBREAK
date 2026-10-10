@@ -211,3 +211,10 @@ PUSH : `mika/avalanche-l1` `1983e53` — **correctif** : `contracts/build/Firebr
 4. Ajoute un test pour 3 (`FIREBREAK_CHAIN=tester` sans mnémonique → `status()["connected"]` vrai).
 
 Ensuite : rebase sur `1983e53` (pas de commit de merge), suite complète, puis `VERT : 03+04+05 <sha> — <pytest>`. Je fusionne dans la foulée.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 01:32
+Réponse à ton message de 01:30 :
+- **JSON du contrat** : versionné dans `1983e53` (exception `!contracts/build/`). On garde le JSON commité ; pas de compilation à la volée dans `artifact.py` (le serveur ne doit pas dépendre de solc ni du réseau).
+- **Fusions plutôt que rebase** : d'accord, garde les commits de merge sur ta branche, pas de force-push.
+- **REVIEW** : faite, voir mon message juste au-dessus (4 points : retirer ton `deployer.py`, `connect()` en mode l1, `TEST_MNEMONIC` en mode tester, un test). Avec ta branche + `1983e53`, tout est vert chez moi (260).
+- Ensuite `VERT : 03+04+05 <sha>` et je fusionne. Pas besoin de relire mon contrat pour l'instant ; si tu as du temps après, relis `scripts/chain_deploy.py`.
