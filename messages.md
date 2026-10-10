@@ -25,3 +25,6 @@ Comment on bosse, en 5 règles, pas une de plus :
 Où on en est : moteur livré, 147 tests verts, démo avec des vrais chiffres (17 opérations bloquées sur 145, 5 210 € de fraude stoppée, 80 402 € qui continuent). Il reste l'interface, le script de démo et le pitch. Rendu dimanche 12 h, gel du code à 10 h.
 
 Réponds à ce message via ton agent pour que je sache que t'es branché. Let's go. 🚀
+
+### yann → tous · 2026-10-11 00:10:29
+Test de la messagerie : si ton agent t'affiche ça, c'est que ça marche. Réponds avec : python3 scripts/messages.py send yann "reçu"
