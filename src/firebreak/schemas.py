@@ -63,7 +63,17 @@ class CountersBlock(BaseModel):
     model_config = {"populate_by_name": True, "serialize_by_alias": True}
 
 
+AlertType = Literal["taint", "release"]
+AuditEvent = Literal[
+    "declaration", "declaration_withdrawn", "alert_sent", "alert_received",
+    "quarantine", "remediation", "release",
+]
+
+
 class AlertOut(BaseModel):
+    type: AlertType = Field(
+        description="« taint » = contamination signalée ; « release » = levée de quarantaine."
+    )
     from_: str = Field(alias="from")
     to: str
     tokens_count: int
@@ -99,6 +109,44 @@ class ExplainOut(BaseModel):
     path: list[RecordOut] = Field(description="Records du taint_path, dans l'ordre.")
     explanation: str
     remediation_plan: list[RemediationOption]
+
+
+class AuditEntryOut(BaseModel):
+    index: int
+    ts: str = Field(description="Heure du scénario (ISO 8601, heure de Paris).")
+    company: str
+    event: AuditEvent
+    actor: Literal["humain", "règle"]
+    details: dict
+    prev_hash: str = Field(description="Hash de l'entrée précédente (64 zéros pour la première).")
+    hash: str = Field(description="sha256(prev_hash + JSON canonique de l'entrée sans hash).")
+
+
+class AuditOut(BaseModel):
+    company: str
+    head: str = Field(description="Hash de la dernière entrée.")
+    entries: list[AuditEntryOut]
+
+
+class AuditJournalCheck(BaseModel):
+    company: str
+    ok: bool
+    entries: int
+    first_broken_index: int | None = Field(
+        description="Index de la première entrée cassée, null si la chaîne est intacte."
+    )
+    head: str
+
+
+class BrokenRef(BaseModel):
+    company: str
+    index: int
+
+
+class AuditVerifyOut(BaseModel):
+    ok: bool
+    first_broken: BrokenRef | None
+    journals: list[AuditJournalCheck]
 
 
 class ErrorOut(BaseModel):

@@ -9,6 +9,11 @@
   aucune donnée commerciale (payload, prix, libellé).
 - B vérifie la signature avec la clé publique de A ; une alerte
   falsifiée est rejetée (`verified: false`) et ne seede rien.
+- Quand un record sortant déjà signalé n'est plus contaminé (remédiation,
+  retrait d'une déclaration), A émet une alerte `type: "release"`, au même
+  format et signée de la même façon. B retire ces jetons de ses seeds,
+  recalcule, et lève à son tour vers l'aval. Une release falsifiée est
+  rejetée : les jetons restent en quarantaine chez B.
 """
 
 from __future__ import annotations
@@ -17,7 +22,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -30,6 +35,9 @@ if TYPE_CHECKING:
     from .engine import Ledger
 
 PAIR_SECRET = "firebreak-demo-pair-secret"
+
+AlertType = Literal["taint", "release"]
+REASONS = {"taint": "source compromise", "release": "donnée de nouveau saine"}
 
 
 def make_token(sender: str, recipient: str, record_id: str) -> str:
@@ -60,11 +68,13 @@ class Alert:
     tokens: list[str]
     reason: str
     issued_at: datetime
+    type: AlertType = "taint"
     signature: str = ""
     verified: bool | None = None
 
     def payload(self) -> dict:
         return {
+            "type": self.type,
             "from": self.sender,
             "to": self.recipient,
             "tokens": sorted(self.tokens),
@@ -110,27 +120,35 @@ class Federation:
             return False
 
     def emit_alerts(self, ledgers: dict[str, Ledger], issued_at: datetime) -> list[Alert]:
-        """Une alerte par (expéditeur, destinataire) pour les records sortants
-        nouvellement contaminés. Ne fuite que des jetons."""
+        """Une alerte par (expéditeur, destinataire, type) :
+        - « taint » pour les records sortants nouvellement contaminés ;
+        - « release » pour ceux déjà signalés qui ne le sont plus.
+        Ne fuite que des jetons."""
         new_alerts: list[Alert] = []
-        # regrouper les liens contaminés par (sender, recipient)
-        grouped: dict[tuple[str, str], list[str]] = {}
+        grouped: dict[tuple[str, str, str], list[str]] = {}
         for link in self.links:
             key = (link.sender_record, link.recipient_record)
-            if key in self._alerted_links:
-                continue
             rec = ledgers[link.sender].records.get(link.sender_record)
-            if rec is not None and rec.status == "quarantined":
-                grouped.setdefault((link.sender, link.recipient), []).append(link.token)
+            tainted = rec is not None and rec.status == "quarantined"
+            alerted = key in self._alerted_links
+            if tainted and not alerted:
+                kind = "taint"
                 self._alerted_links.add(key)
-        for (sender, recipient), tokens in sorted(grouped.items()):
+            elif alerted and not tainted:
+                kind = "release"
+                self._alerted_links.discard(key)
+            else:
+                continue
+            grouped.setdefault((link.sender, link.recipient, kind), []).append(link.token)
+        for (sender, recipient, kind), tokens in sorted(grouped.items()):
             self._issue_counter += 1
             alert = Alert(
                 sender=sender,
                 recipient=recipient,
                 tokens=sorted(tokens),
-                reason="source compromise",
+                reason=REASONS[kind],
                 issued_at=issued_at,
+                type=kind,
             )
             alert.signature = (
                 self._priv[sender].sign(_canonical(alert.payload())).hex()
@@ -147,5 +165,8 @@ class Federation:
         alert.verified = ok
         if not ok:
             return False
-        ledgers[alert.recipient].register_alert_tokens(list(alert.tokens))
+        if alert.type == "release":
+            ledgers[alert.recipient].release_alert_tokens(list(alert.tokens))
+        else:
+            ledgers[alert.recipient].register_alert_tokens(list(alert.tokens))
         return True

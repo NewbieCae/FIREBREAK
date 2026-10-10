@@ -60,7 +60,7 @@ def test_alert_contains_no_business_data(setup):
     taint_a_out(la)
     alert = fed.emit_alerts({"a": la, "b": lb}, NOW)[0]
     payload = alert.payload()
-    assert set(payload) == {"from", "to", "tokens", "reason", "issued_at"}
+    assert set(payload) == {"type", "from", "to", "tokens", "reason", "issued_at"}
     for tok in payload["tokens"]:
         assert "a-out" not in tok  # jamais l'id du record d'origine
 
@@ -83,3 +83,46 @@ def test_alert_signed_by_other_company_rejected(setup):
         json.dumps(alert.payload(), sort_keys=True, separators=(",", ":")).encode()
     ).hex()
     assert fed.deliver(alert, {"a": la, "b": lb}) is False
+
+
+def test_release_alert_frees_recipient(setup):
+    fed, la, lb = setup
+    ledgers = {"a": la, "b": lb}
+    taint_a_out(la)
+    fed.deliver(fed.emit_alerts(ledgers, NOW)[0], ledgers)
+    lb.recompute()
+    la.records["a-out"].status = "released"
+    la.recompute()
+    release = fed.emit_alerts(ledgers, NOW)
+    assert [a.type for a in release] == ["release"]
+    assert fed.deliver(release[0], ledgers) is True
+    lb.recompute()
+    assert all(r.status == "ok" for r in lb.records.values())
+
+
+def test_tampered_release_rejected(setup):
+    fed, la, lb = setup
+    ledgers = {"a": la, "b": lb}
+    taint_a_out(la)
+    fed.deliver(fed.emit_alerts(ledgers, NOW)[0], ledgers)
+    la.records["a-out"].status = "released"
+    la.recompute()
+    release = fed.emit_alerts(ledgers, NOW)[0]
+    release.signature = "00" * 64
+    assert fed.deliver(release, ledgers) is False
+    lb.recompute()
+    assert lb.records["b-recv"].status == "quarantined"
+    assert lb.records["b-der"].status == "quarantined"
+
+
+def test_alert_type_is_signed(setup):
+    """Transformer une alerte de contamination en levée casse la signature."""
+    fed, la, lb = setup
+    ledgers = {"a": la, "b": lb}
+    taint_a_out(la)
+    fed.deliver(fed.emit_alerts(ledgers, NOW)[0], ledgers)
+    forged = fed.alerts[0]
+    forged.type = "release"
+    assert fed.deliver(forged, ledgers) is False
+    lb.recompute()
+    assert lb.records["b-recv"].status == "quarantined"

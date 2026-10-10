@@ -132,4 +132,69 @@ def test_state_payload_keys_stable():
     s = client.get("/api/state").json()
     assert set(s) == {"companies", "records", "edges", "counters", "alerts", "declarations"}
     assert set(s["counters"]) == {"global", "per_company"}
-    assert set(s["alerts"][0]) == {"from", "to", "tokens_count", "verified", "issued_at"}
+    assert set(s["alerts"][0]) == {
+        "type", "from", "to", "tokens_count", "verified", "issued_at"}
+
+
+def _declare():
+    return client.post("/api/compromise", json={
+        "company": "fournisseur", "since": "2026-10-10T14:00:00"})
+
+
+def test_remediate_propagates_release_to_client():
+    _declare()
+    s = client.post("/api/records/m-gr-X/remediate",
+                    json={"action": "human_approval"}).json()
+    states = {r["id"]: r["status"] for r in s["records"]}
+    assert states["d-ship-X"] == states["c-ship-X"] == "ok"
+    releases = [a for a in s["alerts"] if a["type"] == "release"]
+    assert releases and all(a["verified"] for a in releases)
+
+
+def test_withdraw():
+    _declare()
+    res = client.post("/api/compromise/withdraw", json={"company": "fournisseur"})
+    assert res.status_code == 200
+    s = res.json()
+    assert s["counters"]["global"]["quarantined"] == 0
+    assert s["declarations"] == []
+    assert client.post("/api/compromise/withdraw",
+                       json={"company": "fournisseur"}).status_code == 400
+    assert client.post("/api/compromise/withdraw",
+                       json={"company": "inconnu"}).status_code == 404
+    assert client.post("/api/compromise/withdraw", json={}).status_code == 422
+
+
+def test_audit_endpoints():
+    _declare()
+    res = client.get("/api/audit", params={"company": "fabricant"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["company"] == "fabricant"
+    assert data["entries"][0]["event"] == "declaration"
+    assert data["head"] == data["entries"][-1]["hash"]
+    assert client.get("/api/audit", params={"company": "x"}).status_code == 404
+    assert client.get("/api/audit").status_code == 422
+
+    v = client.get("/api/audit/verify").json()
+    assert v["ok"] is True and v["first_broken"] is None
+    assert {j["company"] for j in v["journals"]} == {
+        "fournisseur", "fabricant", "distributeur", "client"}
+    one = client.get("/api/audit/verify", params={"company": "client"}).json()
+    assert [j["company"] for j in one["journals"]] == ["client"]
+
+
+def test_audit_verify_reports_tampering():
+    import firebreak.api as api_mod
+
+    _declare()
+    api_mod.sim.ledgers["distributeur"].audit._entries[2]["actor"] = "humain"
+    v = client.get("/api/audit/verify").json()
+    assert v["ok"] is False
+    assert v["first_broken"] == {"company": "distributeur", "index": 2}
+
+
+def test_reset_clears_audit():
+    _declare()
+    client.post("/api/reset")
+    assert client.get("/api/audit", params={"company": "fabricant"}).json()["entries"] == []

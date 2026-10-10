@@ -36,6 +36,7 @@
 <div id="topbar">
   <h1>🔥 Firebreak</h1>
   <button id="btn-compromise">Déclarer le fournisseur compromis (depuis 14:00)</button>
+  <button id="btn-withdraw" class="secondary">Retirer la déclaration (fausse alerte)</button>
   <button id="btn-reset" class="secondary">Réinitialiser</button>
   <span class="counter" id="cnt-main">—</span>
   <span class="counter" id="cnt-gates">—</span>
@@ -47,6 +48,8 @@
     <div id="detail" class="muted">Cliquez sur une opération.</div>
     <h2 style="margin-top:18px">Alertes signées</h2>
     <div id="alerts" class="muted">Aucune alerte.</div>
+    <h2 style="margin-top:18px">Journal d'audit</h2>
+    <div id="audit" class="muted">—</div>
   </div>
 </div>
 <script>
@@ -120,12 +123,23 @@ function render(s) {
   s.alerts.forEach(a => {
     const div = document.createElement('div');
     div.className = 'alert';
-    div.innerHTML = `${a.from} → ${a.to} — ${a.tokens_count} jeton(s) — ` +
+    const kind = a.type === 'release' ? 'levée' : 'contamination';
+    div.innerHTML = `<b>${kind}</b> ${a.from} → ${a.to} — ${a.tokens_count} jeton(s) — ` +
       `<span class="${a.verified ? 'sig-ok' : 'sig-ko'}">` +
       `signature ${a.verified ? 'OK' : 'REJETÉE'}</span><br>` +
       `<span class="muted">${a.issued_at}</span>`;
     feed.appendChild(div);
   });
+  renderAudit();
+}
+
+async function renderAudit() {
+  const v = await api('/api/audit/verify');
+  document.getElementById('audit').innerHTML = v.journals.map(j =>
+    `<div>${j.company} — ${j.entries} entrée(s) — ` +
+    `<span class="${j.ok ? 'sig-ok' : 'sig-ko'}">` +
+    `${j.ok ? 'chaîne intacte' : 'cassée à l’entrée ' + j.first_broken_index}</span></div>`
+  ).join('');
 }
 
 async function showDetail(r) {
@@ -154,6 +168,11 @@ async function showDetail(r) {
 document.getElementById('btn-compromise').onclick = async () => {
   render(await api('/api/compromise', 'POST',
     { company: 'fournisseur', since: '2026-10-10T14:00:00' }));
+};
+document.getElementById('btn-withdraw').onclick = async () => {
+  try {
+    render(await api('/api/compromise/withdraw', 'POST', { company: 'fournisseur' }));
+  } catch (e) { alert(e.message); }
 };
 document.getElementById('btn-reset').onclick = async () => {
   render(await api('/api/reset', 'POST'));

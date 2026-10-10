@@ -85,10 +85,11 @@ def test_remediate_frees_descendants():
     # lot / expédition ne dépendaient que de m-gr-X : libérés
     assert led.records["m-lot-X"].status == "ok"
     assert led.records["m-ship-X"].status == "ok"
-    # les alertes déjà émises restent stockées : le distributeur doit
-    # remédier lui-même à la donnée reçue (d-ship-X toujours en quarantaine)
-    assert sim.ledgers["distributeur"].records["d-ship-X"].status == "quarantined"
-    assert sim.ledgers["client"].records["c-ship-X"].status == "quarantined"
+    # levée signée propagée jusqu'au client
+    for rid in ("d-ship-X", "d-gr-X", "d-out-X"):
+        assert sim.ledgers["distributeur"].records[rid].status == "ok"
+    for rid in ("c-ship-X", "c-gr-X"):
+        assert sim.ledgers["client"].records[rid].status == "ok"
     # le paiement au RIB frauduleux reste bloqué (seed m-inv-X)
     assert led.records["m-pay-X"].status == "quarantined"
 
@@ -105,7 +106,7 @@ def test_alerts_carry_only_opaque_tokens():
     labels = {r.label for led in sim.ledgers.values() for r in led.records.values()}
     for alert in sim.federation.alerts:
         payload = alert.payload()
-        assert set(payload) == {"from", "to", "tokens", "reason", "issued_at"}
+        assert set(payload) == {"type", "from", "to", "tokens", "reason", "issued_at"}
         for tok in payload["tokens"]:
             assert len(tok) == 64 and int(tok, 16) >= 0
         blob = json.dumps(payload)

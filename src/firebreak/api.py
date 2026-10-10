@@ -11,7 +11,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -20,7 +20,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .ai import MockExplainer
 from .scenario import build_simulation
-from .schemas import ErrorOut, ExplainOut, StateOut
+from .schemas import AuditOut, AuditVerifyOut, ErrorOut, ExplainOut, StateOut
 from .simulation import REMEDIATION_ACTIONS, serialize_record, to_scenario_time
 
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
@@ -80,6 +80,10 @@ class CompromiseBody(BaseModel):
     )
 
 
+class WithdrawBody(BaseModel):
+    company: str = Field(examples=["fournisseur"])
+
+
 class RemediateBody(BaseModel):
     action: str = Field(
         description="Action de reprise.",
@@ -102,6 +106,38 @@ def post_compromise(body: CompromiseBody) -> dict:
             raise HTTPException(404, f"entreprise inconnue: {body.company}")
         sim.declare_compromise(body.company, to_scenario_time(body.since))
         return sim.state()
+
+
+@app.post("/api/compromise/withdraw", summary="Retirer une déclaration (fausse alerte)",
+          response_model=StateOut, responses=ERRORS)
+def post_withdraw(body: WithdrawBody) -> dict:
+    with _lock:
+        if body.company not in sim.ledgers:
+            raise HTTPException(404, f"entreprise inconnue: {body.company}")
+        try:
+            sim.withdraw_compromise(body.company)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return sim.state()
+
+
+@app.get("/api/audit", summary="Journal d'audit d'une entreprise",
+         response_model=AuditOut, responses=ERRORS)
+def get_audit(company: str = Query(examples=["fabricant"])) -> dict:
+    with _lock:
+        if company not in sim.ledgers:
+            raise HTTPException(404, f"entreprise inconnue: {company}")
+        audit = sim.ledgers[company].audit
+        return {"company": company, "head": audit.head, "entries": audit.entries()}
+
+
+@app.get("/api/audit/verify", summary="Vérifier la chaîne de hash des journaux",
+         response_model=AuditVerifyOut, responses=ERRORS)
+def get_audit_verify(company: str | None = None) -> dict:
+    with _lock:
+        if company is not None and company not in sim.ledgers:
+            raise HTTPException(404, f"entreprise inconnue: {company}")
+        return sim.audit_verify(company)
 
 
 @app.get("/api/records/{record_id}/explain", summary="Explication d'un record",

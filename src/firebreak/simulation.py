@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from .audit import Actor
 from .engine import Ledger
-from .federation import Federation
+from .federation import Alert, Federation
 from .model import Company, Record
 
 REMEDIATION_ACTIONS = {"revalidate", "human_approval", "trusted_source"}
@@ -49,40 +50,113 @@ class Simulation:
         self.companies = companies
         self.ledgers = ledgers
         self.federation = federation
-        self._alert_time = datetime(2026, 10, 10, 15, 0, 0)
+        self.clock = datetime(2026, 10, 10, 15, 0, 0)  # heure du scénario
 
     # -- propagation ------------------------------------------------------
 
+    def _recompute_all(self) -> None:
+        for cid, ledger in self.ledgers.items():
+            entered, cleared = ledger.recompute()
+            for rid in entered:
+                r = ledger.records[rid]
+                ledger.audit.append(self.clock, "quarantine", "règle", {
+                    "record": rid,
+                    "rule": ledger.quarantine_rule(rid),
+                    "taint_path": list(r.taint_path or []),
+                    "gate": r.gate,
+                })
+            for rid in cleared:
+                ledger.audit.append(self.clock, "release", "règle", {
+                    "record": rid,
+                    "reason": "ne dépend plus d'aucune donnée suspecte",
+                })
+
     def run(self) -> None:
-        """Recompute tous les registres puis alertes, jusqu'à point fixe.
+        """Recompute tous les registres puis alertes (contamination et
+        levée), jusqu'à point fixe.
 
-        Chaque tour qui émet au moins une alerte consomme au moins un lien
-        non encore alerté : le point fixe est atteint en ≤ len(links) + 1 tours."""
-        for _ in range(len(self.federation.links) + 1):
-            for ledger in self.ledgers.values():
-                ledger.recompute()
-            alerts = self.federation.emit_alerts(self.ledgers, self._alert_time)
+        Chaque lien bascule au plus une fois par sens (signalé / levé) par
+        tour : sur une chaîne sans cycle, le point fixe est atteint en
+        ≤ 2 × len(links) + 1 tours. Au-delà, on lève une erreur plutôt que
+        de renvoyer un état non stabilisé."""
+        for _ in range(2 * len(self.federation.links) + 2):
+            self._recompute_all()
+            alerts = self.federation.emit_alerts(self.ledgers, self.clock)
             if not alerts:
-                break
-            self._alert_time += timedelta(minutes=1)
+                return
             for alert in alerts:
-                self.federation.deliver(alert, self.ledgers)
+                self.ledgers[alert.sender].audit.append(
+                    self.clock, "alert_sent", "règle", self._alert_details(alert))
+            self.clock += timedelta(minutes=1)
+            for alert in alerts:
+                self._deliver(alert)
+        raise RuntimeError("propagation non stabilisée")
 
-    def declare_compromise(self, company: str, since: datetime) -> None:
-        """L'entreprise compromise se déclare elle-même et ses partenaires
-        directs (ceux qui ont reçu ses données) la déclarent aussi."""
-        since = to_scenario_time(since)
-        self.ledgers[company].declare_compromised(company, since)
+    def _deliver(self, alert: Alert) -> bool:
+        ok = self.federation.deliver(alert, self.ledgers)
+        recipient = self.ledgers.get(alert.recipient)
+        if recipient is not None:
+            recipient.audit.append(self.clock, "alert_received", "règle", {
+                **self._alert_details(alert),
+                "verified": ok,
+                "outcome": "appliquée" if ok else "rejetée : signature invalide",
+            })
+        return ok
+
+    @staticmethod
+    def _alert_details(alert: Alert) -> dict:
+        return {
+            "type": alert.type,
+            "from": alert.sender,
+            "to": alert.recipient,
+            "tokens": sorted(alert.tokens),
+            "issued_at": alert.issued_at.isoformat(),
+            "signature": alert.signature,
+        }
+
+    def _declaring_ledgers(self, company: str) -> list[str]:
+        """L'entreprise compromise et ses partenaires directs (ceux qui ont
+        reçu ses données)."""
         partners = {
             link.recipient
             for link in self.federation.links
             if link.sender == company
         }
-        for partner in sorted(partners):
-            self.ledgers[partner].declare_compromised(company, since)
+        return [company] + sorted(partners - {company})
+
+    def declare_compromise(self, company: str, since: datetime) -> None:
+        """L'entreprise compromise se déclare elle-même et ses partenaires
+        directs la déclarent aussi. Redéclarer la même source garde l'heure
+        la plus ancienne."""
+        since = to_scenario_time(since)
+        for cid in self._declaring_ledgers(company):
+            ledger = self.ledgers[cid]
+            decl = ledger.declare_compromised(company, since)
+            ledger.audit.append(self.clock, "declaration", "humain", {
+                "source": company,
+                "since": since.isoformat(),
+                "effective_since": decl.since.isoformat(),
+            })
         self.run()
 
-    def remediate(self, record_id: str, action: str) -> Record:
+    def withdraw_compromise(self, company: str) -> None:
+        """Retire la déclaration (fausse alerte) partout où elle est
+        enregistrée, puis recalcule : les levées partent en cascade."""
+        withdrawn = False
+        for cid, ledger in self.ledgers.items():
+            decl = ledger.withdraw_declaration(company)
+            if decl is None:
+                continue
+            withdrawn = True
+            ledger.audit.append(self.clock, "declaration_withdrawn", "humain", {
+                "source": company,
+                "since": decl.since.isoformat(),
+            })
+        if not withdrawn:
+            raise ValueError(f"aucune déclaration active pour {company}")
+        self.run()
+
+    def remediate(self, record_id: str, action: str, actor: Actor = "humain") -> Record:
         if action not in REMEDIATION_ACTIONS:
             raise ValueError(f"action inconnue: {action}")
         record = self.find_record(record_id)
@@ -91,8 +165,13 @@ class Simulation:
         if record.status != "quarantined":
             raise ValueError("record non mis en quarantaine")
         record.status = "released"
+        self.ledgers[record.company].audit.append(self.clock, "remediation", actor, {
+            "record": record_id,
+            "action": action,
+            "taint_path": list(record.taint_path or []),
+        })
         self.run()  # recompute complet : libère les descendants qui ne
-        # dépendaient que de ce record, refait tourner la fédération
+        # dépendaient que de ce record, puis levées signées vers l'aval
         return record
 
     # -- accès ------------------------------------------------------------
@@ -110,6 +189,31 @@ class Simulation:
             for rid in (record.taint_path or [])
             if rid in ledger.records
         ]
+
+    # -- audit ------------------------------------------------------------
+
+    def audit_verify(self, company: str | None = None) -> dict:
+        ids = [company] if company is not None else list(self.ledgers)
+        journals = []
+        for cid in ids:
+            audit = self.ledgers[cid].audit
+            broken = audit.verify()
+            journals.append({
+                "company": cid,
+                "ok": broken is None,
+                "entries": len(audit),
+                "first_broken_index": broken,
+                "head": audit.head,
+            })
+        first = next((j for j in journals if not j["ok"]), None)
+        return {
+            "ok": first is None,
+            "first_broken": (
+                {"company": first["company"], "index": first["first_broken_index"]}
+                if first else None
+            ),
+            "journals": journals,
+        }
 
     # -- état sérialisable ------------------------------------------------
 
@@ -138,6 +242,7 @@ class Simulation:
         }
         alerts = [
             {
+                "type": a.type,
                 "from": a.sender,
                 "to": a.recipient,
                 "tokens_count": len(a.tokens),
