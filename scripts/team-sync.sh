@@ -80,7 +80,29 @@ secret_files() { # stdin : diff git → fichiers dont une ligne AJOUTÉE porte u
   } | grep -v 'auto-commit:allow' | cut -f1 | sort -u | tr '\n' ' '
 }
 
-# ---------------------------------------------------------------- verrou + synchro
+# ----------------------------------------------------------- garde-fou conflits
+# Ne jamais committer/pousser un conflit non résolu : les entrées « unmerged »
+# de l'index et les marqueurs <<<<<<< / ||||||| / >>>>>>> ajoutés.
+# Un « ======= » seul est volontairement ignoré (soulignement setext Markdown).
+# Une ligne voulue se marque « team-sync:allow ».
+
+MARKER_RE='^(<{7}|>{7}|\|{7})( |$)'
+
+unmerged_files() { # fichiers en conflit réel dans l'index (avant tout git add)
+  git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' '
+}
+
+marker_files() { # stdin : diff git → fichiers dont une ligne AJOUTÉE porte un marqueur
+  awk '/^\+\+\+ /{f=substr($0,7); next} /^\+/{print f "\t" substr($0,2)}' \
+    | grep -v 'team-sync:allow' | grep -E "$MARKER_RE" \
+    | cut -f1 | sort -u | tr '\n' ' '
+}
+
+conflict_files() { # $1 = entrées unmerged relevées AVANT git add -A (l'add les « résoudrait »)
+  local after
+  after=$(git diff --cached -U0 --no-color --no-ext-diff 2>/dev/null | marker_files)
+  printf '%s\n%s\n' ${1:-x} ${after:-x} | sed '/^x$/d' | sort -u | tr '\n' ' ' | sed 's/ *$//'
+}
 
 # Ré-exécution sous verrou (un seul fetch/rebase à la fois sur l'arbre partagé).
 # Si le verrou n'est pas obtenu en 10 s, on ré-exécute avec TEAM_SYNC_LOCK=skip :
@@ -123,6 +145,14 @@ sync_pull() {
     SYNC_OUT=$(printf '%s' "$SYNC_OUT" | tail -1)
     return 2
   fi
+  # autostash reapplied with a conflict → index entries unmerged (no rebase running)
+  local left
+  left=$(unmerged_files)
+  if [ -n "${left% }" ]; then
+    CONFLICT_FILES="$left"
+    SYNC_OUT="conflit au rétablissement du stash sur ${left% }"
+    return 1
+  fi
   SYNC_OUT=""
   return 0
 }
@@ -149,9 +179,14 @@ if [ "$CMD" = "start" ]; then
   if in_work_tree && [ "$HAVE_LOCK" = 1 ]; then
     sync_pull; src=$?
     case "$src" in
-      1) problem=" Synchro : conflit rebase abandonné ($SYNC_OUT) — à résoudre à la main." ;;
+      1) problem=" Synchro : conflit à résoudre à la main ($SYNC_OUT)." ;;
       2) problem=" Synchro impossible : $SYNC_OUT." ;;
     esac
+    # conflit non résolu présent dans l'arbre (unmerged ou marqueurs ajoutés)
+    local_conflicts="$({ unmerged_files; git diff -U0 --no-color --no-ext-diff 2>/dev/null | marker_files; } | tr ' ' '\n' | sed '/^$/d' | sort -u | tr '\n' ' ')"
+    if [ -n "${local_conflicts% }" ]; then
+      problem="$problem Attention : conflit non résolu dans ${local_conflicts% }— résous-le avant tout."
+    fi
   fi
   if member=$(whoami_member); then
     ctx="Coéquipier : $member. Avant de terminer ce tour, mets à jour sessions/$member.md (fait / en cours / prochaine étape) et goal.md (état du plan, blocages) — cf. AGENTS.md.$problem"
