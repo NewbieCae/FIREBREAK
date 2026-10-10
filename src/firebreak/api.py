@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import threading
 import time
 from datetime import datetime
@@ -22,7 +23,8 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .ai import get_explainer
+from .ai import MockExplainer, get_explainer
+from .demo import DEMO_CAPTIONS, DEMO_MODE, DEMO_REPLAY_SPEED, DEMO_SCENARIO, demo_caption
 from .ingest.documents import DocumentError, Party, document_text, get_extractor
 from .ingest.epcis import EpcisError, parse_epcis
 from .model import Record
@@ -67,8 +69,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-sim = build_simulation()
-explainer = get_explainer()
+# Mode démo : scénario fixe, IA forcée en mock (zéro dépendance réseau),
+# rejeu SSE cadencé pour la scène. FIREBREAK_DEMO=1.
+sim = build_simulation(DEMO_SCENARIO if DEMO_MODE else DEFAULT_SCENARIO)
+explainer = MockExplainer() if DEMO_MODE else get_explainer()
+demo_index = 0
 extractor = get_extractor()
 proposals: dict[str, dict] = {}
 _lock = threading.Lock()
@@ -392,7 +397,7 @@ def get_timeline() -> dict:
 @app.get("/api/events", summary="Rejeu en direct (Server-Sent Events)",
          response_class=StreamingResponse)
 def get_events(speed: float = Query(
-        default=0.5, ge=0, le=10,
+        default=DEMO_REPLAY_SPEED if DEMO_MODE else 0.5, ge=0, le=10,
         description="Pause en secondes entre deux événements (0 = tout d'un coup).")):
     with _lock:
         steps = copy.deepcopy(sim.timeline)
@@ -407,16 +412,76 @@ def get_events(speed: float = Query(
     return StreamingResponse(gen(), media_type="text/event-stream")
 
 
+@app.post("/api/demo/step", summary="Démo : avancer d'une étape",
+          responses=ERRORS)
+def post_demo_step() -> dict:
+    """Pilote la démo au clic (ou flèche droite) :
+    0 reset(mixed) → 1 compromission → 2 explication du paiement bloqué
+    → 3 remédiation (levée fédérée en cascade) → 4 vérification d'audit ;
+    ensuite reste en fin. La réponse porte l'index, la légende française,
+    le détail de l'étape et l'état complet."""
+    global sim, demo_index
+    with _lock:
+        i = demo_index
+        detail: dict | None = None
+        error: str | None = None
+        if i == 0:
+            sim = build_simulation(DEMO_SCENARIO if DEMO_MODE else sim_scenario(sim))
+            proposals.clear()
+        elif i == 1:
+            hint = sim.scenario["compromise"]
+            sim.declare_compromise(
+                hint["company"],
+                to_scenario_time(datetime.fromisoformat(hint["since"])))
+            detail = {"steps": len(sim.timeline)}
+        elif i == 2:
+            record = sim.find_record("m-pay-X")
+            if record is None or record.status != "quarantined":
+                error = "m-pay-X n'est pas en quarantaine — passer l'étape 1 d'abord."
+            else:
+                rec_copy, path = copy.deepcopy((record, sim.path_records(record)))
+                detail = {
+                    "record": serialize_record(rec_copy),
+                    "path": [serialize_record(r) for r in path],
+                    **explainer.analyze(rec_copy, path),
+                }
+        elif i == 3:
+            rec = sim.find_record("m-gr-X")
+            if rec is None or rec.status != "quarantined":
+                error = "m-gr-X n'est pas en quarantaine — passer l'étape 1 d'abord."
+            else:
+                sim.remediate("m-gr-X", "human_approval")
+                detail = {"steps": len(sim.timeline)}
+        elif i == 4:
+            detail = sim.audit_verify()
+        if i < len(DEMO_CAPTIONS):
+            demo_index = i + 1
+        return {
+            "step": i,
+            "total": len(DEMO_CAPTIONS),
+            "caption": demo_caption(i),
+            "detail": detail,
+            "error": error,
+            "done": i >= len(DEMO_CAPTIONS) - 1,
+            "state": sim.state(),
+        }
+
+
+def sim_scenario(sim) -> str:
+    return (sim.scenario or {}).get("id", DEFAULT_SCENARIO)
+
+
 @app.post("/api/reset", summary="Réinitialiser (choix du scénario)",
           response_model=StateOut, responses=ERRORS)
 def post_reset(body: ResetBody | None = None) -> dict:
-    global sim
+    global sim, demo_index
     scenario = (body or ResetBody()).scenario
     if scenario not in SCENARIOS:
         raise HTTPException(400, f"scénario inconnu: {scenario}")
     with _lock:
         sim = build_simulation(scenario)
         proposals.clear()
+        demo_index = 0
         return sim.state()
 
 

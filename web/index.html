@@ -41,6 +41,7 @@
   <button id="btn-compromise">Déclarer le fournisseur compromis (depuis 14:00)</button>
   <button id="btn-withdraw" class="secondary">Retirer la déclaration (fausse alerte)</button>
   <button id="btn-replay" class="secondary">Rejouer</button>
+  <button id="btn-demo" class="secondary">Démo : étape suivante →</button>
   <button id="btn-reset" class="secondary">Réinitialiser</button>
   <span class="counter" id="cnt-main">—</span>
   <span class="counter" id="cnt-gates">—</span>
@@ -241,6 +242,25 @@ async function replay() {
   } finally { replaying = false; }
 }
 document.getElementById('btn-replay').onclick = replay;
+async function demoNext() {
+  const r = await api('/api/demo/step', 'POST', {});
+  if (r.state) render(r.state);
+  const det = document.getElementById('detail');
+  det.className = '';
+  let html = `<b>Démo — étape ${r.step + 1}/${r.total}</b><p>${r.caption}</p>`;
+  if (r.error) html += `<p class="sig-ko">${r.error}</p>`;
+  if (r.detail && r.detail.explanation)
+    html += `<p>${r.detail.explanation}</p>`;
+  else if (r.detail && typeof r.detail === 'object' && r.detail.ok !== undefined)
+    html += `<p>Journaux : <span class="${r.detail.ok ? 'sig-ok' : 'sig-ko'}">` +
+            `${r.detail.ok ? 'intègres' : 'cassés'}</span></p>`;
+  det.innerHTML = html;
+}
+document.getElementById('btn-demo').onclick = demoNext;
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' && !e.target.closest('input,select,textarea'))
+    demoNext();
+});
 document.getElementById('btn-reset').onclick = async () => {
   render(await api('/api/reset', 'POST', { scenario: state.scenario.id }));
 };
