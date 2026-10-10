@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-${DEVIN_PROJECT_DIR:-.}}/scripts/team-sync.sh\" start",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-${DEVIN_PROJECT_DIR:-.}}/scripts/team-sync.sh\" start",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-${DEVIN_PROJECT_DIR:-.}}/scripts/team-sync.sh\" stop",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

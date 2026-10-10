@@ -6,7 +6,8 @@ build/
 *.pem
 *.key
 secrets/
-.claude/
+.claude/*
+!.claude/settings.json
 CLAUDE.md
 sessionyann.md
 steps/

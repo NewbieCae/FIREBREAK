@@ -2,6 +2,7 @@
 
 Dépôt privé du projet finswag, Team 14 au hackathon Secure Horizons, Track 1 « Guardians of Value » (Fintech Security).
 
+- **Travail en équipe : [goal.md](goal.md) (objectif et avancement partagés), [sessions/](sessions/) (une session par membre), protocole dans [AGENTS.md](AGENTS.md).**
 - [Page Notion — brief et coordination](https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e)
 - [Brief et ressources](docs/brief.md)
 - [Piste FIREBREAK — pare-feu des supply chains (Track 3)](docs/firebreak.md)
