@@ -43,12 +43,15 @@ Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h) : 17 opérat
 - [x] Étape 4 : timeline et flux SSE (`/api/timeline`, `/api/events`, bouton « Rejouer »).
 - [ ] Interface finale branchée sur l'API (`docs/api.md`).
 - [x] Étape 6 : mode démo (`FIREBREAK_DEMO=1`, `/api/demo/step`, flèche droite), script `docs/demo.md`, test de bout en bout.
+- [ ] Banc d'essai v2 : gates fuités, pire cas / 5e centile, ventilation par entreprise compromise, politique D « Firebreak + prudence », limites écrites par le script (Céline)
 - [ ] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux, `/api/compare`, chiffres du banc d'essai de Céline + cas JLR et CDK (Yann).
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
 - [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
 
 ## Décisions
+
+- Track 3 annoncé aux organisateurs, le 10 octobre.
 
 - 10/10 : banc d'essai — vérité terrain = descendants par toutes les vraies dépendances des records émis par l'entreprise compromise après `since`, `verified` exclus (même sémantique que le moteur).
 
