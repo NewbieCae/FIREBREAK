@@ -288,7 +288,7 @@ def _parallel_chain(monkeypatch, companies, delay=0.1):
         eth = Eth()
 
     return mod.Web3Chain(ChainConfig(mode="tester"), W3(), Contract(),
-                         {c: Acct() for c in companies})
+                         {c: Acct() for c in companies}, max_parallel=4)
 
 
 def _timed(chain, companies, per_company=3):

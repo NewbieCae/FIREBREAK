@@ -42,6 +42,7 @@ COMPANIES = [
 
 RIB_OK = "FR76 3000 4028 3798 7654 3210 085"
 RIB_FRAUD = "FR76 1234 5678 9000 0000 0000 666"
+PART = "BOBINE-S235-2MM"
 
 
 def _t(h: int, m: int = 0) -> datetime:
@@ -87,21 +88,27 @@ def _clean_morning(b: _Builder) -> None:
         t0 = _t(8, 30) + timedelta(minutes=30 * (i - 1))  # 08:30 -> 11:30
         amount = 4000 + 317 * i
         bc = f"BC-{1000 + i}"
-        b.rec(f, f"f-asn-{i:02d}", "asn", t0, f"ASN commande {bc}")
+        coil = f"COIL-{100 + i}"
+        ship = {"bc": f"BC-100{i}", "part": PART, "qty": 12, "lot_no": coil,
+                "ship_date": t0.isoformat()}
+        cert = {"cert_no": f"CQ-200{i}", "lot_no": coil, "part": PART, "grade": "S235"}
+        inv = {"amount": amount, "rib": RIB_OK, "bc": f"BC-100{i}"}
+        b.rec(f, f"f-asn-{i:02d}", "asn", t0, f"ASN commande {bc}", payload=ship)
         b.rec(f, f"f-cert-{i:02d}", "quality_cert", t0 + timedelta(minutes=2),
-              f"Certificat qualité CQ-{2000 + i}")
+              f"Certificat qualité CQ-{2000 + i}", payload=cert)
         b.rec(f, f"f-inv-{i:02d}", "invoice", t0 + timedelta(minutes=4),
-              f"Facture F-{3000 + i}", payload={"amount": amount, "rib": RIB_OK})
+              f"Facture F-{3000 + i}", payload=inv)
         b.send(f, f"f-asn-{i:02d}", m, f"m-asn-{i:02d}", "asn",
-               t0 + timedelta(minutes=10), f"ASN reçu — {bc}")
+               t0 + timedelta(minutes=10), f"ASN reçu — {bc}", payload=ship)
         b.send(f, f"f-cert-{i:02d}", m, f"m-cert-{i:02d}", "quality_cert",
-               t0 + timedelta(minutes=10), f"Certificat reçu CQ-{2000 + i}")
+               t0 + timedelta(minutes=10), f"Certificat reçu CQ-{2000 + i}",
+               payload=cert)
         b.send(f, f"f-inv-{i:02d}", m, f"m-inv-{i:02d}", "invoice",
                t0 + timedelta(minutes=10), f"Facture reçue F-{3000 + i}",
-               payload={"amount": amount, "rib": RIB_OK})
+               payload=inv)
         b.rec(m, f"m-gr-{i:02d}", "goods_receipt", t0 + timedelta(minutes=40),
               f"Réception marchandise {bc}", inputs=[f"m-asn-{i:02d}", f"m-cert-{i:02d}"],
-              payload={"lot": f"COIL-{100 + i}"})
+              payload={"lot": coil, "part": PART, "qty": 12, "bc": f"BC-100{i}"})
         b.transform(m, f"m-lot-{i:02d}", t0 + timedelta(minutes=90),
                     f"Lancement lot LOT-{500 + i}", [f"m-gr-{i:02d}"], f"LOT-{500 + i}")
         b.rec(m, f"m-pay-{i:02d}", "payment", t0 + timedelta(minutes=120),
@@ -208,20 +215,37 @@ def _internal_ops(b: _Builder) -> None:
         b.rec(ledger, rid, kind, ts, label)
 
 
+def _legit_ship_08() -> dict:
+    return {"bc": "BC-1008", "part": PART, "qty": 12, "lot_no": "COIL-108",
+            "ship_date": _t(14, 45).isoformat()}
+
+
+def _legit_gr_08() -> dict:
+    return {"lot": "COIL-108", "part": PART, "qty": 12, "bc": "BC-1008"}
+
+
 def _attack_mixed(b: _Builder) -> None:
     """Les trois attaques mélangées, puis une livraison légitime vérifiée."""
     f, m, d, c = b.f, b.m, b.d, b.c
-    b.rec(f, "f-asn-X", "asn", _t(14, 10), "ASN urgente BC-9999")
-    b.rec(f, "f-cert-X", "quality_cert", _t(14, 12), "Certificat qualité CQ-9999")
+    ship = {"bc": "BC-1999", "part": PART, "qty": 30, "lot_no": "COIL-999",
+            "ship_date": _t(14, 10).isoformat()}
+    cert = {"cert_no": "CQ-9999", "lot_no": "COIL-999", "part": PART, "grade": "S235"}
+    b.rec(f, "f-asn-X", "asn", _t(14, 10), "ASN urgente BC-9999", payload=ship)
+    b.rec(f, "f-cert-X", "quality_cert", _t(14, 12), "Certificat qualité CQ-9999",
+          payload=cert)
     b.rec(f, "f-inv-X", "invoice", _t(14, 14), "Facture F-9999 — nouveau RIB",
-          payload={"amount": 5210, "rib": RIB_FRAUD, "bank_details_change": True})
-    b.send(f, "f-asn-X", m, "m-asn-X", "asn", _t(14, 15), "ASN reçu — BC-9999")
+          payload={"amount": 5210, "rib": RIB_FRAUD, "bank_details_change": True,
+                   "bc": "BC-1999"})
+    b.send(f, "f-asn-X", m, "m-asn-X", "asn", _t(14, 15), "ASN reçu — BC-9999",
+           payload=ship)
     b.send(f, "f-cert-X", m, "m-cert-X", "quality_cert", _t(14, 17),
-           "Certificat reçu CQ-9999")
+           "Certificat reçu CQ-9999", payload=cert)
     b.send(f, "f-inv-X", m, "m-inv-X", "invoice", _t(14, 19),
-           "Facture reçue F-9999", payload={"amount": 5210, "rib": RIB_FRAUD})
+           "Facture reçue F-9999",
+           payload={"amount": 5210, "rib": RIB_FRAUD, "bc": "BC-1999"})
     b.rec(m, "m-gr-X", "goods_receipt", _t(14, 40), "Réception marchandise BC-9999",
-          inputs=["m-asn-X", "m-cert-X"], payload={"lot": "COIL-999"})
+          inputs=["m-asn-X", "m-cert-X"],
+          payload={"lot": "COIL-999", "part": PART, "qty": 30, "bc": "BC-1999"})
     b.transform(m, "m-lot-X", _t(15, 0), "Lancement lot LOT-999", ["m-gr-X"], "LOT-999")
     b.rec(m, "m-pay-X", "payment", _t(15, 10), "Paiement facture F-9999 (RIB modifié)",
           inputs=["m-inv-X"], gate=True, payload={"amount": 5210, "rib": RIB_FRAUD})
@@ -239,11 +263,13 @@ def _attack_mixed(b: _Builder) -> None:
           inputs=["c-ship-X"])
 
     # livraison légitime post-14:00, réception vérifiée (stop rule)
-    b.rec(f, "f-asn-08", "asn", _t(14, 45), "ASN commande BC-1008")
-    b.send(f, "f-asn-08", m, "m-asn-08", "asn", _t(14, 50), "ASN reçu — BC-1008")
+    ship = _legit_ship_08()
+    b.rec(f, "f-asn-08", "asn", _t(14, 45), "ASN commande BC-1008", payload=ship)
+    b.send(f, "f-asn-08", m, "m-asn-08", "asn", _t(14, 50), "ASN reçu — BC-1008",
+           payload=ship)
     b.rec(m, "m-gr-08", "goods_receipt", _t(15, 10),
           "Réception BC-1008 (contrôle physique)", inputs=["m-asn-08"],
-          verified=True, payload={"lot": "COIL-108"})
+          verified=True, payload=_legit_gr_08())
 
 
 def _attack_rib(b: _Builder) -> None:
@@ -255,12 +281,14 @@ def _attack_rib(b: _Builder) -> None:
           "Mail : changement de coordonnées bancaires",
           payload={"rib": RIB_FRAUD, "previous_rib": RIB_OK, "bank_details_change": True})
     b.rec(f, "f-inv-X", "invoice", _t(14, 14), "Facture F-9999 — nouveau RIB",
-          payload={"amount": 5210, "rib": RIB_FRAUD, "bank_details_change": True})
+          payload={"amount": 5210, "rib": RIB_FRAUD, "bank_details_change": True,
+                   "bc": "BC-1009"})
     b.send(f, "f-bank-X", m, "m-bank-X", "bank_details_change", _t(14, 8),
            "Changement de RIB reçu (mail)",
            payload={"rib": RIB_FRAUD, "previous_rib": RIB_OK, "bank_details_change": True})
     b.send(f, "f-inv-X", m, "m-inv-X", "invoice", _t(14, 19),
-           "Facture reçue F-9999", payload={"amount": 5210, "rib": RIB_FRAUD})
+           "Facture reçue F-9999",
+           payload={"amount": 5210, "rib": RIB_FRAUD, "bc": "BC-1009"})
     b.rec(m, "m-vendor-X", "vendor_master_update", _t(14, 30),
           "Fiche fournisseur : RIB remplacé", inputs=["m-bank-X"],
           payload={"rib": RIB_FRAUD, "previous_rib": RIB_OK})
@@ -269,9 +297,9 @@ def _attack_rib(b: _Builder) -> None:
           payload={"amount": 5210, "rib": RIB_FRAUD})
 
     b.rec(f, "f-inv-08", "invoice", _t(14, 40), "Facture F-3008",
-          payload={"amount": 4950, "rib": RIB_OK})
+          payload={"amount": 4950, "rib": RIB_OK, "bc": "BC-1008"})
     b.send(f, "f-inv-08", m, "m-inv-08", "invoice", _t(14, 45), "Facture reçue F-3008",
-           payload={"amount": 4950, "rib": RIB_OK})
+           payload={"amount": 4950, "rib": RIB_OK, "bc": "BC-1008"})
     b.rec(m, "m-call-08", "callback_verification", _t(15, 0),
           "Contre-appel au numéro connu : F-3008 confirmée", inputs=["m-inv-08"],
           verified=True)
@@ -285,15 +313,21 @@ def _attack_cert(b: _Builder) -> None:
     sous-ensemble ASM-950 fabriqué avec LOT-901 et leurs expéditions sont
     bloqués ; le lot LOT-902 (autres bobines) continue."""
     f, m, d, c = b.f, b.m, b.d, b.c
-    b.rec(f, "f-asn-X", "asn", _t(14, 10), "ASN commande BC-1010 (bobine COIL-210)")
+    ship = {"bc": "BC-1010", "part": PART, "qty": 12, "lot_no": "COIL-210",
+            "ship_date": _t(14, 10).isoformat()}
+    cert = {"cert_no": "CQ-9999", "lot": "COIL-210", "lot_no": "COIL-210", "part": PART, "grade": "S355"}
+    b.rec(f, "f-asn-X", "asn", _t(14, 10), "ASN commande BC-1010 (bobine COIL-210)",
+          payload=ship)
     b.rec(f, "f-cert-X", "quality_cert", _t(14, 12), "Certificat qualité CQ-9999",
-          payload={"lot": "COIL-210", "grade": "S355"})
-    b.send(f, "f-asn-X", m, "m-asn-X", "asn", _t(14, 15), "ASN reçu — BC-1010")
+          payload=cert)
+    b.send(f, "f-asn-X", m, "m-asn-X", "asn", _t(14, 15), "ASN reçu — BC-1010",
+           payload=ship)
     b.send(f, "f-cert-X", m, "m-cert-X", "quality_cert", _t(14, 17),
-           "Certificat reçu CQ-9999 (COIL-210)")
+           "Certificat reçu CQ-9999 (COIL-210)", payload=cert)
     b.rec(m, "m-gr-X", "goods_receipt", _t(14, 40),
           "Réception bobine COIL-210 (pesée et comptage)", inputs=["m-asn-X"],
-          verified=True, payload={"lot": "COIL-210"})
+          verified=True,
+          payload={"lot": "COIL-210", "part": PART, "qty": 12, "bc": "BC-1010"})
     b.rec(m, "m-qc-X", "quality_release", _t(14, 50),
           "Libération qualité COIL-210 sur certificat CQ-9999",
           inputs=["m-gr-X", "m-cert-X"], payload={"lot": "COIL-210"})
@@ -329,12 +363,15 @@ def _attack_asn(b: _Builder) -> None:
     stock fantôme et la livraison est promise jusqu'au client. Une vraie
     livraison de la fenêtre, contrôlée physiquement, continue."""
     f, m, d, c = b.f, b.m, b.d, b.c
+    ship = {"bc": "BC-9999", "part": PART, "qty": 12, "lot_no": "COIL-299",
+            "ship_date": _t(14, 10).isoformat()}
     b.rec(f, "f-asn-X", "asn", _t(14, 10), "ASN urgente BC-9999 (bobine COIL-299)",
-          payload={"lot": "COIL-299"})
-    b.send(f, "f-asn-X", m, "m-asn-X", "asn", _t(14, 15), "ASN reçu — BC-9999")
+          payload=ship)
+    b.send(f, "f-asn-X", m, "m-asn-X", "asn", _t(14, 15), "ASN reçu — BC-9999",
+           payload=ship)
     b.rec(m, "m-gr-X", "goods_receipt", _t(14, 30),
           "Réception COIL-299 saisie depuis l'ASN (sans contrôle)", inputs=["m-asn-X"],
-          payload={"lot": "COIL-299"})
+          payload={"lot": "COIL-299", "part": PART, "qty": 12, "bc": "BC-9999"})
     b.rec(m, "m-stock-X", "stock_entry", _t(14, 35), "Entrée en stock COIL-299",
           inputs=["m-gr-X"], payload={"lot": "COIL-299"})
     b.transform(m, "m-lot-X", _t(15, 0), "Lancement lot LOT-999 (COIL-299 + COIL-107)",
@@ -352,11 +389,14 @@ def _attack_asn(b: _Builder) -> None:
     b.rec(c, "c-plan-X", "work_plan", _t(16, 30), "Planning chantier calé sur LOT-999",
           inputs=["c-ship-X"])
 
-    b.rec(f, "f-asn-08", "asn", _t(14, 45), "ASN commande BC-1008 (bobine COIL-108)")
-    b.send(f, "f-asn-08", m, "m-asn-08", "asn", _t(14, 50), "ASN reçu — BC-1008")
+    ship = _legit_ship_08()
+    b.rec(f, "f-asn-08", "asn", _t(14, 45), "ASN commande BC-1008 (bobine COIL-108)",
+          payload=ship)
+    b.send(f, "f-asn-08", m, "m-asn-08", "asn", _t(14, 50), "ASN reçu — BC-1008",
+           payload=ship)
     b.rec(m, "m-gr-08", "goods_receipt", _t(15, 10),
           "Réception COIL-108 (contrôle physique)", inputs=["m-asn-08"],
-          verified=True, payload={"lot": "COIL-108"})
+          verified=True, payload=_legit_gr_08())
     b.transform(m, "m-lot-908", _t(15, 40), "Lancement lot LOT-908 (COIL-108)",
                 ["m-gr-08"], "LOT-908")
 
