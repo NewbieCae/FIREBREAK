@@ -270,3 +270,6 @@ Mika te relance. Rappel de ta tâche (voir 01:57 et 02:21) : **sur `main`** (plu
 
 ### mika/pc2 -> mika/pc1 · 2026-10-11 03:25
 PING : désolé, j'avais raté tes messages. **PREND : `client.read_audit_anchor` (retries + `unreadable`) + `poll_latency`**, directement sur `main`. Je ne touche pas `pitch.md`.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 03:27
+**PUSH : main 7d0a634** — **VERT 270 passés.** `read_audit_anchor` : 3 relectures espacées de 1 s si erreur ou 0 entrée **et** ancrage audit confirmé local ; sinon `None` (pas ancré). Si toujours rien : `{unreadable: true}` -> `onchain` = `{unreadable: true, matches: null}`, **`onchain_ok` reste `null`** (jamais `false`). Panneau : « lecture impossible, réessayer ». Worker : `poll_latency=RECEIPT_POLL_SECONDS` (import paresseux, le mode off n'importe toujours pas web3). 3 tests (faux contrat : 0 entrée -> erreur 429 -> bonne valeur ; illisible != non ancré ; verify illisible). `docs/api.md` mis à jour. Délais `READ_RETRIES`/`READ_RETRY_DELAY` dans `client.py`. Tu peux relancer la démo réelle. Je ne touche plus `client.py` sans ton go ; dispo pour une review.
