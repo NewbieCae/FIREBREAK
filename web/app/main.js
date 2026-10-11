@@ -8,7 +8,7 @@ import {
   snapshotBefore, takeSnapshot,
 } from './scene.js';
 import {
-  closeDrawer, closeVersus, drawerIs, drawerOpen, openAudit, openIngest, openProof, openVersus,
+  closeDrawer, closeVersus, drawerIs, drawerOpen, openAudit, openChain, openIngest, openProof, openVersus,
   setAi, setSnapshotFn, versusOpen,
 } from './panels.js';
 
@@ -125,6 +125,7 @@ function bindHeader() {
   $('#importBtn').addEventListener('click', () => S.state && openIngest());
   $('#replayBtn').addEventListener('click', replay);
   $('#verifyBtn').addEventListener('click', () => refreshHeads(true));
+  $('#chainChip').addEventListener('click', openChain);
   $('#scrim').addEventListener('click', closeDrawer);
 }
 
@@ -132,10 +133,15 @@ async function probeChain() {
   // Ancrage Avalanche (optionnel) : rien n'est affiché si absent ou éteint.
   try {
     const st = await api('GET', '/api/chain/status');
-    if (!st || st.mode === 'off') return;
-    $('#chainChip').hidden = false;
+    S.chain = st;
+    const on = st && st.mode !== 'off';
+    $('#chainChip').hidden = !on;
+    if (!on) return;
     $('#chainChip').classList.toggle('off', !st.connected);
-    $('#chainLabel').textContent = `Avalanche · ${st.connected ? 'ancré' : 'hors ligne'}`;
+    const q = st.queue || {};
+    const busy = (q.pending || 0) + (q.sent || 0);
+    $('#chainLabel').textContent = !st.connected ? 'Avalanche · hors ligne'
+      : busy ? `Avalanche · ${busy} en cours` : `Avalanche · ${F.n(q.confirmed || 0)} ancré(s)`;
   } catch { /* endpoint absent : normal */ }
 }
 
@@ -161,13 +167,23 @@ async function refreshHeads(loud = false) {
       mark.className = j.entries ? (j.ok ? 'okmark' : 'badmark') : '';
       mark.innerHTML = j.entries ? icon(j.ok ? 'check' : 'close', 's16') : '';
       mark.title = j.ok ? 'Chaîne de hash intacte' : 'Chaîne de hash cassée';
+      if (j.onchain) {
+        mark.className = j.ok && j.onchain.matches ? 'okmark' : 'badmark';
+        mark.innerHTML = icon(j.onchain.matches ? 'chain' : 'leak', 's16');
+        if (j.onchain.matches) mark.style.color = 'var(--accent)';
+        mark.title = j.onchain.matches ? `Ancré sur Avalanche, bloc ${j.onchain.block}` : "Ne correspond plus à l'ancrage Avalanche";
+      } else mark.style.color = '';
     }
     if (loud) {
       const n = v.journals.reduce((a, j) => a + j.entries, 0);
+      const chain = v.onchain_ok == null ? '' : v.onchain_ok
+        ? ' Têtes ancrées sur Avalanche : elles correspondent.'
+        : ' Attention : un journal ne correspond plus à son ancrage Avalanche.';
+      const good = v.ok && v.onchain_ok !== false;
       toast(v.ok
-        ? `Journaux d'audit intacts : ${F.n(n)} entrées, ${v.journals.length} chaînes de hash vérifiées.`
+        ? `Journaux d'audit intacts : ${F.n(n)} entrées, ${v.journals.length} chaînes de hash vérifiées.${chain}`
         : `Chaîne cassée : ${companyName(v.first_broken.company)}, entrée #${v.first_broken.index}.`,
-      { tone: v.ok ? 'info' : 'err', ttl: 4000 });
+      { tone: good ? 'info' : 'err', ttl: 5000 });
     }
   } catch (e) {
     if (loud) fail(e, () => refreshHeads(true));
@@ -207,7 +223,12 @@ function renderActionbar() {
 }
 
 on('playing', () => renderActionbar());
-on('settled', () => { renderActionbar(); renderMenus(); refreshHeads(); applyView(); });
+on('settled', () => {
+  renderActionbar(); renderMenus(); refreshHeads(); applyView();
+  // Les ancrages partent en arrière-plan : on relit l'état de la chaîne un peu après.
+  probeChain(); setTimeout(probeChain, 2500);
+});
+on('audit-changed', () => refreshHeads());
 
 // =====================================================================
 // Actions

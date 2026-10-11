@@ -165,7 +165,9 @@ svg.i.s20 { width: 20px; height: 20px; }
 }
 .chip .led { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
 .chip.ai .led { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-.chip.chain .led { background: var(--accent); }
+.chip.chain { cursor: pointer; }
+.chip.chain:hover { color: var(--text); background: var(--glass-hover); }
+.chip.chain .led { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .chip.chain.off .led { background: var(--text-3); }
 
 /* Menus déroulants (scénario, vue partenaire) */

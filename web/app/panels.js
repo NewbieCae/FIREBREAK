@@ -235,13 +235,79 @@ export async function openAudit(company) {
     const ok = ver.ok;
     $('#auVerify').className = `verify surface ${ok ? 'ok' : 'bad'}`;
     $('#auVerify').innerHTML = `${icon(ok ? 'verified' : 'leak', 's20')}<span>${ok
-      ? `Chaîne intacte : ${F.n(j?.entries ?? log.entries.length)} entrée(s) vérifiée(s)`
+      ? `Chaîne locale intacte : ${F.n(j?.entries ?? log.entries.length)} entrée(s) vérifiée(s)`
       : `Chaîne cassée à l'entrée #${j?.first_broken_index}`}</span><span class="mono">${F.tok(log.head, 6, 6)}</span>`;
+    const oc = j?.onchain;
+    if (oc) {
+      const box = el('div', `verify surface ${oc.matches ? 'ok' : 'bad'}`);
+      const link = oc.explorer_link ? ` · <a href="${F.esc(oc.explorer_link)}" target="_blank" rel="noopener" style="color:var(--accent)">explorateur</a>` : '';
+      box.innerHTML = `${icon(oc.matches ? 'chain' : 'leak', 's20')}<span>${oc.matches
+        ? `Ancré sur Avalanche, bloc ${F.n(oc.block)} : le journal correspond (${F.n(oc.anchored_entries)} entrées)`
+        : `Ne correspond plus à l'ancrage Avalanche du bloc ${F.n(oc.block)} : journal réécrit`}${link}</span><span class="mono">${F.tok(oc.anchored_head, 6, 6)}</span>`;
+      if (oc.matches) box.querySelector('svg').style.color = 'var(--accent)';
+      $('#auVerify').after(box);
+      if (oc.matches && S.chain?.mode !== 'off' && log.entries.length) {
+        const ev = log.entries.find((e) => e.event === 'alert_received') || log.entries[0];
+        const b = el('button', 'btn ghost', `${icon('leak', 's16')}<span>Simuler une réécriture du journal (démo)</span>`);
+        b.addEventListener('click', async () => {
+          try {
+            await api('POST', '/api/demo/rewrite', { company, drop_event: ev.event });
+            emit('audit-changed');
+            openAudit(company);
+          } catch (err) { fail(err); }
+        });
+        box.after(b);
+      }
+    }
     $('#auList').innerHTML = log.entries.length
       ? log.entries.map(auditLine).join('')
       : `<li><div class="ci">${icon('audit', 's16')}</div><div class="cd" style="padding-top:6px">Journal vide : aucun événement depuis la réinitialisation.</div></li>`;
   } catch (e) {
     if (token === drawerToken) fail(e, () => openAudit(company));
+  }
+}
+
+// =====================================================================
+// Preuves sur Avalanche (optionnel : affiché seulement si la chaîne est active)
+// =====================================================================
+
+const ANCHOR_KIND = { audit: 'Tête de journal d\'audit', alert: 'Alerte signée', incident: 'Déclaration d\'incident', ack: 'Accusé de réception' };
+const ANCHOR_ICON = { audit: 'audit', alert: 'alert', incident: 'declaration', ack: 'check' };
+const ANCHOR_STATUS = {
+  confirmed: ['a', 'confirmé'], sent: ['r', 'envoyé'], pending: ['r', 'en attente'], failed: ['q', 'échec'],
+};
+
+export async function openChain() {
+  const token = openDrawer('chain', `
+    ${head({ ico: 'chain', title: 'Preuves sur Avalanche', sub: '<span>Des empreintes, jamais de données métier. La chaîne ne décide rien : elle rend la preuve infalsifiable.</span>' })}
+    <div class="drawer-body">
+      <section class="facts" id="chFacts"><div class="sk block"></div><div class="sk block"></div></section>
+      <section><h3 class="sec-title">${icon('chain', 's16')}Ancrages<span class="aside" id="chCount"></span></h3>
+        <ol class="chainlist" id="chList"><li><div class="sk block" style="grid-column:span 2"></div></li></ol></section>
+    </div>`);
+  try {
+    const [st, anchors] = await Promise.all([api('GET', '/api/chain/status'), api('GET', '/api/chain/anchors')]);
+    if (token !== drawerToken) return;
+    S.chain = st;
+    const q = st.queue || {};
+    $('#chFacts').innerHTML = `
+      <div class="fact surface"><div class="f-k">Mode</div><div class="f-v">${st.mode === 'l1' ? 'Avalanche L1' : st.mode === 'tester' ? 'EVM en mémoire (test)' : 'désactivé'}</div></div>
+      <div class="fact surface"><div class="f-k">Connexion</div><div class="f-v" style="color:${st.connected ? 'var(--accent)' : 'var(--q)'}">${st.connected ? 'connectée' : 'hors ligne'}</div></div>
+      <div class="fact surface"><div class="f-k">Chain ID</div><div class="f-v mono">${F.esc(st.chain_id ?? '—')}</div></div>
+      <div class="fact surface"><div class="f-k">Dernier bloc</div><div class="f-v mono">${F.esc(st.last_block ?? '—')}</div></div>
+      <div class="fact surface wide"><div class="f-k">Contrat</div><div class="f-v mono">${F.esc(st.contract || '—')}</div></div>
+      <div class="fact surface wide"><div class="f-k">File d'envoi</div><div class="f-v">${F.n(q.confirmed || 0)} confirmé(s) · ${F.n((q.pending || 0) + (q.sent || 0))} en cours · ${F.n(q.failed || 0)} échec(s)</div></div>`;
+    $('#chCount').textContent = `${anchors.length} ancrage${anchors.length > 1 ? 's' : ''}`;
+    $('#chList').innerHTML = anchors.length ? [...anchors].reverse().map((a) => {
+      const [tone, label] = ANCHOR_STATUS[a.status] || ['n', a.status];
+      const link = a.explorer_link ? `<a href="${F.esc(a.explorer_link)}" target="_blank" rel="noopener" style="color:var(--accent)">explorateur</a>` : '';
+      return `<li><div class="ci">${icon(ANCHOR_ICON[a.kind] || 'chain', 's16')}</div><div>
+        <div class="ce">${ANCHOR_KIND[a.kind] || F.esc(a.kind)} <span class="badge ${tone}" style="height:20px;font-size:11px" ${a.error ? `title="${F.esc(a.error)}"` : ''}>${label}</span></div>
+        <div class="cd">${F.esc(companyName(a.company))}${a.block != null ? ` · bloc ${F.n(a.block)}` : ''} ${link}</div>
+        <div class="ch mono"><span>${F.tok(a.hash, 6, 6)}</span>${a.tx_hash ? `<span class="arrow">tx</span><span>${F.tok(a.tx_hash, 6, 6)}</span>` : ''}</div></div></li>`;
+    }).join('') : `<li><div class="ci">${icon('chain', 's16')}</div><div class="cd" style="padding-top:6px">Aucun ancrage pour l'instant : déclarez une compromission.</div></li>`;
+  } catch (e) {
+    if (token === drawerToken) fail(e, openChain);
   }
 }
 
