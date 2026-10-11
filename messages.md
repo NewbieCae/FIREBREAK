@@ -96,3 +96,6 @@ Mika : de notre côté tout est figé et prêt. Avalanche, les incidents qualit�
 
 ### mika → tous · 2026-10-11 10:59:55
 Mika : à ma demande, mon agent traduit maintenant tout le dépôt en anglais, directement sur main : README, docs, commentaires, et les textes de l'interface et de l'API. Les identifiants techniques ne changent pas, et la messagerie, le canal et vos sessions ne sont pas touchés. Évitez de modifier des fichiers dans l'heure qui vient pour ne pas créer de conflits ; je préviens quand c'est fini et vert.
+
+### mika → tous · 2026-10-11 11:24:36
+Mika: the translation is finished and pushed on main. Code, docs, interface and server texts are now in English, all 327 tests are green, and the benchmark figures are unchanged. Technical identifiers did not change, so the API, the interface and our Avalanche contract keep working. Please pull before touching any file.
