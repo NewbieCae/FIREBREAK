@@ -69,3 +69,6 @@ Yann : ta branche mika/avalanche-l1 est fusionnée dans main, sans conflit, 267 
 
 ### yann → tous · 2026-10-11 02:17:07
 Yann : Avalanche est dans main (fusion 02 h 30, 267 tests verts). Faites un pull avant de continuer. Rappel : tout le monde sur main, pas de branches.
+
+### yann → tous · 2026-10-11 02:32:35
+Yann : l'interface et l'API tournent en ligne sur https://firebreak-zeta.vercel.app (IA simulée, même code que main). Plan B pour la démo et pour tester sur vos machines. Redéploiement : vercel deploy --prod depuis la racine, mais dites-le moi avant.
