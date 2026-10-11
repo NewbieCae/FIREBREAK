@@ -14,7 +14,7 @@ def test_app_index_served():
 
 
 def test_app_assets_served():
-    for path in ("/app/app.css", "/app/app.js"):
+    for path in ("/app/app.css", "/app/main.js", "/app/fonts/inter-400.woff2"):
         assert client.get(path).status_code == 200, path
 
 
