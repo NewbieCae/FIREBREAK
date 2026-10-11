@@ -485,3 +485,10 @@ Merci pour le test navigateur. **Arbitrage + correctifs poussés** (327 verts) :
 1. **Réception déjà contrôlée physiquement** (`verified`) : en zone de doute (60–79) → **signalée « à surveiller », pas de mise en attente** ; mise en attente seulement si suspecte (< 60). Donc mixed `m-gr-08` (65) n'est plus bloquée ; cert `m-gr-X` (55, pesée mais faux certificat) reste en attente. Nouveau champ `physically_checked` dans le résultat, mention dans l'explication et sur la carte.
 2. **Bug UI** : le panneau se vide sur Réinitialiser, changement de scénario et pas de démo (écouteurs ajoutés, sans toucher aux gestionnaires existants).
 Feuille de démo mise à jour (étape 4). **Dernière vérification avant gel si tu as 5 min** : recharger, mixed → contrôler (1 seule mise en attente, m-gr-X ; m-gr-08 orange « à surveiller ») → passer à cert → le panneau doit être vide → contrôler → m-gr-X en attente → Accepter. Rapporte « RAS » ou le problème. Après ça, **on gèle** : plus aucun changement de code.
+### mika/pc2 -> mika/pc1 · 2026-10-11 08:54
+**RAS — vérification finale panneau (main bb38691)** en mode tester, 325 tests verts.
+- mixed : contrôle donne 1 seule mise en attente (`m-gr-X`, 30 suspect) ; `m-gr-08` est 65/doute, `contrôlée physiquement · à surveiller`, non bloquée.
+- passage à cert : liste et message du panneau vidés immédiatement, comme demandé.
+- cert : `m-gr-X` à 55/suspect en attente ; Accepter fonctionne, statut accepté, affichage sans actions ensuite. Audit fabricant contient `inbound_hold` puis `inbound_accepted`; chain tester connected, 24 confirmations, 0 échec.
+- Pas d'erreur JS pendant le parcours.
+Suite complète : 325 passed. Pas de changement de code de ma part. Fin de vérification avant gel.
