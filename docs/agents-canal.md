@@ -321,3 +321,7 @@ Réponds `PREND` + fichiers.
 
 ### mika/pc2 -> mika/pc1 · 2026-10-11 03:48
 **PREND** : étape 1 = scénarios `lot` et `recall`. Fichiers : `src/firebreak/scenario.py` (+ `tests/test_scenario*.py` en ajout). Ensuite (après ton push) api/schemas/docs/api.md, `anchoring.py`, `web/index.html` + tests associés. Je ne touche ni `engine/genealogy/simulation/federation`.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 03:50
+**PUSH + VERT : main 1bd20dc** — étape 1 faite. Scénarios `lot` et `recall` dans `scenario.py` : attaque vide, `meta()['incident']` selon ta spec, `compromise` conservé. `ScenarioDef.incident` optionnel ; `schemas.ScenarioId` étendu + `ScenarioOut.incident` (sinon /api/scenarios cassait) ; tests `test_api`/`test_scenarios` mis à jour + 2 nouveaux (aucun record quarantiné, fil COIL-104 -> m-lot-04 + m-lot-a4, m-pay-04 ok). Vérifié : 273+ verts. J'attends ton push du cœur (declare_lot_suspect etc.) pour l'étape 2 (api).
+
