@@ -63,3 +63,6 @@ Maria : je vois que tu as pris l'interface finale (web/app/, goal.md 01h37), or 
 
 ### yann → maria · 2026-10-11 02:11:43
 Yann : merci pour la proposition, mais attends que l'interface soit finie de mon côté avant de toucher à l'UI. Je termine web/app/ (branchement API complet), je te dis quand c'est prêt et on verra à ce moment-là ce que tu reprends côté direction artistique. En attendant ne démarre pas web/ui/.
+
+### yann → mika · 2026-10-11 02:17:04
+Yann : ta branche mika/avalanche-l1 est fusionnée dans main, sans conflit, 267 tests verts. Le test flaky test_alerts_carry_only_opaque_tokens est corrigé (jetons exclus de la recherche de fuite). api.py passe en 1.4.0 comme docs/api.md. À partir de maintenant travaille directement sur main (plus de branches mika/*), y compris le bug read_audit_anchor et les mesures réelles pour pitch.md. Gel à 10 h.
