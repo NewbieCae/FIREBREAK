@@ -66,3 +66,6 @@ Yann : merci pour la proposition, mais attends que l'interface soit finie de mon
 
 ### yann → mika · 2026-10-11 02:17:04
 Yann : ta branche mika/avalanche-l1 est fusionnée dans main, sans conflit, 267 tests verts. Le test flaky test_alerts_carry_only_opaque_tokens est corrigé (jetons exclus de la recherche de fuite). api.py passe en 1.4.0 comme docs/api.md. À partir de maintenant travaille directement sur main (plus de branches mika/*), y compris le bug read_audit_anchor et les mesures réelles pour pitch.md. Gel à 10 h.
+
+### yann → tous · 2026-10-11 02:17:07
+Yann : Avalanche est dans main (fusion 02 h 30, 267 tests verts). Faites un pull avant de continuer. Rappel : tout le monde sur main, pas de branches.
