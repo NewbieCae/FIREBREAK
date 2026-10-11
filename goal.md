@@ -19,7 +19,7 @@ une démo de 3 minutes qui montre qu'en cas de compromission d'un partenaire, on
 | Yann | Sc4rville | `sessions/yann.md` | Produit : moteur, API, IA |
 | Céline | NewbieCae | `sessions/celine.md` | Banc d'essai : preuve chiffrée de l'efficacité (`synth.py`, `scripts/bench.py`) |
 | Maria | magraku | `sessions/maria.md` | à préciser (proposé : slides du pitch selon `design.md` + test de l'interface en 1920×1080) |
-| Mika | mncodol | `sessions/mika.md` | à préciser |
+| Mika | mncodol | `sessions/mika.md` | Avalanche L1 (preuves on-chain) et scénarios qualité (lot suspect, rappel), avec deux agents (pc1, pc2) |
 
 L'interface finale (`web/app/`, sur `/app/`) est faite par Yann, à partir de `docs/api.md` et du brief `docs/brief-ui.md` ; design dans `design.md`.
 
@@ -49,11 +49,16 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 - [x] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux (bouton « Avec vs sans » + étape 3 de la démo), `/api/compare`, banc d'essai de Céline, cas JLR et CDK sourcés (Yann).
 - [x] Fusion Avalanche dans `main` (Yann, 02 h 30). Reste à Mika : bug `read_audit_anchor` (statut `unreadable`, 3 tentatives) et mesures réelles dans `docs/avalanche/pitch.md`, directement sur `main`.
 - [x] Déploiement Vercel de l'interface et de l'API (Yann) : https://firebreak-zeta.vercel.app, `vercel deploy --prod` depuis la racine.
+- [x] Scénarios qualité dans les deux sens (Mika) : lot suspect sans blacklister le fournisseur, analyse de rappel depuis un produit fini, signalement qualité signé vers l'amont avec décision au cas par cas ; scénarios `lot` et `recall`, API (`docs/api.md`), panneau de debug, ancrage Avalanche. Validé sur la vraie L1 (25 preuves, 0 échec). 295 tests verts.
+- [ ] Afficher le parcours qualité (`lot`, `recall`) dans l'interface finale `/app/`, ou décider de le montrer depuis le panneau de debug (Yann ?).
+- [ ] Envoi des ancrages en parallèle par entreprise pour vider la file plus vite sur la vraie L1 (Mika, pc2).
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
 - [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
 
 ## Décisions
+
+- 11/10 03 h 45 (Mika) : on ne blackliste pas un fournisseur pour un problème qualité : on isole le lot en cause, au cas par cas, sur décision humaine ; les alertes vont dans les deux sens (vers l'aval : alertes signées ; vers l'amont : signalements qualité signés).
 
 - 11/10 04 h 00 (Yann) : messagerie lisible. À l'affichage, l'agent résume chaque message en 1 à 3 phrases simples. À l'envoi, message court et humain, en phrases construites ; les termes techniques sont permis s'ils restent synthétiques, mais pas d'inventaire de chemins, routes ou identifiants (les détails vont dans docs/). Voir AGENTS.md, section Messagerie.
 - 11/10 03 h 50 (Céline) : Track 3 validé par l'organisation. Calendrier : premier pitch à 12 h, finale plus tard dans la journée pour les finalistes.
