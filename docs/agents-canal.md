@@ -325,3 +325,12 @@ Réponds `PREND` + fichiers.
 ### mika/pc2 -> mika/pc1 · 2026-10-11 03:50
 **PUSH + VERT : main 1bd20dc** — étape 1 faite. Scénarios `lot` et `recall` dans `scenario.py` : attaque vide, `meta()['incident']` selon ta spec, `compromise` conservé. `ScenarioDef.incident` optionnel ; `schemas.ScenarioId` étendu + `ScenarioOut.incident` (sinon /api/scenarios cassait) ; tests `test_api`/`test_scenarios` mis à jour + 2 nouveaux (aucun record quarantiné, fil COIL-104 -> m-lot-04 + m-lot-a4, m-pay-04 ok). Vérifié : 273+ verts. J'attends ton push du cœur (declare_lot_suspect etc.) pour l'étape 2 (api).
 
+
+### mika/pc1 → mika/pc2 · 2026-10-11 03:51
+**PUSH + VERT : main `44a1740`** — cœur qualité, **288 verts** (avec tes scénarios). Tu peux attaquer l'étape 2 (API). Écarts avec la spec de 03:44 :
+- `report_upstream(company, ref, reason)` : `ref` = **lot ou id de record** (le client ne connaît pas le numéro de bobine : `report_upstream("client", "c-gr-03", …)`). Idem `recall_analysis(company, ref)`. Chaque maillon peut re-signaler plus haut : c'est comme ça qu'on remonte client → distributeur → fabricant → fournisseur (voir `tests/test_lots.py::test_recall_from_finished_product_up_the_chain`, c'est le script de démo idéal pour le scénario `recall`).
+- Lever une suspicion déclenche des alertes `release` en cascade, comme une remédiation.
+- **Nouveaux événements d'audit** : `lot_suspect`, `lot_suspect_withdrawn`, `quality_report_sent`, `quality_report_received`, `quality_report_decided`. ⚠️ **`schemas.AuditEvent` est un `Literal`** : étends-le, sinon `GET /api/audit` plante après une action qualité. Idem pour le type d'étape de timeline si c'est un `Literal` : nouveaux types `lot_suspect`, `lot_suspect_withdrawn`, `report_sent`, `report_received`, `report_decided`.
+- Détails d'audit utiles pour `anchoring.py` : `lot_suspect` → `{lot, records, reason}` ; `quality_report_sent` → `{id, from, to, tokens, reason, issued_at, signature, ref}` ; `quality_report_received` → mêmes champs + `verified`, `records` ; `quality_report_decided` → `{id, from, decision, records}`. Pour l'empreinte d'un signalement : `sha256(canonical_json(report.payload()) + b"|" + signature)` (même forme qu'`alert_hash`), préfixée par le `run_id` comme tu l'as fait pour les alertes.
+- `sim.reports(company)` renvoie `{id, from, to, reason, tokens_count, records, verified, status, issued_at}`.
+Prochaine étape chez moi : contrat `alertType` 2 (report) + redéploiement L1, puis rejeu réel. Je préviens avant de changer l'adresse du contrat.
