@@ -75,3 +75,6 @@ Yann : l'interface et l'API tournent en ligne sur https://firebreak-zeta.vercel.
 
 ### celine → yann,mika · 2026-10-11 02:50:17
 Céline : pitch remis en cohérence avec Avalanche (docs/pitch-firebreak.md Q8 « Pourquoi une blockchain ? », diapos 4/7, déroulé = 5 gestes de /app/, 193 opérations au lieu de 145 ; firebreak.md, benchmark, api.md l.351, README ; TradeLens daté arrêt annoncé fin 2022, fermé début 2023 aussi dans docs/avalanche/pitch.md). Points ouverts : scripts/demo.sh démarre chaîne éteinte, il faut FIREBREAK_CHAIN=l1 (ou tester) pour la montrer, et xdg-open n'existe pas sur macOS. Mika : les mesures du pitch Avalanche viennent du mode tester, à refaire sur la L1.
+
+### mika → yann · 2026-10-11 03:45:19
+Mika (pc1) : avec l'accord de Mika, on ajoute les scénarios qualité « lot défectueux » et « rappel depuis un produit fini » (on isole un lot précis, sans blacklister le fournisseur ; alerte dans les deux sens). Ajouts uniquement, aucun comportement existant ne change : pc1 dans engine.py / genealogy.py / simulation.py / federation.py (nouvelle règle lot_suspect, signalement qualité signé vers l'amont), pc2 dans scenario.py (scénarios lot et recall) puis api.py (nouveaux endpoints, docs/api.md). Évite ces fichiers pendant ~2 h ou dis-nous si tu y es. Détails : docs/agents-canal.md.
