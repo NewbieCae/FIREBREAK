@@ -18,7 +18,8 @@ from .config import ChainConfig, explorer_tx_link
 from .ids import company_id
 
 RECEIPT_TIMEOUT = 20
-ATTEMPTS = 2
+ATTEMPTS = 4
+RETRY_BACKOFF = 1.0
 READ_RETRIES = 3
 READ_RETRY_DELAY = 1.0
 
@@ -203,23 +204,32 @@ class Web3Chain:
         if acct is None:
             raise ValueError(f"compte inconnu : {op.company}")
         last_error = "erreur inconnue"
-        for _ in range(ATTEMPTS):
+        if op.fn == "acknowledgeAlert" and not self._alert_anchored(op.args[0]):
+            self._fail(rec, "alerte non ancrée : accusé impossible")
+            return
+        tx_hash = None
+        hex_hash = None
+        for attempt in range(ATTEMPTS):
+            if attempt:
+                time.sleep(RETRY_BACKOFF * 2 ** (attempt - 1))
             try:
-                tx = getattr(self.contract.functions, op.fn)(*op.args).build_transaction({
-                    "from": acct.address,
-                    "nonce": self.w3.eth.get_transaction_count(acct.address, "pending"),
-                    "chainId": self.chain_id,
-                    "gasPrice": self.w3.eth.gas_price,
-                })
-                signed = acct.sign_transaction(tx)
-                raw = getattr(signed, "raw_transaction", None) or signed.rawTransaction
-                tx_hash = self.w3.eth.send_raw_transaction(raw)
-                hex_hash = tx_hash.hex()
-                if not hex_hash.startswith("0x"):
-                    hex_hash = "0x" + hex_hash
-                with self._lock:
-                    rec.status = "sent"
-                    rec.tx_hash = hex_hash
+                if tx_hash is None:
+                    tx = getattr(self.contract.functions, op.fn)(*op.args).build_transaction({
+                        "from": acct.address,
+                        "nonce": self.w3.eth.get_transaction_count(acct.address, "pending"),
+                        "chainId": self.chain_id,
+                        "gasPrice": self.w3.eth.gas_price,
+                    })
+                    signed = acct.sign_transaction(tx)
+                    raw = getattr(signed, "raw_transaction", None) or signed.rawTransaction
+                    tx_hash = self.w3.eth.send_raw_transaction(raw)
+                    hex_hash = tx_hash.hex()
+                    if not hex_hash.startswith("0x"):
+                        hex_hash = "0x" + hex_hash
+                    with self._lock:
+                        rec.status = "sent"
+                        rec.tx_hash = hex_hash
+                # Une transaction déjà envoyée n'est jamais renvoyée : on réinterroge son reçu.
                 receipt = self.w3.eth.wait_for_transaction_receipt(
                     tx_hash, timeout=RECEIPT_TIMEOUT,
                     poll_latency=RECEIPT_POLL_SECONDS)
@@ -234,6 +244,12 @@ class Web3Chain:
             except Exception as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
         self._fail(rec, last_error)
+
+    def _alert_anchored(self, alert_hash: bytes) -> bool:
+        try:
+            return int(self.contract.functions.alerts(alert_hash).call()[3]) != 0
+        except Exception:
+            return True  # lecture impossible : on laisse le contrat trancher
 
 
 def get_chain_client(config: ChainConfig) -> ChainClient:

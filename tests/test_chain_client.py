@@ -142,6 +142,95 @@ def test_verify_onchain_illisible_ne_dit_pas_falsifie():
     assert all(v == {"unreadable": True} for v in res.values())
 
 
+def _send_fakes(monkeypatch, fail_sends=0, fail_receipts=0, alert_anchored_at=1):
+    import firebreak.chain.client as mod
+    monkeypatch.setattr(mod, "RETRY_BACKOFF", 0)
+    state = {"sends": 0, "receipts": 0}
+
+    class Tx:
+        def build_transaction(self, params):
+            return params
+
+    class Fns:
+        def anchorAlert(self, *a):
+            return Tx()
+
+        def acknowledgeAlert(self, *a):
+            return Tx()
+
+        def alerts(self, h):
+            class C:
+                def call(_):
+                    return (b"", b"", 0, alert_anchored_at, 0)
+            return C()
+
+    class Contract:
+        functions = Fns()
+
+    class Signed:
+        raw_transaction = b"raw"
+
+    class Acct:
+        address = "0xabc"
+
+        def sign_transaction(self, tx):
+            return Signed()
+
+    class Eth:
+        chain_id = 1
+        gas_price = 1
+
+        def get_transaction_count(self, *a):
+            return 0
+
+        def send_raw_transaction(self, raw):
+            state["sends"] += 1
+            if state["sends"] <= fail_sends:
+                raise ConnectionError("réseau")
+            return bytes.fromhex("11" * 32)
+
+        def wait_for_transaction_receipt(self, h, timeout, poll_latency):
+            state["receipts"] += 1
+            if state["receipts"] <= fail_receipts:
+                raise TimeoutError("reçu")
+            return {"status": 1, "blockNumber": 9}
+
+    class W3:
+        eth = Eth()
+
+    chain = mod.Web3Chain(ChainConfig(mode="tester"), W3(), Contract(),
+                          {"fabricant": Acct()})
+    return chain, state
+
+
+def _op(fn):
+    args = (b"\0" * 32, b"\1" * 32, b"\2" * 32, 0) if fn == "anchorAlert" else (b"\1" * 32,)
+    return ChainOp("alert", "fabricant", fn, args, "0x" + "01" * 32)
+
+
+def test_envoi_retente_avec_attente_puis_confirme(monkeypatch):
+    chain, state = _send_fakes(monkeypatch, fail_sends=2)
+    rec = chain.submit(_op("anchorAlert"))
+    chain.flush(5)
+    assert rec.status == "confirmed" and state["sends"] == 3
+
+
+def test_reçu_manquant_ne_renvoie_pas_de_transaction(monkeypatch):
+    chain, state = _send_fakes(monkeypatch, fail_receipts=2)
+    rec = chain.submit(_op("anchorAlert"))
+    chain.flush(5)
+    assert rec.status == "confirmed"
+    assert state["sends"] == 1 and state["receipts"] == 3
+
+
+def test_ack_sans_alerte_ancree_echoue_clairement(monkeypatch):
+    chain, state = _send_fakes(monkeypatch, alert_anchored_at=0)
+    rec = chain.submit(_op("acknowledgeAlert"))
+    chain.flush(5)
+    assert rec.status == "failed" and "alerte non ancrée" in rec.error
+    assert state["sends"] == 0
+
+
 def test_l1_injoignable_ne_leve_pas():
     cfg = ChainConfig(mode="l1", rpc_url="http://127.0.0.1:1", chain_id=1,
                       mnemonic="test test test test test test test test test "
