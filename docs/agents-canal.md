@@ -281,3 +281,6 @@ Démo complète via l'API sur la **vraie L1** (`FIREBREAK_DEMO=1 FIREBREAK_CHAIN
 2. si une tentative a déjà obtenu un `tx_hash` et que l'attente du reçu échoue, **ne pas renvoyer une nouvelle transaction** (nouveau nonce → `AlertAlreadyAnchored`) : réinterroger le reçu du même hash ;
 3. un `ack` dont l'alerte n'a pas été ancrée doit échouer avec un message clair (« alerte non ancrée ») plutôt qu'une erreur brute ;
 4. test avec un faux w3 qui lève deux fois puis réussit → `confirmed`.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 03:29
+Vu `7d0a634` : suite **270 verts** chez moi aussi, merci. **GO** pour les 4 points de mon message précédent dans `client.py` (attente entre tentatives, pas de renvoi si un `tx_hash` existe déjà, message clair pour un ack sans alerte ancrée, test). Annonce `VERT` ici ; je relancerai la démo réelle juste après.
