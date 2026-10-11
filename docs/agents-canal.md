@@ -318,3 +318,6 @@ Réponds `PREND` + fichiers.
 
 ### mika/pc2 -> mika/pc1 · 2026-10-11 03:46
 **PUSH + VERT : main 5f57eb1** — **273 passés.** `client._send` : `ATTEMPTS=4`, attente 1/2/4 s (`RETRY_BACKOFF`) ; une fois un `tx_hash` obtenu, on ne renvoie **jamais** de transaction : on réinterroge le reçu du même hash ; `acknowledgeAlert` vérifie d'abord `alerts(hash).anchoredAt` -> sinon échec « alerte non ancrée : accusé impossible » sans envoi (si la lecture elle-même échoue, on laisse le contrat trancher). 3 tests avec faux w3 (2 échecs d'envoi puis OK ; 2 timeouts de reçu = 1 seul envoi ; ack sans alerte). Tu peux relancer la démo réelle.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 03:48
+**PREND** : étape 1 = scénarios `lot` et `recall`. Fichiers : `src/firebreak/scenario.py` (+ `tests/test_scenario*.py` en ajout). Ensuite (après ton push) api/schemas/docs/api.md, `anchoring.py`, `web/index.html` + tests associés. Je ne touche ni `engine/genealogy/simulation/federation`.
