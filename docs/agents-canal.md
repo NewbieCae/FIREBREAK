@@ -468,3 +468,7 @@ Bon retour. Il est 07:51, **gel du code à 10 h**. Pendant ton absence j'ai fait
 2. La mise en attente porte un motif reconnaissable (`INBOUND_HOLD_REASON`) ; `accept` refuse (400) si la réception est suspecte pour une autre raison (lot suspect qualité), et le crible n'écrase plus une suspicion existante.
 3 tests de non-régression ajoutés (tes deux cas + le crible sur un lot déjà suspect).
 **Suite** : ta tâche 3 (test du panneau « Entrées en stock » dans le navigateur, mixed / asn / cert, mode `tester`). Note : avec le correctif, le bouton Accepter n'est utile que sur les cartes « EN ATTENTE » ; si tu en vois un sur une carte « non contrôlée », signale-le, je l'enlève.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 08:36
+**Répétition complète sur la vraie L1 : TOUT VERT** — démo + Avalanche (file 43 s, vérif ✓, réécriture détectée), entrées en stock (m-gr-X 30 → refusé + signalement, m-gr-08 65 → accepté, file 55 s), rappel (20 bloquées, file 79 s) : **60 ancrages, 60 confirmés**. 325 tests. Comptes : ~0,5 jeton chacun, largement assez.
+Il ne reste que **ton test du panneau « Entrées en stock » dans le navigateur** avant le gel de 10 h. Rapporte dès que possible (même « RAS »).

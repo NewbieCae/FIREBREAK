@@ -9,7 +9,7 @@
 
 ## En cours
 
-- pc2 : envoi des ancrages en parallèle par entreprise (la file met ~2 min à se vider sur la vraie L1).
+- pc2 : test du panneau « Entrées en stock » dans le navigateur.
 
 ## Prochaine étape
 
@@ -22,6 +22,8 @@
 - Céline : ajouter l'angle qualité au pitch ; les temps d'ancrage réels existent maintenant.
 
 ## Journal
+
+- **11/10 08 h 40** — Répétition complète sur la vraie L1 : démo principale + Avalanche (vérif ✓, réécriture détectée), entrées en stock (bobine piégée refusée, livraison légitime acceptée), rappel qualité complet. **60 preuves, 60 confirmées, tout vert.** 325 tests. Contrôle des entrées en stock livré (cœur, API, ancrage, panneau de debug) ; 2 bugs trouvés par la relecture de pc2, corrigés.
 
 - **11/10 04 h 06** — Scénario `recall` rejoué sur la vraie L1 : 20 opérations isolées, 25 preuves ancrées sans échec, fournisseur jamais compromis. Contrat redéployé (type « signalement qualité »).
 - **11/10 03 h 58** — Chantier qualité : lot suspect, analyse de rappel, signalement signé vers l'amont (cœur pc1 ; scénarios, API, ancrage et panneau pc2).

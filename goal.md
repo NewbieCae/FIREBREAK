@@ -52,7 +52,8 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 - [x] Scénarios qualité dans les deux sens (Mika) : lot suspect sans blacklister le fournisseur, analyse de rappel depuis un produit fini, signalement qualité signé vers l'amont avec décision au cas par cas ; scénarios `lot` et `recall`, API (`docs/api.md`), panneau de debug, ancrage Avalanche. Validé sur la vraie L1 (25 preuves, 0 échec). 295 tests verts.
 - [x] Afficher le parcours qualité (`lot`, `recall`) dans l'interface finale `/app/` (Yann) : gestes guidés dans le dock (« Étape 2/6 · Distributeur »), tiroir d'analyse de rappel, levée du lot ; « Avec vs sans » masqué sur ces scénarios (pas de déclaration à comparer).
 - [x] Refonte visuelle de `/app/` en registre keynote (Yann) : noir, horizon granuleux, sans boîtes, Geist, nouveau logo ; `design.md` réécrit.
-- [ ] Envoi des ancrages en parallèle par entreprise pour vider la file plus vite sur la vraie L1 (Mika, pc2).
+- [x] Envoi des ancrages optimisé (Mika, pc2) : démo 19/19 en ~40 s, rappel 25/25 en ~80 s sur la vraie L1.
+- [x] Contrôle des entrées en stock (Mika) : note de confiance /100 de chaque réception (commande, pièce, quantité, date, certificat, lot, RIB, alertes), mise en attente sous 80, décision humaine (accepter / refuser + signalement au fournisseur). Sur les 3 attaques, le lot piégé est arrêté à la réception. API, ancrage, panneau de debug ; feuille de démo `docs/demo-avalanche-qualite.md`. Répétition sur la vraie L1 à 08 h 40 : 60 preuves, 0 échec.
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
 - [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
