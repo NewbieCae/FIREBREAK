@@ -14,6 +14,8 @@ const dots = new Map();      // id → bouton .dot
 const pos = new Map();       // id → {x, y} dans le repère de la carte
 const panels = new Map();    // company → article
 let flows = [];              // arêtes cross animées
+// Accès de diagnostic depuis la console (lecture seule).
+window.__firebreak = { S, pos, dots, flows: () => flows };
 const flashing = new Map();  // id → échéance du flash ambre (particules)
 
 // =====================================================================
@@ -120,7 +122,10 @@ function renderMap() {
     p.style.animation = `rise 420ms ${EASE} ${ci * 70}ms both`;
   });
   applyView();
-  requestAnimationFrame(() => requestAnimationFrame(measure));
+  // Mesure immédiate, puis après l'entrée animée des panneaux (≈ 650 ms).
+  measure();
+  setTimeout(measure, 120);
+  setTimeout(measure, 900);
 }
 
 function paintDot(id, s) {
