@@ -4,6 +4,28 @@ Secure Horizons 2026 · Team 14 · Track 3 « Uncharted Frontiers ».
 
 > Quand un partenaire d'une chaîne d'approvisionnement est compromis, on isole **ce qui est contaminé**, pas toute l'activité.
 
+<p align="center">
+  <a href="https://firebreak-zeta.vercel.app/video/firebreak-demo.mp4"><img src="assets/video/firebreak-demo-thumbnail.png" alt="Watch the 3-minute FIREBREAK demo" width="100%"></a>
+</p>
+
+<p align="center">
+  <b><a href="https://firebreak-zeta.vercel.app/video/firebreak-demo.mp4">▶ Watch the 3-minute demo</a></b> &nbsp;·&nbsp;
+  <a href="https://firebreak-zeta.vercel.app/app/">Try the live app</a> &nbsp;·&nbsp;
+  <a href="docs/fiche-defense.md"><b>Defense sheet</b></a> &nbsp;·&nbsp;
+  <a href="assets/video/firebreak-demo-en.mp4">Download the video</a>
+</p>
+
+## For the jury
+
+| | |
+|---|---|
+| 🎬 **Demo video (3 min)** | [Watch it in your browser](https://firebreak-zeta.vercel.app/video/firebreak-demo.mp4) · [download from the repo](assets/video/firebreak-demo-en.mp4) |
+| 🛡️ **Defense sheet** | [docs/fiche-defense.md](docs/fiche-defense.md) — the threat, how FIREBREAK works, what we tested and the results, known limitations, accountability |
+| 🖥️ **Live app** | [firebreak-zeta.vercel.app/app](https://firebreak-zeta.vercel.app/app/) — press <kbd>→</kbd> to play the demo gestures, click any red operation for its proof |
+| 🎤 **Pitch** | [docs/pitch-firebreak.md](docs/pitch-firebreak.md) · demo script: [docs/demo.md](docs/demo.md) |
+| 📊 **Measured results** | [docs/bench-results.md](docs/bench-results.md) |
+
+
 ## Le problème
 
 Les entreprises d'une même chaîne échangent des données en continu : commandes, stocks, avis d'expédition, certificats, factures. Si l'une d'elles est compromise, elle peut injecter de fausses données chez ses partenaires. Ceux-ci n'ont aujourd'hui que deux options : tout couper avec elle et paralyser l'activité, ou continuer et laisser passer l'attaque.
