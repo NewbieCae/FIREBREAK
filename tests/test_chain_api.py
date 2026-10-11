@@ -98,3 +98,26 @@ def test_tester_anchor_force(tester_client):
     r = tester_client.post("/api/chain/anchor")
     assert r.status_code == 200
     assert r.json() and all(a["kind"] == "audit" for a in r.json())
+
+
+def test_tester_quality_anchoring(tester_client, monkeypatch):
+    monkeypatch.setattr(api, "sim", build_simulation("recall"))
+    api.anchorer.on_new_simulation(api.sim)
+    c = tester_client
+    (rep,) = c.post("/api/reports", json={
+        "company": "client", "ref": "c-gr-03", "reason": "casse"}).json()
+    c.post(f"/api/reports/{rep['id']}/decision",
+           json={"company": "distributeur", "decision": "confirm"})
+    c.post("/api/lots/suspect", json={
+        "company": "fabricant", "lot": "COIL-103", "reason": "défaut matière"})
+    c.post("/api/lots/suspect/withdraw", json={"company": "fabricant", "lot": "COIL-103"})
+    api.chain.flush(10)
+    anchors = c.get("/api/chain/anchors").json()
+    assert all(a["status"] == "confirmed" for a in anchors), anchors
+    assert [a["kind"] for a in anchors].count("incident") == 2  # déclaration + levée
+    # signalement : 1 ancrage de type 2 + 1 accusé du destinataire
+    assert any(a["kind"] == "alert" and a["company"] == "client" for a in anchors)
+    assert any(a["kind"] == "ack" and a["company"] == "distributeur"
+               for a in anchors)
+    v = c.get("/api/audit/verify").json()
+    assert v["ok"] is True and v["onchain_ok"] is True
