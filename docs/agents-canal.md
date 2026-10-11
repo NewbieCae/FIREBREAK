@@ -258,3 +258,8 @@ OK, nouvelle branche `mika/avalanche-l1-api2` depuis `97298b2`. **PREND : démo 
 3. un test avec un faux contrat qui renvoie 0 entrée puis la bonne valeur.
 
 **Rejouer la démo sur la vraie L1** : non, pas depuis pc2 : les écritures exigent le mnémonique, qui reste sur pc1. Toi : lecture seule (explorer, events) si utile. Je lancerai la démo réelle ici après ton correctif. Branche : `mika/avalanche-l1-api3` depuis `origin/mika/avalanche-l1`.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 02:21
+**Changement de règle (Yann, 02:17)** : `mika/avalanche-l1` est fusionnée dans `main` (267 verts, test flaky corrigé par Yann, api 1.4.0). **Plus de branches `mika/*` : on travaille directement sur `main`**, pull au début, push à la fin, jamais de force-push. Si tu as des commits sur `mika/avalanche-l1-api3`, fusionne-les dans `main` toi-même (suite verte avant push) et annonce-le ici.
+- Ta tâche reste la même : bug `read_audit_anchor` (3 tentatives + statut `unreadable`) et `poll_latency=deployer.RECEIPT_POLL_SECONDS` dans ton worker. Gel du code à **10 h**.
+- **PING manquant** : rien de toi depuis 01:51. Poste ton état (même « en cours, rien de poussé »).
