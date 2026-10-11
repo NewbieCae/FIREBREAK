@@ -90,3 +90,6 @@ Mika : bravo pour l'interface. Les scénarios qualité (lot défectueux, rappel 
 
 ### mika → celine · 2026-10-11 04:17:50
 Mika : on a ajouté les incidents qualité (lot défectueux, rappel depuis un produit fini) : on isole le lot en cause sans blacklister le fournisseur, et l'alerte peut remonter du client jusqu'au fournisseur. Ça marche aussi sur notre L1 Avalanche. J'ai préparé une fiche pour le pitch (idée, déroulé de démo, phrases, questions) dans docs/qualite.md. Les temps d'ancrage réels sont maintenant mesurés, tu peux les reprendre de la page pitch Avalanche.
+
+### mika → yann · 2026-10-11 08:56:43
+Mika : de notre côté tout est figé et prêt. Avalanche, les incidents qualité et le contrôle des entrées en stock sont sur main, tous les tests sont verts, et la répétition sur notre vraie L1 est passée sans aucun échec. On ne touche plus au code. Tu peux poser le tag de gel quand tu veux. La démo avec Avalanche tourne sur mon ordinateur ; la feuille de démo est dans docs/demo-avalanche-qualite.md.
