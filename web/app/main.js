@@ -69,7 +69,7 @@ function renderScenario() {
 }
 
 function menu(btn, list, items, onPick) {
-  list.innerHTML = items.map((it) => `<button role="option" data-v="${it.value}" aria-selected="${it.selected}">
+  list.innerHTML = items.map((it) => `<button role="option" data-v="${F.esc(it.value)}" aria-selected="${it.selected}">
     <span class="tick">${icon('check', 's16')}</span><span class="t">${F.esc(it.title)}</span>${it.desc ? `<span class="d">${F.esc(it.desc)}</span>` : '<span></span>'}</button>`).join('');
   list.querySelectorAll('[role="option"]').forEach((o) => o.addEventListener('click', () => {
     closeMenus();
@@ -97,8 +97,13 @@ function renderMenus() {
 }
 
 function closeMenus() {
-  $$('.menu.open').forEach((m) => m.classList.remove('open'));
-  $$('.menu-btn[aria-expanded="true"]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  for (const b of $$('.menu-btn[aria-expanded="true"]')) {
+    const m = b.nextElementSibling;
+    const hadFocus = m?.contains(document.activeElement);
+    m?.classList.remove('open');
+    b.setAttribute('aria-expanded', 'false');
+    if (hadFocus) b.focus({ preventScroll: true });
+  }
 }
 
 function bindHeader() {
@@ -160,7 +165,7 @@ async function refreshHeads(loud = false) {
   try {
     const v = await api('GET', '/api/audit/verify');
     for (const j of v.journals) {
-      const h = document.querySelector(`.company[data-company="${j.company}"] [data-head]`);
+      const h = document.querySelector(`.company[data-company="${F.esc(j.company)}"] [data-head]`);
       if (!h) continue;
       h.textContent = j.entries ? `${F.n(j.entries)} · ${F.tok(j.head, 4, 4)}` : 'vide';
       const mark = h.nextElementSibling;
@@ -181,7 +186,8 @@ async function refreshHeads(loud = false) {
         : ' Attention : un journal ne correspond plus à son ancrage Avalanche.';
       const good = v.ok && v.onchain_ok !== false;
       toast(v.ok
-        ? `Journaux d'audit intacts : ${F.n(n)} entrées, ${v.journals.length} chaînes de hash vérifiées.${chain}`
+        ? n ? `Journaux d'audit intacts : ${F.n(n)} entrée${n > 1 ? 's' : ''}, ${v.journals.length} chaînes de hash vérifiées.${chain}`
+          : `Journaux d'audit vides et intacts : aucun événement depuis la réinitialisation.`
         : `Chaîne cassée : ${companyName(v.first_broken.company)}, entrée #${v.first_broken.index}.`,
       { tone: good ? 'info' : 'err', ttl: 5000 });
     }
@@ -212,7 +218,7 @@ function renderActionbar() {
     bar.innerHTML = `<button class="btn compare" id="compareBtn">${icon('compare')}<span>Avec vs sans Firebreak</span></button>
       <button class="btn" id="withdrawBtn">${icon('falseAlarm')}<span>Fausse alerte</span></button>
       <span class="sep"></span>
-      <span class="hint">${q ? `${icon('arrow', 's16')}Cliquez une opération rouge : chemin, explication, reprise` : `${icon('check', 's16')}Plus aucune opération bloquée`}</span>`;
+      <span class="hint">${q ? `${icon('arrow', 's16')}Cliquez sur une opération rouge : chemin, explication, reprise` : `${icon('check', 's16')}Plus aucune opération bloquée`}</span>`;
     $('#compareBtn').addEventListener('click', openVersus);
     $('#withdrawBtn').addEventListener('click', withdraw);
   }
@@ -234,22 +240,25 @@ on('audit-changed', () => refreshHeads());
 // Actions
 // =====================================================================
 
-async function run(title, call, { healing = false, source = null } = {}) {
-  if (S.playing) {
+let busy = false;
+async function run(title, call, { source = null } = {}) {
+  if (S.playing || busy) {
     toast('Une séquence est en cours : attendez sa fin.', { tone: 'info', ttl: 2500 });
     return;
   }
+  busy = true;
+  $$('#actionbar button').forEach((b) => { b.disabled = true; });
   const snapshot = takeSnapshot();
   try {
     const final = await call();
     S.lastAction = title;
-    S.healing = healing;
     await play({ final, title, snapshot, source });
   } catch (e) {
-    fail(e, () => run(title, call, { healing, source }));
+    fail(e, () => run(title, call, { source }));
   } finally {
+    busy = false;
     S.healing = false;
-    renderScenario();
+    renderActionbar();
   }
 }
 
@@ -262,25 +271,29 @@ function declare() {
 function withdraw() {
   const src = [...S.compromised][0];
   if (!src) return;
-  return run('Fausse alerte : déclaration retirée', () => api('POST', '/api/compromise/withdraw', { company: src }), { healing: true, source: src });
+  return run('Fausse alerte : déclaration retirée', () => api('POST', '/api/compromise/withdraw', { company: src }), { source: src });
 }
 
 function remediate(id, action) {
   const r = S.recs.get(id);
-  return run(`Remédiation : ${r?.label || id}`, () => api('POST', `/api/records/${encodeURIComponent(id)}/remediate`, { action }), { healing: true });
+  return run(`Remédiation : ${r?.label || id}`, () => api('POST', `/api/records/${encodeURIComponent(id)}/remediate`, { action }));
 }
 
 async function replay() {
-  if (S.playing || !S.snapshot) return;
+  if (S.playing || busy || !S.snapshot) return;
   closeDrawer();
-  if (versusOpen()) closeVersus();
-  S.healing = /Remédiation|Fausse/.test(S.lastAction || '');
-  await play({ title: `Rejeu — ${S.lastAction || 'dernière action'}`, snapshot: S.snapshot });
-  S.healing = false;
-  renderScenario();
+  closeVersus();
+  try {
+    await play({ title: `Rejeu — ${S.lastAction || 'dernière action'}`, snapshot: S.snapshot });
+  } catch (e) {
+    fail(e, replay);
+  } finally {
+    S.healing = false;
+    renderActionbar();
+  }
 }
 
-async function resetTo(scenario) {
+async function resetTo(scenario, { quiet = false } = {}) {
   S.abort?.abort();
   closeDrawer();
   if (versusOpen()) closeVersus();
@@ -295,19 +308,27 @@ async function resetTo(scenario) {
     renderMenus();
     renderActionbar();
     refreshHeads();
-    toast(`Scénario « ${st.scenario?.label || scenario} » prêt : ${F.n(st.records.length)} opérations, aucune déclaration.`, { tone: 'info', ttl: 3200 });
+    if (!quiet) toast(`Scénario « ${st.scenario?.label || scenario} » prêt : ${F.n(st.records.length)} opérations, aucune déclaration.`, { tone: 'info', ttl: 3200 });
   } catch (e) {
-    fail(e, () => resetTo(scenario));
+    fail(e, () => resetTo(scenario, { quiet }));
   }
 }
 
-on('open-proof', (id) => { if (versusOpen()) closeVersus(); openProof(id); });
+on('open-proof', (id) => { closeVersus(); openProof(id); });
 on('open-audit', (co) => openAudit(co));
 on('remediate', ({ id, action }) => remediate(id, action));
 on('highlight', (id) => highlight(id));
-on('ingested', ({ state, snapshot, title }) => {
+on('ingested', async ({ state, snapshot, title }) => {
   S.lastAction = title;
-  play({ final: state, title, snapshot });
+  try {
+    await play({ final: state, title, snapshot });
+  } catch (e) {
+    fail(e);
+    applyState(state, { render: true });
+  } finally {
+    S.healing = false;
+    renderActionbar();
+  }
 });
 
 // =====================================================================
@@ -329,18 +350,27 @@ function healTarget() {
 }
 
 async function nextGesture() {
-  if (S.playing) return;
+  if (S.playing || busy) return;
   closeMenus();
-  if (S.compromised.size === 0) demo = 0;
+  // Le geste se déduit de l'état : un clic à la souris ou un rechargement ne décale rien.
+  const incident = S.compromised.size > 0;
+  if (!incident) {
+    // Après une remédiation puis un retrait, des records restent « released » :
+    // on repart d'une scène propre pour que les chiffres soient ceux du pitch.
+    if ([...S.status.values()].some((s) => s !== 'ok')) await resetTo(S.state.scenario?.id, { quiet: true });
+    demo = 1;
+    return declare();
+  }
+  if (demo < 1) demo = 1;
   const gestures = [
-    () => declare(),
-    () => openVersus(),
+    null,
+    () => { closeDrawer(); openVersus(); },
     () => { closeVersus(); const id = proofTarget(); if (id) openProof(id); },
-    () => { closeDrawer(); const id = healTarget(); if (id) remediate(id, 'human_approval'); },
-    () => refreshHeads(true),
+    () => { closeDrawer(); closeVersus(); const id = healTarget(); if (id) remediate(id, 'human_approval'); },
+    () => { closeDrawer(); closeVersus(); refreshHeads(true); },
   ];
   const g = gestures[Math.min(demo, gestures.length - 1)];
-  demo = Math.min(demo + 1, gestures.length);
+  demo = Math.min(demo + 1, gestures.length - 1);
   await g();
 }
 
@@ -348,8 +378,8 @@ function bindKeys() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if ($('.menu.open')) { closeMenus(); return; }
-      if (versusOpen()) { closeVersus(); return; }
       if (drawerOpen()) { closeDrawer(); return; }
+      if (versusOpen()) { closeVersus(); return; }
     }
     const typing = e.target.closest?.('input, textarea, select, [contenteditable]');
     if (typing || e.altKey || e.ctrlKey || e.metaKey) return;

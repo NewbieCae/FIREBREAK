@@ -95,7 +95,7 @@ function renderMap() {
         <span class="r"><i></i><b data-r>0</b> <span data-rl>libérée</span></span>
       </div>
       <div class="fams"></div>
-      <div class="c-foot"><button data-audit="${c.id}" title="Journal d'audit · ${F.esc(c.name)}">${icon('audit', 's16')}<span>Journal</span><span class="mono" data-head>—</span><span></span></button></div>
+      <div class="c-foot"><button data-audit="${F.esc(c.id)}" title="Journal d'audit · ${F.esc(c.name)}">${icon('audit', 's16')}<span>Journal</span><span class="mono" data-head>—</span><span></span></button></div>
       <div class="privacy"></div>`;
     const fams = p.querySelector('.fams');
     for (const f of F.FAMILIES) {
@@ -501,6 +501,7 @@ export function applyView() {
   for (const [cid, p] of panels) {
     const masked = S.view !== 'all' && cid !== S.view;
     p.classList.toggle('masked', masked);
+    for (const part of p.querySelectorAll('.fams, .c-counts, .c-foot')) part.inert = masked;
     const priv = p.querySelector('.privacy');
     if (!masked) { priv.innerHTML = ''; continue; }
     const alerts = (S.state.alerts || []).filter((a) =>
@@ -511,7 +512,7 @@ export function applyView() {
       const bad = a.verified === false;
       return `<div class="p-alert surface ${bad ? 'bad' : ''}">${icon(bad ? 'alertBad' : 'alert', 's16')}
         <span>${inbound ? 'Reçue' : 'Envoyée'} · ${kind}</span>
-        <span class="mono">${a.tokens_count} jeton${a.tokens_count > 1 ? 's' : ''}</span></div>`;
+        <span class="mono">${F.n(a.tokens_count)} jeton${a.tokens_count > 1 ? 's' : ''}</span></div>`;
     }).join('');
     priv.innerHTML = `${icon('lockKey')}
       <div class="p-title">Registre privé · ${F.esc(companyName(cid))}</div>
@@ -675,6 +676,10 @@ export async function play({ final = null, title, snapshot = null, source = null
   try {
     const { steps } = await api('GET', '/api/timeline', undefined, { signal: ctrl.signal });
     if (!steps.length) { applyState(target); return; }
+    // Séquence de guérison (remédiation, retrait) : aucune nouvelle contamination.
+    S.healing = steps.some((s) => s.type === 'release' || s.type === 'remediation' || s.type === 'withdrawal')
+      && !steps.some((s) => s.type === 'seed' || s.type === 'quarantine' || s.type === 'gate_blocked');
+    emit('playing', true);
     // Nouveaux records (ingestion) : on pose la nouvelle carte, puis l'état d'avant.
     let born = [];
     if (final && final.records.length !== S.state.records.length) {
@@ -682,11 +687,16 @@ export async function play({ final = null, title, snapshot = null, source = null
       applyState(final, { render: true });
       born = [...S.recs.keys()].filter((id) => !old.has(id));
       await wait(60);
+      if (ctrl.signal.aborted) return;
     }
     const snap = snapshot || S.snapshot;
     S.snapshot = snap;
     if (snap) restore(snap);
-    for (const id of born) dots.get(id)?.classList.add('new');
+    for (const id of born) {
+      const d = dots.get(id);
+      d?.classList.add('new');
+      d?.addEventListener('animationend', () => d.classList.remove('new'), { once: true });
+    }
     const group = feedGroup(title || 'Rejeu');
     const total = steps.length;
     const src = source ?? [...S.compromised][0];
@@ -698,12 +708,12 @@ export async function play({ final = null, title, snapshot = null, source = null
         if (ctrl.signal.aborted) return;
         n++;
         setProgress(n / total);
-        await onStep(group, step, src);
+        await onStep(group, step, src, ctrl.signal);
       }
     } catch (e) {
-      if (e.name === 'AbortError') return;
+      if (e.name === 'AbortError' || ctrl.signal.aborted) return;
       // Flux coupé : on termine avec la timeline (même contenu).
-      for await (const step of paced(steps.slice(n), ctrl.signal)) { n++; setProgress(n / total); await onStep(group, step, src); }
+      for await (const step of paced(steps.slice(n), ctrl.signal)) { n++; setProgress(n / total); await onStep(group, step, src, ctrl.signal); }
     }
     await wait(450);
     if (ctrl.signal.aborted) return;
@@ -719,7 +729,8 @@ export async function play({ final = null, title, snapshot = null, source = null
   }
 }
 
-async function onStep(group, step, source) {
+async function onStep(group, step, source, signal) {
+  if (signal?.aborted) return;
   feedAdd(group, step, true);
   if (S.view === 'all' && step.counters) setKpis(step.counters, { total: S.state.records.length });
   const id = step.record;
@@ -735,11 +746,12 @@ async function onStep(group, step, source) {
     case 'seed':
       setStatus(id, 'quarantined');
       pulse(id);
-      floatTag(id, F.RULE_LABEL[step.rule] || step.rule);
+      floatTag(id, F.RULE_LABEL[step.rule] || String(step.rule || ''));
       break;
     case 'quarantine':
     case 'gate_blocked':
       if (step.parent) await trace(step.parent, id, Q);
+      if (signal?.aborted) return;
       setStatus(id, 'quarantined');
       pulse(id);
       if (step.type === 'gate_blocked') lockPop(id);

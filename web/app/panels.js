@@ -92,7 +92,7 @@ function pathHtml(recs, currentId) {
     const from = r.origin && r.origin !== r.company ? `<span>émis par ${F.esc(companyName(r.origin))}</span>` : '';
     const lbl = r.id === currentId
       ? `<div class="p-label">${F.esc(r.label)}</div>`
-      : `<button class="p-label" data-goto="${r.id}">${F.esc(r.label)}</button>`;
+      : `<button class="p-label" data-goto="${F.esc(r.id)}">${F.esc(r.label)}</button>`;
     items.push(`<li class="${tone} ${r.id === currentId ? 'current' : ''}" style="animation-delay:${(i + 1) * 70}ms">
       <div class="p-node">${icon(F.kindIcon(r.kind), 's18')}</div>
       <div>${lbl}<div class="p-meta">${origin}<span>${F.kindLabel(r.kind)}</span><span class="mono">${F.hm(r.ts)}</span>${from}${r.gate ? `<span>${icon('gate', 's16')}</span>` : ''}</div></div></li>`);
@@ -112,7 +112,7 @@ export async function openProof(id) {
   if (r.payload?.rib) facts.push(`<div class="fact surface wide"><div class="f-k">RIB ${r.payload.previous_rib ? '(nouveau)' : ''}</div><div class="f-v mono">${F.esc(r.payload.rib)}</div></div>`);
   if (r.payload?.lot) facts.push(`<div class="fact surface"><div class="f-k">Lot</div><div class="f-v mono">${F.esc(r.payload.lot)}</div></div>`);
   if (r.origin && r.origin !== r.company) facts.push(`<div class="fact surface"><div class="f-k">Émis par</div><div class="f-v">${F.esc(companyName(r.origin))}</div></div>`);
-  if (r.token) facts.push(`<div class="fact surface wide"><div class="f-k">Jeton reçu (sha256, opaque)</div><div class="f-v mono">${F.tok(r.token, 10, 10)}<button class="copy" data-copy="${r.token}" title="Copier le jeton" aria-label="Copier le jeton">${icon('copy', 's16')}</button></div></div>`);
+  if (r.token) facts.push(`<div class="fact surface wide"><div class="f-k">Jeton reçu (sha256, opaque)</div><div class="f-v mono">${F.tok(r.token, 10, 10)}<button class="copy" data-copy="${F.esc(r.token)}" title="Copier le jeton" aria-label="Copier le jeton">${icon('copy', 's16')}</button></div></div>`);
   facts.push(`<div class="fact surface"><div class="f-k">Identifiant</div><div class="f-v mono">${F.esc(r.id)}</div></div>`);
 
   const chips = [statusBadge(s)];
@@ -146,7 +146,7 @@ export async function openProof(id) {
       </section>
       ${s === 'quarantined' ? `<section><h3 class="sec-title">${icon('release', 's16')}Plan de reprise</h3><div class="plan" id="pfPlan"><div class="sk block"></div><div class="sk block"></div><div class="sk block"></div></div></section>` : ''}
       <section>
-        <button class="btn ghost" data-audit="${r.company}">${icon('audit', 's16')}<span>Journal d'audit · ${F.esc(companyName(r.company))}</span></button>
+        <button class="btn ghost" data-audit="${F.esc(r.company)}">${icon('audit', 's16')}<span>Journal d'audit · ${F.esc(companyName(r.company))}</span></button>
       </section>
     </div>`, id);
 
@@ -167,7 +167,7 @@ export async function openProof(id) {
     const plan = $('#pfPlan');
     if (plan) {
       plan.innerHTML = ex.remediation_plan.map((p) => `
-        <button data-action="${p.action}">
+        <button data-action="${F.esc(p.action)}">
           <span class="pl-ico">${icon(F.ACTION_ICON[p.action] || 'release', 's18')}</span>
           <span class="pl-t">${F.esc(p.label)}</span>
           <span class="pl-d">${F.esc(p.rationale)}</span>
@@ -227,7 +227,7 @@ export async function openAudit(company) {
   // En vue partenaire, on ne voit que son propre journal.
   const companies = S.state.companies.filter((c) => S.view === 'all' || c.id === S.view);
   if (S.view !== 'all') company = S.view;
-  const tabs = companies.map((c) => `<button role="tab" data-co="${c.id}" aria-selected="${c.id === company}">${F.ROLE_SHORT[c.id] || F.esc(c.name)}</button>`).join('');
+  const tabs = companies.map((c) => `<button role="tab" data-co="${F.esc(c.id)}" aria-selected="${c.id === company}">${F.ROLE_SHORT[c.id] || F.esc(c.name)}</button>`).join('');
   const token = openDrawer('audit', `
     ${head({ ico: 'audit', title: "Journal d'audit", sub: '<span>Ajout seul, chaîné par hash (sha256) : une entrée modifiée casse la chaîne.</span>' })}
     <div class="drawer-body">
@@ -344,7 +344,7 @@ function typeOf(file) {
 }
 
 export function openIngest() {
-  const seg = S.state.companies.map((c) => `<button data-co="${c.id}" aria-pressed="${c.id === ingestCompany}">${F.ROLE_SHORT[c.id] || F.esc(c.name)}</button>`).join('');
+  const seg = S.state.companies.map((c) => `<button data-co="${F.esc(c.id)}" aria-pressed="${c.id === ingestCompany}">${F.ROLE_SHORT[c.id] || F.esc(c.name)}</button>`).join('');
   openDrawer('ingest', `
     ${head({ ico: 'upload', title: 'Importer un document', sub: "<span>L'IA lit, un humain confirme, puis le graphe décide.</span>" })}
     <div class="drawer-body">
@@ -356,7 +356,7 @@ export function openIngest() {
         <input type="file" id="inFile" hidden accept=".pdf,.eml,.txt,.json,.jsonld,application/pdf,message/rfc822,text/plain,application/json">
       </label>
       <section><h3 class="sec-title">${icon('file', 's16')}Exemples prêts</h3>
-        <div class="samples">${SAMPLES.map((s, i) => `<button data-sample="${i}">${icon(s.ico, 's20')}<span><span class="st">${s.title}</span><br><span class="sd">${s.desc}</span></span></button>`).join('')}</div>
+        <div class="samples">${SAMPLES.map((s, i) => `<button data-sample="${F.esc(i)}">${icon(s.ico, 's20')}<span><span class="st">${s.title}</span><br><span class="sd">${s.desc}</span></span></button>`).join('')}</div>
       </section>
       <div id="inResult"></div>
     </div>`);
