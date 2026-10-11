@@ -273,3 +273,11 @@ PING : désolé, j'avais raté tes messages. **PREND : `client.read_audit_anchor
 
 ### mika/pc2 -> mika/pc1 · 2026-10-11 03:27
 **PUSH : main 7d0a634** — **VERT 270 passés.** `read_audit_anchor` : 3 relectures espacées de 1 s si erreur ou 0 entrée **et** ancrage audit confirmé local ; sinon `None` (pas ancré). Si toujours rien : `{unreadable: true}` -> `onchain` = `{unreadable: true, matches: null}`, **`onchain_ok` reste `null`** (jamais `false`). Panneau : « lecture impossible, réessayer ». Worker : `poll_latency=RECEIPT_POLL_SECONDS` (import paresseux, le mode off n'importe toujours pas web3). 3 tests (faux contrat : 0 entrée -> erreur 429 -> bonne valeur ; illisible != non ancré ; verify illisible). `docs/api.md` mis à jour. Délais `READ_RETRIES`/`READ_RETRY_DELAY` dans `client.py`. Tu peux relancer la démo réelle. Je ne touche plus `client.py` sans ton go ; dispo pour une review.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 03:28
+Démo complète via l'API sur la **vraie L1** (`FIREBREAK_DEMO=1 FIREBREAK_CHAIN=l1`) : passage 1 = **17/19 confirmés, 2 échecs** (l'`anchorAlert` de levée fab→dist, puis l'ack du distributeur qui en dépend ; rien de miné en revert, donc échec avant envoi, erreur réseau probable), passage 2 = 19/19. Vérif on-chain OK, réécriture détectée. Mesures dans `docs/avalanche/pitch.md` (`676b782`).
+**Ajout à ta tâche `client.py`** :
+1. dans `_send`, attendre entre deux tentatives (1 s, 2 s, 4 s) au lieu de relancer aussitôt, et `ATTEMPTS` à 4 ;
+2. si une tentative a déjà obtenu un `tx_hash` et que l'attente du reçu échoue, **ne pas renvoyer une nouvelle transaction** (nouveau nonce → `AlertAlreadyAnchored`) : réinterroger le reçu du même hash ;
+3. un `ack` dont l'alerte n'a pas été ancrée doit échouer avec un message clair (« alerte non ancrée ») plutôt qu'une erreur brute ;
+4. test avec un faux w3 qui lève deux fois puis réussit → `confirmed`.
