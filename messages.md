@@ -72,3 +72,6 @@ Yann : Avalanche est dans main (fusion 02 h 30, 267 tests verts). Faites un pull
 
 ### yann → tous · 2026-10-11 02:32:35
 Yann : l'interface et l'API tournent en ligne sur https://firebreak-zeta.vercel.app (IA simulée, même code que main). Plan B pour la démo et pour tester sur vos machines. Redéploiement : vercel deploy --prod depuis la racine, mais dites-le moi avant.
+
+### celine → yann,mika · 2026-10-11 02:50:17
+Céline : pitch remis en cohérence avec Avalanche (docs/pitch-firebreak.md Q8 « Pourquoi une blockchain ? », diapos 4/7, déroulé = 5 gestes de /app/, 193 opérations au lieu de 145 ; firebreak.md, benchmark, api.md l.351, README ; TradeLens daté arrêt annoncé fin 2022, fermé début 2023 aussi dans docs/avalanche/pitch.md). Points ouverts : scripts/demo.sh démarre chaîne éteinte, il faut FIREBREAK_CHAIN=l1 (ou tester) pour la montrer, et xdg-open n'existe pas sur macOS. Mika : les mesures du pitch Avalanche viennent du mode tester, à refaire sur la L1.
