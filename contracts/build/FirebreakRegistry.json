@@ -1,0 +1,682 @@
+{
+  "contractName": "FirebreakRegistry",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "alertHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "AlertAlreadyAnchored",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "alertHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "AlreadyAcknowledged",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint32",
+          "name": "previous",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "submitted",
+          "type": "uint32"
+        }
+      ],
+      "name": "AuditShrunk",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "companyId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "CompanyTaken",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint8",
+          "name": "alertType",
+          "type": "uint8"
+        }
+      ],
+      "name": "InvalidAlertType",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotAdmin",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotMember",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "alertHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "NotRecipient",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "alertHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "UnknownAlert",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroValue",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "name": "AdminTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "alertHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "toCompany",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "name": "AlertAcknowledged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "runId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "alertHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "fromCompany",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "toCompany",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "alertType",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "name": "AlertAnchored",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "runId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "companyId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "head",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "entries",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "name": "AuditAnchored",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "runId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "declarer",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "sourceCompany",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "since",
+          "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "declarationHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "name": "IncidentDeclared",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "runId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "declarer",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "sourceCompany",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "declarationHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ],
+      "name": "IncidentWithdrawn",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "companyId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "MemberDeactivated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "companyId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "ed25519PubKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "MemberRegistered",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "accountOf",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "alertHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "acknowledgeAlert",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "admin",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "alerts",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "fromCompany",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "toCompany",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "alertType",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint64",
+          "name": "anchoredAt",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "ackAt",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "runId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "alertHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "toCompany",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "alertType",
+          "type": "uint8"
+        }
+      ],
+      "name": "anchorAlert",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "runId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "head",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "entries",
+          "type": "uint32"
+        }
+      ],
+      "name": "anchorAudit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "deactivateMember",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "runId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "sourceCompany",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "since",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "declarationHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "declareIncident",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "latestAudit",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "head",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "entries",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "anchoredAt",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "members",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "companyId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "ed25519PubKey",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bool",
+          "name": "active",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "pubKeyOf",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "companyId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "pubKey",
+          "type": "bytes32"
+        }
+      ],
+      "name": "registerMember",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "name": "transferAdmin",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "runId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "sourceCompany",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "declarationHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "withdrawIncident",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b50600080546001600160a01b0319163390811782556040519091907ff8ccb027dfcd135e000e9d45e6cc2d662578a8825d4c45b5e32e0adf67e79ec6908290a3610e1a8061005f6000396000f3fe608060405234801561001057600080fd5b50600436106100ea5760003560e01c8063bce9252d1161008c578063dc417e4711610066578063dc417e471461028f578063eb5f2906146102bd578063efa9f53814610331578063f851a4401461034457600080fd5b8063bce9252d146101e4578063cf9516d114610269578063d4f3476d1461027c57600080fd5b80634acb9eda116100c85780634acb9eda146101985780634cfe54a6146101ab57806375829def146101be578063a499fc27146101d157600080fd5b806308ae4b0c146100ef5780630b61a887146101425780632d4362a914610183575b600080fd5b6101206100fd366004610c54565b600160208190526000918252604090912080549181015460029091015460ff1683565b6040805193845260208401929092521515908201526060015b60405180910390f35b61016b610150366004610c76565b6002602052600090815260409020546001600160a01b031681565b6040516001600160a01b039091168152602001610139565b610196610191366004610c8f565b610357565b005b6101966101a6366004610c76565b6104b9565b6101966101b9366004610cd1565b61060c565b6101966101cc366004610c54565b6106a6565b6101966101df366004610cfd565b610753565b6102306101f2366004610c76565b60046020526000908152604090208054600182015460029092015490919060ff8116906001600160401b036101008204811691600160481b90041685565b60408051958652602086019490945260ff909216928401929092526001600160401b03918216606084015216608082015260a001610139565b610196610277366004610d30565b610914565b61019661028a366004610c54565b6109af565b6102af61029d366004610c76565b60036020526000908152604090205481565b604051908152602001610139565b6103086102cb366004610d7b565b60056020908152600092835260408084209091529082529020805460019091015463ffffffff81169064010000000090046001600160401b031683565b6040805193845263ffffffff90921660208401526001600160401b031690820152606001610139565b61019661033f366004610d9d565b610a5d565b60005461016b906001600160a01b031681565b3360009081526001602052604090206002015460ff1661038a5760405163148fe22160e11b815260040160405180910390fd5b33600090815260016020818152604080842054878552600583528185208186529092529092209081015463ffffffff90811690841610156103f957600181015460405163b321e99960e01b815263ffffffff918216600482015290841660248201526044015b60405180910390fd5b604080516060808201835286825263ffffffff86811660208085018281526001600160401b0342811687890181815260008f8152600586528a81208d825286528a9020985189559251600190980180549351909216640100000000026bffffffffffffffffffffffff1990931697909516969096171790945584518981529384015292820192909252839187917f5558c55ad3b6914f300f073c92df34585d545c3d8ad733574fbfb247189e941b91015b60405180910390a35050505050565b3360009081526001602052604090206002015460ff166104ec5760405163148fe22160e11b815260040160405180910390fd5b6000818152600460205260408120600281015490916101009091046001600160401b03169003610532576040516328c7d2b160e11b8152600481018390526024016103f0565b33600090815260016020819052604090912054908201541461056a576040516306a4537160e21b8152600481018390526024016103f0565b6002810154600160481b90046001600160401b0316156105a057604051636d35caf160e11b8152600481018390526024016103f0565b60028101805467ffffffffffffffff60481b1916600160481b426001600160401b03169081029190911790915560018201546040519182529083907fd7aba4be635a2cf382799deeb40f60c32ebabbc59ce0c1111035eb8d195626a49060200160405180910390a35050565b3360009081526001602052604090206002015460ff1661063f5760405163148fe22160e11b815260040160405180910390fd5b336000908152600160205260409081902054905183919085907f6ee16fbce25d9b4d3c346d355e8b565bb1f3c430b8b8e15f9abc9f3917377d2d9061069990869042909182526001600160401b0316602082015260400190565b60405180910390a4505050565b6000546001600160a01b031633146106d157604051637bfa4b9f60e01b815260040160405180910390fd5b6001600160a01b0381166106f857604051637c946ed760e01b815260040160405180910390fd5b600080546040516001600160a01b03808516939216917ff8ccb027dfcd135e000e9d45e6cc2d662578a8825d4c45b5e32e0adf67e79ec691a3600080546001600160a01b0319166001600160a01b0392909216919091179055565b6000546001600160a01b0316331461077e57604051637bfa4b9f60e01b815260040160405180910390fd5b6001600160a01b0383161580610792575081155b156107b057604051637c946ed760e01b815260040160405180910390fd5b6000828152600260205260409020546001600160a01b031680158015906107e95750836001600160a01b0316816001600160a01b031614155b15610819576040516301beb27b60e01b8152600481018490526001600160a01b03821660248201526044016103f0565b6001600160a01b03841660009081526001602052604090205480158015906108415750838114155b1561086e57600081815260026020908152604080832080546001600160a01b031916905560039091528120555b60408051606081018252858152602080820186815260018385018181526001600160a01b038b16600081815283865287812096518755935192860192909255516002948501805460ff191691151591909117905588825292825283812080546001600160a01b0319168417905560038252839020869055915185815286927f47fc1dd8d830d8f00b5c7cac42ecaec8351504937d035251e151bd805332333b91016104aa565b3360009081526001602052604090206002015460ff166109475760405163148fe22160e11b815260040160405180910390fd5b336000908152600160209081526040918290205482516001600160401b0386811682529281018590524290921682840152915185929187917fcac1c2b1f3595c3c14b564adb9730f52600c4ac66fa7f6325b9a7ed20587171c9181900360600190a450505050565b6000546001600160a01b031633146109da57604051637bfa4b9f60e01b815260040160405180910390fd5b6001600160a01b0381166000908152600160205260409020600281015460ff16610a175760405163148fe22160e11b815260040160405180910390fd5b60028101805460ff1916905580546040516001600160a01b038416907f7ba4c02eb7879617d591f00936748246ecfba32d32120f2291f0db8aa032e18090600090a35050565b3360009081526001602052604090206002015460ff16610a905760405163148fe22160e11b815260040160405180910390fd5b60018160ff161115610aba576040516308aff7ad60e31b815260ff821660048201526024016103f0565b821580610ac5575081155b15610ae357604051637c946ed760e01b815260040160405180910390fd5b60008381526004602052604090206002015461010090046001600160401b031615610b24576040516301780ad360e51b8152600481018490526024016103f0565b33600090815260016020818152604080842054815160a08101835281815280840188815260ff8089168386019081526001600160401b034281811660608701908152608087018c81528f8d526004909a529a889020955186559351988501989098555160029093018054985196518816600160481b0267ffffffffffffffff60481b19979098166101000268ffffffffffffffffff1990991693909116929092179690961793909316939093179091555190918291869188917ffc4ccfce89fac2f2499c9a3b913ea18a336e4071366a68e260d2358629a1b53891610c29918991899192835260ff9190911660208301526001600160401b0316604082015260600190565b60405180910390a45050505050565b80356001600160a01b0381168114610c4f57600080fd5b919050565b600060208284031215610c6657600080fd5b610c6f82610c38565b9392505050565b600060208284031215610c8857600080fd5b5035919050565b600080600060608486031215610ca457600080fd5b8335925060208401359150604084013563ffffffff81168114610cc657600080fd5b809150509250925092565b600080600060608486031215610ce657600080fd5b505081359360208301359350604090920135919050565b600080600060608486031215610d1257600080fd5b610d1b84610c38565b95602085013595506040909401359392505050565b60008060008060808587031215610d4657600080fd5b843593506020850135925060408501356001600160401b0381168114610d6b57600080fd5b9396929550929360600135925050565b60008060408385031215610d8e57600080fd5b50508035926020909101359150565b60008060008060808587031215610db357600080fd5b843593506020850135925060408501359150606085013560ff81168114610dd957600080fd5b93969295509093505056fea26469706673582212202557c86a850971b26fae1bb3748399d25dd80e7edc44d2a763ac880d5567653164736f6c63430008180033",
+  "solcVersion": "0.8.24",
+  "evmVersion": "paris",
+  "optimizerRuns": 200,
+  "sourceSha256": "3e794b5c6c3ca6348612993f407064b28d6a90b7fe7b59a994a7f7136f01867d"
+}

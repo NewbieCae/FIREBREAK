@@ -72,3 +72,26 @@ Cliquer encore reste en fin de démo (« Démo terminée… »).
   `asn` (13 bloqués, stock fantôme jusqu'au planning chantier).
 - **API** : http://localhost:8000/docs — tout ce que fait le dashboard est
   documenté dans [api.md](api.md).
+
+## Avalanche L1 (optionnel)
+
+Aucune étape existante ne change. La chaîne ne s'active que si on le demande.
+
+**Lancement** (sans réseau, EVM en mémoire) :
+`FIREBREAK_DEMO=1 FIREBREAK_CHAIN=tester bash scripts/demo.sh`.
+Sur la vraie L1 : `FIREBREAK_CHAIN=l1` après `scripts/chain_smoke.py` au vert
+(configuration dans `.env.local`, jamais versionné). Fixer aussi
+`FIREBREAK_KEY_SEED` et `FIREBREAK_PAIR_SECRET`.
+
+| Clic | Ce qu'on voit | Ce qu'on dit |
+|---|---|---|
+| Ouvrir le panneau « Avalanche » (colonne de droite) | point vert, chainId, contrat, file d'ancrages | « Chaque alerte et chaque journal sont ancrés sur notre L1 Avalanche : un témoin horodaté que ni le fournisseur, ni le client, ni nous ne pouvons réécrire. » |
+| Étape « compromission » de la démo | des ancrages `alert`, `ack`, `incident`, `audit` passent à *confirmé* avec un numéro de bloc | « Seuls les membres de la chaîne peuvent écrire : une entreprise extérieure ne peut pas déclarer un faux incident pour paralyser un concurrent. » |
+| « Vérifier sur Avalanche » | pour chaque entreprise : local ✓, Avalanche ✓ | « Aucune donnée commerciale sur la chaîne : uniquement des empreintes. » |
+| « Simuler une réécriture du journal » | local ✓, **Avalanche ✗** sur le fabricant | « Ici quelqu'un réécrit le journal du fabricant pour effacer qu'il a été prévenu, et recalcule tous les hash. La vérification locale ne voit rien. Avalanche, si. » |
+
+Le bouton de réécriture exige `FIREBREAK_DEMO=1`. Après une réécriture,
+« Réinitialiser » repart d'un journal propre (nouveau `run_id`). Si la L1 est
+lente ou coupée, les ancrages restent `en cours` ou `échec` : la démo
+continue, la chaîne n'est jamais bloquante. Les étapes de démo ne sont pas
+modifiées : l'enchaînement ci-dessus se fait à la main.
