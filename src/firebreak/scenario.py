@@ -227,7 +227,7 @@ def _legit_gr_08() -> dict:
 def _attack_mixed(b: _Builder) -> None:
     """Les trois attaques mélangées, puis une livraison légitime vérifiée."""
     f, m, d, c = b.f, b.m, b.d, b.c
-    ship = {"bc": "BC-1999", "part": PART, "qty": 30, "lot_no": "COIL-999",
+    ship = {"bc": "BC-9999", "part": PART, "qty": 30, "lot_no": "COIL-999",
             "ship_date": _t(14, 10).isoformat()}
     cert = {"cert_no": "CQ-9999", "lot_no": "COIL-999", "part": PART, "grade": "S235"}
     b.rec(f, "f-asn-X", "asn", _t(14, 10), "ASN urgente BC-9999", payload=ship)
@@ -235,17 +235,17 @@ def _attack_mixed(b: _Builder) -> None:
           payload=cert)
     b.rec(f, "f-inv-X", "invoice", _t(14, 14), "Facture F-9999 — nouveau RIB",
           payload={"amount": 5210, "rib": RIB_FRAUD, "bank_details_change": True,
-                   "bc": "BC-1999"})
+                   "bc": "BC-9999"})
     b.send(f, "f-asn-X", m, "m-asn-X", "asn", _t(14, 15), "ASN reçu — BC-9999",
            payload=ship)
     b.send(f, "f-cert-X", m, "m-cert-X", "quality_cert", _t(14, 17),
            "Certificat reçu CQ-9999", payload=cert)
     b.send(f, "f-inv-X", m, "m-inv-X", "invoice", _t(14, 19),
            "Facture reçue F-9999",
-           payload={"amount": 5210, "rib": RIB_FRAUD, "bc": "BC-1999"})
+           payload={"amount": 5210, "rib": RIB_FRAUD, "bc": "BC-9999"})
     b.rec(m, "m-gr-X", "goods_receipt", _t(14, 40), "Réception marchandise BC-9999",
           inputs=["m-asn-X", "m-cert-X"],
-          payload={"lot": "COIL-999", "part": PART, "qty": 30, "bc": "BC-1999"})
+          payload={"lot": "COIL-999", "part": PART, "qty": 30, "bc": "BC-9999"})
     b.transform(m, "m-lot-X", _t(15, 0), "Lancement lot LOT-999", ["m-gr-X"], "LOT-999")
     b.rec(m, "m-pay-X", "payment", _t(15, 10), "Paiement facture F-9999 (RIB modifié)",
           inputs=["m-inv-X"], gate=True, payload={"amount": 5210, "rib": RIB_FRAUD})
@@ -282,13 +282,13 @@ def _attack_rib(b: _Builder) -> None:
           payload={"rib": RIB_FRAUD, "previous_rib": RIB_OK, "bank_details_change": True})
     b.rec(f, "f-inv-X", "invoice", _t(14, 14), "Facture F-9999 — nouveau RIB",
           payload={"amount": 5210, "rib": RIB_FRAUD, "bank_details_change": True,
-                   "bc": "BC-1009"})
+                   "bc": "BC-1010"})
     b.send(f, "f-bank-X", m, "m-bank-X", "bank_details_change", _t(14, 8),
            "Changement de RIB reçu (mail)",
            payload={"rib": RIB_FRAUD, "previous_rib": RIB_OK, "bank_details_change": True})
     b.send(f, "f-inv-X", m, "m-inv-X", "invoice", _t(14, 19),
            "Facture reçue F-9999",
-           payload={"amount": 5210, "rib": RIB_FRAUD, "bc": "BC-1009"})
+           payload={"amount": 5210, "rib": RIB_FRAUD, "bc": "BC-1010"})
     b.rec(m, "m-vendor-X", "vendor_master_update", _t(14, 30),
           "Fiche fournisseur : RIB remplacé", inputs=["m-bank-X"],
           payload={"rib": RIB_FRAUD, "previous_rib": RIB_OK})

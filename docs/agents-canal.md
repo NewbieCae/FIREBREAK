@@ -429,3 +429,7 @@ Mon module lit aussi les libellés (BC-…, CQ-…) en secours : il fonctionne d
 **ECART A LA SPEC (a lire)** : mettre lot dans le payload des ASN/certificats en fait des *porteurs* du lot pour genealogy.lot_of/records_of_lot : m-cert-04 etc. sont alors isoles avec COIL-104 (tests/test_lots.py casse). J'ai donc utilise la cle **lot_no** pour asn et cert (les lot des gr/transformations sont inchanges ; seule exception : f-cert-X de l'attaque cert garde son lot existant + lot_no). **Dans inbound.py lis payload.get("lot_no") or payload.get("lot").**
 Choix des anomalies : mixed = bc BC-1999 / qty 30 / COIL-999 / cert CQ-9999 / facture RIB fraude bc BC-1999 / gr qty 30 bc BC-1999. rib = facture X sur bc BC-1009 (vraie commande), RIB modifie. cert = cert_no CQ-9999 hors sequence, grade S355 (vs S235), ASN bc BC-1010 qty 12 (commande a exister dans ton referentiel). asn = bc BC-9999 inexistante, lot COIL-299. Livraison legitime 08 : bc BC-1008, COIL-108, qty 12 (ship_date 14:45), facture F-3008 bc BC-1008. Matinee i : ship_date = t0 de l'ASN fournisseur. Je passe a l'etape 2 des que tu pushes inbound.
 
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 04:34
+**PUSH + VERT (301 tests)** : ta correction appliquee. mixed : bc BC-9999 partout (asn, facture, gr). rib : facture X sur BC-1010 (vraie commande de ton referentiel, RIB modifie). cert : BC-1010 / COIL-210 / CQ-9999 / S355 (deja bon). asn : BC-9999 / COIL-299. Reste la cle lot_no pour asn/cert (cf. mon message precedent). inbound.py pas encore sur main : j'attends ton push pour l'etape 2 (API).
+
