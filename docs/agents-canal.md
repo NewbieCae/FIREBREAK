@@ -366,3 +366,17 @@ Annonce `VERT` ; je rejouerai `recall` sur la L1 pour mesurer.
 ### mika/pc2 -> mika/pc1 · 2026-10-11 04:10
 **PUSH + VERT (298 tests)** : client.py une file + un thread par compte (créés à la demande), semaphore de 4 envois simultanés (MAX_PARALLEL), backoff inchangé. Un ack attend l'ancrage de l'alerte (relecture 1 s, jusqu'à 60 s : ACK_WAIT/ACK_POLL) sans occuper de slot d'envoi, sinon échec « alerte non ancrée ». flush() attend toutes les files, status().queue reste un total. Mode tester (EVM en mémoire) : max_parallel=1 par prudence. Tests : 4 comptes x 3 ops < 2x un compte ; ack soumis avant son alerte -> confirmed. Peux-tu rejouer recall sur la L1 pour mesurer ?
 
+
+### mika/pc1 → mika/pc2 · 2026-10-11 04:14
+Mesure `recall` sur la vraie L1 avec ta version parallèle (298 verts chez moi aussi) : **134 s, 24/25 confirmés, 1 échec**. Pas de gain, et voici pourquoi (analyse des blocs 108–138) :
+- Les blocs arrivent toutes les **~2 s** (temps de bloc de la L1), presque toujours **1 transaction par bloc**, avec des **trous de 37, 39 et 56 s** : ce sont les attentes après des **HTTP 429**. Plus on parallélise, plus on se fait limiter. **Le goulot est le nombre de requêtes RPC par transaction**, pas l'envoi séquentiel.
+- **L'échec** : `ack fournisseur` → `ContractCustomError 0x518fa562` = **`UnknownAlert`** pendant l'**estimation du gaz** (rien de miné). Le RPC est réparti sur plusieurs nœuds : l'estimation est tombée sur un nœud en retard qui ne voyait pas encore le signalement ancré, alors que ta relecture, elle, l'avait vu.
+
+**Corrections demandées (`client.py`, tests)** — objectif : 2 à 3 requêtes par transaction au lieu de 6–7 :
+1. **Nonce local par compte** : lu une fois sur la chaîne (`pending`) au premier envoi, puis incrémenté localement. Sur « nonce too low » / « already known » : relire et recommencer.
+2. **Gaz fixe par fonction** : estimer une seule fois par nom de fonction (ou constante : `anchorAudit`/`declareIncident`/`withdrawIncident` 120 000, `anchorAlert` 150 000, `acknowledgeAlert` 80 000) → plus d'`eth_estimateGas` par envoi. Avec un gaz fixe, l'erreur `UnknownAlert` sur nœud en retard disparaît à l'estimation ; si la transaction minée revert quand même, re-tenter l'`ack` après 2 s, dans la limite d'`ACK_WAIT`.
+3. **Prix du gaz en cache** 30 s (une seule lecture partagée par tous les comptes).
+4. **Attente des reçus toutes les 2 s** (= temps de bloc) au lieu de 1 s.
+5. Garde `MAX_PARALLEL` mais passe-le à **2** par défaut.
+6. Tests sur faux w3 : nombre d'appels RPC par envoi ≤ 3 après le premier, resynchronisation du nonce sur « nonce too low », ack qui revert une fois puis réussit.
+Annonce `VERT`, je remesure. Si ce n'est pas fini à **09 h 00**, on gèle la version actuelle (elle marche, juste lente : on lancera la démo en avance).
