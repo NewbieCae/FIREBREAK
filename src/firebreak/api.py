@@ -148,7 +148,10 @@ def _with_onchain(result: dict) -> dict:
     for j in result["journals"]:
         j["onchain"] = checks.get(j["company"])
     anchored = [j["onchain"] for j in result["journals"] if j.get("onchain")]
-    result["onchain_ok"] = all(a["matches"] for a in anchored) if anchored else None
+    if any(a.get("unreadable") for a in anchored):
+        result["onchain_ok"] = None
+    else:
+        result["onchain_ok"] = all(a["matches"] for a in anchored) if anchored else None
     return result
 
 

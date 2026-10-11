@@ -607,6 +607,8 @@ Chaque élément de `journals` porte `onchain` (`null` si chaîne désactivée o
 
 `matches` : le journal local tronqué à `anchored_entries` entrées a pour dernier hash `anchored_head`.
 
+Si un ancrage confirmé existe mais que la lecture on-chain échoue après 3 nouvelles tentatives (nœud en retard, 429), `onchain` vaut `{"unreadable": true, "matches": null}` et `onchain_ok` reste `null` : ce n'est jamais interprété comme une falsification.
+
 ### `POST /api/demo/rewrite` (seulement avec `FIREBREAK_DEMO=1`, sinon 404)
 
 Corps `{"company": "fabricant", "drop_event": "alert_received"}`. Supprime la première entrée de ce type du journal et **recalcule tous les hash** : `/api/audit/verify` renvoie `ok: true` (la chaîne locale est cohérente) mais `onchain_ok: false` (le journal ne correspond plus à l'ancrage). 400 si aucune entrée de ce type.

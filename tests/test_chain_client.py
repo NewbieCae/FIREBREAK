@@ -82,6 +82,66 @@ def test_tester_rejouer_la_demo_ne_echoue_pas():
         [(r.kind, r.status) for r in recs if r.status != "confirmed"]
 
 
+def _web3_chain_with_fake_contract(reads, monkeypatch):
+    import firebreak.chain.client as client_mod
+    monkeypatch.setattr(client_mod, "READ_RETRY_DELAY", 0)
+
+    class Call:
+        def __init__(self, value):
+            self.value = value
+
+        def call(self):
+            if isinstance(self.value, Exception):
+                raise self.value
+            return self.value
+
+    class Fns:
+        def latestAudit(self, run_id, cid):
+            return Call(reads.pop(0) if len(reads) > 1 else reads[0])
+
+    class Contract:
+        functions = Fns()
+
+    class Eth:
+        chain_id = 1
+
+    class W3:
+        eth = Eth()
+
+    chain = client_mod.Web3Chain(ChainConfig(mode="tester"), W3(), Contract(), {})
+    return chain, client_mod
+
+
+def test_lecture_onchain_retente_puis_reussit(monkeypatch):
+    head = bytes.fromhex("ab" * 32)
+    chain, mod = _web3_chain_with_fake_contract(
+        [(b"", 0, 0), RuntimeError("429"), (head, 5, 1)], monkeypatch)
+    chain._records.append(AnchorRecord(1, "audit", "fabricant", "0x" + "ab" * 32,
+                                       status="confirmed", block=7))
+    got = chain.read_audit_anchor(b"\0" * 32, "fabricant")
+    assert got["anchored_entries"] == 5 and got["anchored_head"] == head.hex()
+
+
+def test_lecture_onchain_illisible_n_est_pas_non_ancre(monkeypatch):
+    chain, _ = _web3_chain_with_fake_contract([(b"", 0, 0)], monkeypatch)
+    assert chain.read_audit_anchor(b"\0" * 32, "fabricant") is None
+    chain._records.append(AnchorRecord(1, "audit", "fabricant", "0x" + "ab" * 32,
+                                       status="confirmed", block=7))
+    assert chain.read_audit_anchor(b"\0" * 32, "fabricant") == {"unreadable": True}
+
+
+def test_verify_onchain_illisible_ne_dit_pas_falsifie():
+    class Unreadable(FakeChain):
+        def read_audit_anchor(self, run_id, company):
+            return {"unreadable": True}
+
+    sim = build_simulation()
+    anchorer = Anchorer(Unreadable())
+    anchorer.on_new_simulation(sim)
+    res = anchorer.verify_onchain(sim)
+    assert all(v == {"unreadable": True} for v in res.values())
+
+
 def test_l1_injoignable_ne_leve_pas():
     cfg = ChainConfig(mode="l1", rpc_url="http://127.0.0.1:1", chain_id=1,
                       mnemonic="test test test test test test test test test "

@@ -287,14 +287,21 @@ class AuditOut(BaseModel):
 
 
 class OnchainCheck(BaseModel):
-    anchored_head: str = Field(description="Tête du journal telle qu'ancrée sur la chaîne.")
-    anchored_entries: int
+    anchored_head: str | None = Field(
+        default=None, description="Tête du journal telle qu'ancrée sur la chaîne.")
+    anchored_entries: int | None = None
     block: int | None = None
     tx_hash: str | None = None
     explorer_link: str | None = None
-    matches: bool = Field(
+    matches: bool | None = Field(
+        default=None,
         description="Le journal local tronqué à `anchored_entries` a pour dernier hash "
-                    "`anchored_head`."
+                    "`anchored_head`. null si `unreadable`."
+    )
+    unreadable: bool = Field(
+        default=False,
+        description="Un ancrage confirmé existe mais la lecture on-chain a échoué "
+                    "après plusieurs tentatives : à réessayer, ce n'est pas une falsification."
     )
 
 

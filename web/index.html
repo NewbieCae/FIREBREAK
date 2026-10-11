@@ -473,7 +473,8 @@ function showOnchain(v) {
   const mark = ok => `<span class="${ok ? 'sig-ok' : 'sig-ko'}">${ok ? '✓' : '✗'}</span>`;
   document.getElementById('chain-verify').innerHTML = v.journals.map(j =>
     `<div>${esc(j.company)} — local ${mark(j.ok)} — Avalanche ` +
-    (j.onchain ? `${mark(j.onchain.matches)} (${j.onchain.anchored_entries} entrées` +
+    (j.onchain && j.onchain.unreadable ? '<span class="muted">lecture impossible, réessayer</span>' :
+     j.onchain ? `${mark(j.onchain.matches)} (${j.onchain.anchored_entries} entrées` +
       `${j.onchain.block ? ', bloc ' + j.onchain.block : ''})` : '<span class="muted">non ancré</span>') +
     `</div>`).join('') +
     (v.onchain_ok === false ? '<b class="sig-ko">Le journal ne correspond plus à ce qui a été ancré.</b>' : '');

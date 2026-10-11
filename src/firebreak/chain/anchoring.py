@@ -107,8 +107,8 @@ class Anchorer:
         result: dict[str, dict | None] = {}
         for cid, led in sim.ledgers.items():
             anchor = self.client.read_audit_anchor(self.run_id, cid)
-            if anchor is None:
-                result[cid] = None
+            if anchor is None or anchor.get("unreadable"):
+                result[cid] = anchor
                 continue
             n = anchor["anchored_entries"]
             entries = led.audit.entries()

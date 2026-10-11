@@ -19,6 +19,8 @@ from .ids import company_id
 
 RECEIPT_TIMEOUT = 20
 ATTEMPTS = 2
+READ_RETRIES = 3
+READ_RETRY_DELAY = 1.0
 
 
 @dataclass
@@ -141,13 +143,6 @@ class Web3Chain:
     def read_audit_anchor(self, run_id: bytes, company: str) -> dict | None:
         if not self.connected:
             return None
-        try:
-            head, entries, _ = self.contract.functions.latestAudit(
-                run_id, company_id(company)).call()
-        except Exception:
-            return None
-        if not entries:
-            return None
         rec = None
         with self._lock:
             for r in reversed(self._records):
@@ -155,6 +150,22 @@ class Web3Chain:
                         and r.status == "confirmed"):
                     rec = r
                     break
+        # Un nœud en retard peut renvoyer 0 entrée juste après la confirmation.
+        attempts = 1 + (READ_RETRIES if rec else 0)
+        head, entries = b"", 0
+        for i in range(attempts):
+            if i:
+                time.sleep(READ_RETRY_DELAY)
+            try:
+                head, entries, _ = self.contract.functions.latestAudit(
+                    run_id, company_id(company)).call()
+            except Exception:
+                entries = 0
+                continue
+            if entries:
+                break
+        if not entries:
+            return {"unreadable": True} if rec else None
         return {
             "anchored_head": bytes(head).hex(),
             "anchored_entries": int(entries),
@@ -186,6 +197,8 @@ class Web3Chain:
                 self._queue.task_done()
 
     def _send(self, op: ChainOp, rec: AnchorRecord) -> None:
+        from .deployer import RECEIPT_POLL_SECONDS
+
         acct = self.accounts.get(op.company)
         if acct is None:
             raise ValueError(f"compte inconnu : {op.company}")
@@ -208,7 +221,8 @@ class Web3Chain:
                     rec.status = "sent"
                     rec.tx_hash = hex_hash
                 receipt = self.w3.eth.wait_for_transaction_receipt(
-                    tx_hash, timeout=RECEIPT_TIMEOUT)
+                    tx_hash, timeout=RECEIPT_TIMEOUT,
+                    poll_latency=RECEIPT_POLL_SECONDS)
                 with self._lock:
                     if receipt["status"] == 1:
                         rec.status = "confirmed"
