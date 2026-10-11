@@ -59,6 +59,7 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 
 ## Décisions
 
+- 11/10 05 h 55 (Yann) : pour redéployer sur Vercel quand le dernier commit n'est pas de Yann (sinon Vercel le bloque) : `git archive HEAD | tar -x -C <dossier>`, copier `.vercel/` dedans, puis `vercel deploy --prod` depuis ce dossier. Rappel : sur Vercel l'état vit en mémoire par instance ; un parcours en plusieurs étapes peut se perdre si deux requêtes tombent sur deux instances, d'où la démo en local en priorité.
 - 11/10 04 h 50 (Yann) : nouveau design de l'interface, à reprendre dans les slides : fond noir `#050506`, le sain en blanc neutre, corail = bloqué, ambre = reprise, bleu `#6e95ff` = preuve ; police Geist ; logo = grille de points coupée par une barre. Tout est dans `design.md`.
 - 11/10 03 h 45 (Mika) : on ne blackliste pas un fournisseur pour un problème qualité : on isole le lot en cause, au cas par cas, sur décision humaine ; les alertes vont dans les deux sens (vers l'aval : alertes signées ; vers l'amont : signalements qualité signés).
 
