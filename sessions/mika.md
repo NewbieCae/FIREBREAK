@@ -5,7 +5,8 @@
 ## Où j'en suis
 
 - **Avalanche L1** : L1 de l'équipe (chainId 569712), contrat `FirebreakRegistry` déployé (`contracts/deployments/l1.json`), ancrage des journaux d'audit, des alertes signées, des signalements qualité, des accusés de réception et des déclarations. Off par défaut (`FIREBREAK_CHAIN`). Validé sur la vraie L1 : démo complète et scénario `recall`, 0 échec, vérification on-chain conforme, réécriture de journal détectée. Mesures réelles dans `docs/avalanche/pitch.md`.
-- **Qualité, dans les deux sens** : lot suspect sans blacklister le fournisseur, analyse de rappel depuis un produit fini, signalement qualité signé vers l'amont avec décision au cas par cas. Scénarios `lot` et `recall`, API, panneau de debug. 295 tests verts.
+- **Qualité, dans les deux sens** : lot suspect sans blacklister le fournisseur, analyse de rappel depuis un produit fini, signalement qualité signé vers l'amont avec décision au cas par cas. Scénarios `lot` et `recall`, API, panneau de debug.
+- **Contrôle des entrées en stock** : note de confiance /100 de chaque réception, mise en attente sous 80, décision humaine. Sur les 3 attaques, le lot piégé est arrêté à la réception. API, ancrage, panneau de debug. 325 tests verts. Feuille de démo : `docs/demo-avalanche-qualite.md`.
 
 ## En cours
 
@@ -13,8 +14,8 @@
 
 ## Prochaine étape
 
-- Mesurer l'envoi parallèle sur la L1, puis gel à 10 h.
-- Aider le pitch : angle « qualité et rappel produit », chiffres réels Avalanche.
+- Gel à 10 h (plus de changement de code sauf bug bloquant).
+- Aider le pitch : angle qualité, rappel produit et entrées en stock (`docs/qualite.md`), chiffres réels Avalanche (`docs/avalanche/pitch.md`).
 
 ## Besoin des autres
 
