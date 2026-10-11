@@ -60,6 +60,15 @@ https://2hxmvtcr.firn.gg), mesurés par pc1 le 11/10 entre 01 h 50 et 03 h 40 :
 - **« Vérifier sur Avalanche »** (lecture des 4 journaux ancrés) : ~3,4 s,
   tout conforme. **Réécriture du journal du fabricant** : vérification locale
   « intègre », vérification Avalanche « non conforme ».
+- **Scénario `recall` (rappel qualité, contrat `0xeA4B…`, 04 h 05)** : le
+  client signale une casse, le distributeur confirme et remonte, le fabricant
+  analyse et déclare la bobine COIL-103 suspecte, le fournisseur confirme.
+  20 opérations isolées, fournisseur jamais déclaré compromis. **25 preuves
+  ancrées, 25 confirmées, 0 échec** (journaux, alertes, signalements qualité,
+  accusés de réception, déclaration) ; vérification locale et Avalanche
+  conformes. L'API répond en 0,1 s pour les 5 gestes ; la file a mis ~127 s
+  à se vider (envoi séquentiel, ~5 s par preuve) — envoi parallèle par
+  entreprise en cours pour réduire ce délai.
 - Pour le pitch : dire « une preuve est sur la chaîne en quelques secondes,
   et la démo n'attend jamais la chaîne ». Lancer la démo **une minute avant**
   de montrer le panneau Avalanche, pour que la file soit vidée.
