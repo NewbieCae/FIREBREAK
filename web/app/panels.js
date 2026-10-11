@@ -21,8 +21,10 @@ function openDrawer(kind, html, id = '') {
   drawerKind = kind;
   d.dataset.id = id;
   d.innerHTML = html;
+  d.inert = false;
   d.classList.add('on');
   $('#scrim').classList.add('on');
+  syncInert();
   d.querySelector('[data-close]')?.addEventListener('click', closeDrawer);
   requestAnimationFrame(() => d.focus({ preventScroll: true }));
   drawerToken++;
@@ -33,10 +35,17 @@ export function closeDrawer() {
   const d = $('#drawer');
   if (!drawerOpen()) return;
   d.classList.remove('on');
+  d.inert = true;
   $('#scrim').classList.remove('on');
   drawerKind = null;
   drawerToken++;
+  syncInert();
   if (lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+}
+
+// La scène derrière un tiroir ou l'écran « avec vs sans » n'est plus atteignable au clavier.
+function syncInert() {
+  $('#app').inert = drawerOpen() || versusOpen();
 }
 
 const closeBtn = `<button class="btn ghost icon" data-close aria-label="Fermer (Échap)" title="Fermer (Échap)">${icon('close', 's20')}</button>`;
@@ -215,7 +224,9 @@ function auditLine(e) {
 }
 
 export async function openAudit(company) {
-  const companies = S.state.companies;
+  // En vue partenaire, on ne voit que son propre journal.
+  const companies = S.state.companies.filter((c) => S.view === 'all' || c.id === S.view);
+  if (S.view !== 'all') company = S.view;
   const tabs = companies.map((c) => `<button role="tab" data-co="${c.id}" aria-selected="${c.id === company}">${F.ROLE_SHORT[c.id] || F.esc(c.name)}</button>`).join('');
   const token = openDrawer('audit', `
     ${head({ ico: 'audit', title: "Journal d'audit", sub: '<span>Ajout seul, chaîné par hash (sha256) : une entrée modifiée casse la chaîne.</span>' })}
@@ -235,7 +246,7 @@ export async function openAudit(company) {
     const ok = ver.ok;
     $('#auVerify').className = `verify surface ${ok ? 'ok' : 'bad'}`;
     $('#auVerify').innerHTML = `${icon(ok ? 'verified' : 'leak', 's20')}<span>${ok
-      ? `Chaîne locale intacte : ${F.n(j?.entries ?? log.entries.length)} entrée(s) vérifiée(s)`
+      ? `Chaîne locale intacte : ${F.n(j?.entries ?? log.entries.length)} entrée${(j?.entries ?? log.entries.length) > 1 ? 's vérifiées' : ' vérifiée'}`
       : `Chaîne cassée à l'entrée #${j?.first_broken_index}`}</span><span class="mono">${F.tok(log.head, 6, 6)}</span>`;
     const oc = j?.onchain;
     if (oc) {
@@ -385,17 +396,21 @@ async function readFile(blob, type, name = blob.name) {
   if (blob.size > 2 * 1024 * 1024) { toast('Document trop gros : 2 Mo maximum.'); return; }
   resultSkeleton();
   const co = ingestCompany;
+  const token = drawerToken;
   try {
     if (type === 'application/json' && /epcis/i.test(name || '') || (type === 'application/json' && (await blob.slice(0, 600).text()).includes('EPCISDocument'))) {
       const before = new Set(S.recs.keys());
+      const snapshot = { status: new Map([...S.status].filter(([id]) => before.has(id))), compromised: new Set(S.compromised) };
       const res = await api('POST', `/api/ingest/epcis?company=${encodeURIComponent(co)}`, blob, { raw: true, contentType: 'application/json' });
-      showEpcis(res, co, before);
+      // Les records sont déjà au registre côté serveur : on les montre quoi qu'il arrive au tiroir.
+      emit('ingested', { state: res.state, snapshot, title: 'Import EPCIS' });
+      if (token === drawerToken) showEpcis(res, co);
       return;
     }
     const prop = await api('POST', `/api/ingest/document?company=${encodeURIComponent(co)}`, blob, { raw: true, contentType: type });
-    showProposal(prop, name);
+    if (token === drawerToken) showProposal(prop, name);
   } catch (e) {
-    $('#inResult').innerHTML = '';
+    if (token === drawerToken && $('#inResult')) $('#inResult').innerHTML = '';
     fail(e, () => readFile(blob, type, name));
   }
 }
@@ -435,14 +450,15 @@ function showProposal(p, name) {
   </section>`;
   $('#inCancel').addEventListener('click', () => { $('#inResult').innerHTML = ''; });
   $('#inConfirm').addEventListener('click', async (e) => {
-    e.currentTarget.disabled = true;
+    const btn = e.currentTarget;
+    btn.disabled = true;
     try {
       const snapshot = emitSnapshot();
       const st = await api('POST', `/api/ingest/document/${encodeURIComponent(p.id)}/confirm`);
       closeDrawer();
       emit('ingested', { state: st, snapshot, title: 'Document confirmé' });
     } catch (err) {
-      e.currentTarget.disabled = false;
+      btn.disabled = false;
       fail(err);
     }
   });
@@ -452,7 +468,7 @@ let snapshotFn = () => null;
 export function setSnapshotFn(fn) { snapshotFn = fn; }
 function emitSnapshot() { return snapshotFn(); }
 
-function showEpcis(res, co, before) {
+function showEpcis(res, co) {
   const added = res.imported.length;
   $('#inResult').innerHTML = `<section>
     <h3 class="sec-title">${icon('globe', 's16')}Import EPCIS</h3>
@@ -463,8 +479,8 @@ function showEpcis(res, co, before) {
     </div>
     <div class="explain-foot">${icon('verified', 's16')}<span>Données structurées GS1 : ajoutées tout de suite, puis soumises aux mêmes règles que les autres.</span></div>
   </section>`;
-  const snapshot = { status: new Map([...S.status].filter(([id]) => before.has(id))), compromised: new Set(S.compromised) };
-  setTimeout(() => { closeDrawer(); emit('ingested', { state: res.state, snapshot, title: 'Import EPCIS' }); }, 1400);
+  const token = drawerToken;
+  setTimeout(() => { if (token === drawerToken) closeDrawer(); }, 1600);
 }
 
 // =====================================================================
@@ -472,11 +488,14 @@ function showEpcis(res, co, before) {
 // =====================================================================
 
 export function versusOpen() { return $('#versus').classList.contains('on'); }
+let versusFocus = null;
 export function closeVersus() {
+  if (!versusOpen()) return;
   $('#versus').classList.remove('on');
   $('#versus').innerHTML = '';
-  $('#app').inert = false;
+  syncInert();
   emit('versus', false);
+  if (versusFocus && document.contains(versusFocus)) versusFocus.focus({ preventScroll: true });
 }
 
 function vsSide(side, cmp, sideKey, truth) {
@@ -503,7 +522,7 @@ function vsSide(side, cmp, sideKey, truth) {
     <div class="vs-stats">
       <div class="vs-stat surface q"><div class="v">${F.n(side.blocked)}</div><div class="l">opérations bloquées</div></div>
       <div class="vs-stat surface ${side.healthy_blocked ? 'q' : 'ok'}"><div class="v">${F.n(side.healthy_blocked)}</div><div class="l">saines bloquées pour rien</div></div>
-      <div class="vs-stat surface ${leak ? 'alarm' : 'ok'}"><div class="v">${F.n(side.leaked)}</div><div class="l">${leak ? 'contaminées passent quand même' : 'contaminée ne passe'}</div></div>
+      <div class="vs-stat surface ${leak ? 'alarm' : 'ok'}"><div class="v">${F.n(side.leaked)}</div><div class="l">${!leak ? 'aucune contaminée ne passe' : side.leaked > 1 ? 'contaminées passent quand même' : 'contaminée passe quand même'}</div></div>
       <div class="vs-stat surface ${side.activity_preserved_pct >= 99.95 ? 'ok' : ''}"><div class="v">${F.pctRaw(side.activity_preserved_pct)}</div><div class="l">activité saine préservée</div></div>
     </div>
     <div class="vs-map">${cols}</div>`;
@@ -521,8 +540,9 @@ const dec1 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1, minimumF
 export async function openVersus() {
   const box = $('#versus');
   box.innerHTML = `<div class="vs-top"><h2>Avec ou sans Firebreak</h2></div><div class="vs-cols"><div class="vs glass left"><div class="sk block"></div><div class="sk block"></div></div><div class="vs glass right"><div class="sk block"></div><div class="sk block"></div></div></div><div></div>`;
+  if (!versusOpen()) versusFocus = document.activeElement;
   box.classList.add('on');
-  $('#app').inert = true;
+  syncInert();
   emit('versus', true);
   let cmp;
   try {
