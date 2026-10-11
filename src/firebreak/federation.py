@@ -14,6 +14,11 @@
   format et signée de la même façon. B retire ces jetons de ses seeds,
   recalcule, et lève à son tour vers l'aval. Une release falsifiée est
   rejetée : les jetons restent en quarantaine chez B.
+- Dans l'autre sens, B peut envoyer à A un **signalement qualité** signé
+  (`QualityReport`) : « les données que tu m'as envoyées (ces jetons) sont
+  mises en cause ». Il ne met rien en quarantaine chez A : A retrouve ses
+  propres records à partir des jetons, et un humain décide (cas par cas).
+  Seul l'émetteur d'un jeton peut le résoudre : B n'apprend rien de plus.
 """
 
 from __future__ import annotations
@@ -23,7 +28,7 @@ import hmac
 import json
 import os
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
@@ -122,6 +127,8 @@ class Federation:
         self.alerts: list[Alert] = []
         self._alerted_links: set[tuple[str, str]] = set()
         self._issue_counter = 0
+        self.reports: list[QualityReport] = []
+        self._report_counter = 0
 
     def register_send(
         self, sender: str, sender_record: str, recipient: str, recipient_record: str
@@ -194,3 +201,60 @@ class Federation:
         else:
             ledgers[alert.recipient].register_alert_tokens(list(alert.tokens))
         return True
+
+    # -- signalements qualité vers l'amont ----------------------------------
+
+    def make_report(self, sender: str, recipient: str, tokens: list[str], reason: str,
+                    issued_at: datetime) -> QualityReport:
+        """Signalement signé par `sender` (le client) à l'émetteur des jetons."""
+        self._report_counter += 1
+        report = QualityReport(
+            id=f"QR-{self._report_counter:03d}", sender=sender, recipient=recipient,
+            tokens=sorted(tokens), reason=reason, issued_at=issued_at,
+        )
+        report.signature = self._priv[sender].sign(_canonical(report.payload())).hex()
+        self.reports.append(report)
+        return report
+
+    def receive_report(self, report: QualityReport) -> list[str]:
+        """Côté destinataire : vérifie la signature, puis résout les jetons en
+        ses propres records (seul l'émetteur d'un jeton sait le faire).
+        Renvoie les ids de records ; [] si la signature est invalide."""
+        report.verified = self.verify(report.sender, report.payload(), report.signature)
+        if not report.verified:
+            report.records = []
+            return []
+        wanted = set(report.tokens)
+        report.records = sorted({
+            link.sender_record for link in self.links
+            if link.sender == report.recipient and link.recipient == report.sender
+            and link.token in wanted
+        })
+        return report.records
+
+
+@dataclass
+class QualityReport:
+    """Signalement qualité vers l'amont : jetons opaques + motif, signé."""
+
+    id: str
+    sender: str
+    recipient: str
+    tokens: list[str]
+    reason: str
+    issued_at: datetime
+    signature: str = ""
+    verified: bool | None = None
+    records: list[str] = field(default_factory=list)  # résolus chez le destinataire
+    status: str = "pending"  # pending | confirmed | rejected
+
+    def payload(self) -> dict:
+        return {
+            "type": "report",
+            "id": self.id,
+            "from": self.sender,
+            "to": self.recipient,
+            "tokens": sorted(self.tokens),
+            "reason": self.reason,
+            "issued_at": self.issued_at.isoformat(),
+        }

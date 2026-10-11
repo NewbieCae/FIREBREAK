@@ -25,10 +25,15 @@ def transformation_payload(consumed: list[Record], output_lot: str,
     return {**(extra or {}), "lot": output_lot, "input_lots": input_lots}
 
 
+def records_of_lot(ledger: Ledger, lot: str) -> list[str]:
+    """Records d'un registre qui portent ce lot, dans l'ordre d'insertion."""
+    return [rid for rid, r in ledger.records.items() if lot_of(r) == lot]
+
+
 def lot_genealogy(ledger: Ledger, lot: str) -> dict:
     """Lots en amont (consommés, directement ou non) et en aval (fabriqués
     avec ce lot) dans le registre d'une entreprise."""
-    carriers = [rid for rid, r in ledger.records.items() if lot_of(r) == lot]
+    carriers = records_of_lot(ledger, lot)
     if not carriers:
         raise KeyError(lot)
     up: set[str] = set()

@@ -3,11 +3,13 @@
 Règles :
 - seeds = records dont l'origine est une entreprise déclarée compromise
   (et ts >= since), ou dont le `token` figure dans une alerte vérifiée
-  (et pas encore levée par une alerte « release » vérifiée) ;
+  (et pas encore levée par une alerte « release » vérifiée), ou déclarés
+  suspects un par un (lot défectueux : on isole ce lot, pas le fournisseur) ;
 - une seule déclaration par source : on garde l'heure la plus ancienne ;
 - propagation BFS le long des dépendances (input -> record dérivé) ;
 - un record `verified` ou `released` n'est jamais contaminé et stoppe
-  la propagation à travers lui ;
+  la propagation à travers lui, sauf s'il est lui-même déclaré suspect
+  (un défaut découvert après coup prime sur un contrôle passé) ;
 - chaque record contaminé garde `taint_path` (chemin seed -> lui-même),
   qui sert de preuve explicable.
 """
@@ -26,6 +28,7 @@ from .model import Record, payment_amount
 RULE_SOURCE = "source_compromise"
 RULE_ALERT = "alerte_verifiee"
 RULE_DEPENDENCY = "dependance"
+RULE_SUSPECT = "lot_suspect"
 
 
 @dataclass
@@ -48,6 +51,7 @@ class Ledger:
         self.declarations: list[Declaration] = []
         self.alert_tokens: set[str] = set()
         self.seed_rules: dict[str, str] = {}
+        self.suspects: dict[str, str] = {}  # record_id -> motif (lot déclaré suspect)
         self.audit = AuditLog(company_id)
 
     def add(self, record: Record) -> Record:
@@ -89,10 +93,28 @@ class Ledger:
     def release_alert_tokens(self, tokens: list[str]) -> None:
         self.alert_tokens.difference_update(tokens)
 
+    def mark_suspect(self, record_ids: list[str], reason: str) -> None:
+        """Déclare suspects des records précis (un lot), sans toucher au reste
+        de ce que leur émetteur a envoyé."""
+        for rid in record_ids:
+            if rid not in self.records:
+                raise KeyError(rid)
+        for rid in record_ids:
+            self.suspects[rid] = reason
+            if self.records[rid].status == "released":
+                self.records[rid].status = "ok"  # un défaut découvert après coup rouvre le dossier
+
+    def clear_suspect(self, record_ids: list[str]) -> None:
+        for rid in record_ids:
+            self.suspects.pop(rid, None)
+
     def _seeds(self) -> dict[str, str]:
         """Seeds -> règle qui les a déclenchés."""
         seeds: dict[str, str] = {}
         for r in self.records.values():
+            if r.id in self.suspects:
+                seeds[r.id] = RULE_SUSPECT
+                continue
             if r.token is not None and r.token in self.alert_tokens:
                 seeds[r.id] = RULE_ALERT
                 continue
@@ -129,7 +151,8 @@ class Ledger:
             if rid in tainted:
                 continue
             record = self.records[rid]
-            if record.verified or record.status == "released":
+            explicit = rid in self.suspects  # déclaration humaine : prime sur un contrôle passé
+            if not explicit and (record.verified or record.status == "released"):
                 continue  # jamais contaminé, stoppe la propagation
             tainted.add(rid)
             p = parent.get(rid)
