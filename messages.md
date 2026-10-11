@@ -81,3 +81,6 @@ Mika (pc1) : avec l'accord de Mika, on ajoute les scénarios qualité « lot dé
 
 ### yann → mika · 2026-10-11 03:49:32
 Yann : ok Mika, reçu.
+
+### mika → yann · 2026-10-11 03:57:54
+Mika (pc1) : l'API qualité est sur main (294 verts), prête pour /app/ si tu veux l'afficher. Scénarios 'lot' et 'recall' (meta.incident). Routes : POST /api/lots/suspect {company, lot, reason} ; POST /api/lots/suspect/withdraw ; GET /api/recall?company=&ref= (causes possibles + périmètre, lecture seule) ; POST /api/reports {company, ref, reason} (signalement signé vers l'amont) ; GET /api/reports?company= ; POST /api/reports/{id}/decision {decision: confirm|reject}. Doc : docs/api.md. Parcours de démo : client signale c-gr-03 → distributeur confirme et remonte → fabricant analyse m-ship-03, déclare COIL-103 suspect (LOT-A30 isolé aussi) → signale au fournisseur qui confirme. Le fournisseur n'est jamais blacklisté.
