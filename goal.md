@@ -8,7 +8,7 @@
 Livrer **FIREBREAK, le pare-feu des supply chains**, au hackathon Secure Horizons (Track 3 · Uncharted Frontiers) :
 une démo de 3 minutes qui montre qu'en cas de compromission d'un partenaire, on bloque **uniquement les opérations contaminées** (3 sur 100, pas 100), avec une décision prouvable et des alertes signées entre entreprises.
 
-- **Rendu : dimanche 11 octobre 2026, 12 h.** (Le brief annonçait 17 h pour la fin du hacking.)
+- **Rendu : dimanche 11 octobre 2026, 12 h : premier tour de pitch** (5 min + 2 min de questions). Les finalistes repitchent plus tard dans la journée (3 min + 3 min de questions, voir `docs/pitch-firebreak.md`).
 - Gel du code visé : dimanche **10 h**, puis répétition du pitch jusqu'à 12 h.
 - Idée : `docs/firebreak.md` · Concurrents : `docs/benchmark-firebreak.md` · Plan : `docs/plan.md` · API : `docs/api.md`.
 
@@ -55,6 +55,8 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 
 ## Décisions
 
+- 11/10 03 h 50 (Céline) : Track 3 validé par l'organisation. Calendrier : premier pitch à 12 h, finale plus tard dans la journée pour les finalistes.
+
 - 11/10 03 h 30 (Céline) : chiffres de chaîne cités = ceux de la vraie L1 (≈ 2 s par preuve, 12 ancrages en ≈ 24 s), annoncés « mesurés sur notre démo » ; on dit « un seul validateur en démo, les membres du consortium en production » ; la ligne « actions irréversibles à p=0,3 » passe de la diapo Preuve à la diapo Limites.
 
 - 11/10 02 h 50 (Céline) : le pitch assume la blockchain. `docs/pitch-firebreak.md` (question 8, diapos 4 et 7, déroulé de la démo aligné sur les 5 gestes de `/app/` et sur 193 opérations), `docs/firebreak.md`, `docs/benchmark-firebreak.md`, `docs/api.md` (limite du journal → ancrage Avalanche), README : « les règles décident, l'IA explique, la blockchain prouve ». TradeLens : arrêt annoncé fin 2022, fermeture début 2023.
@@ -79,4 +81,4 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 - [ ] Clés de signature et PAIR_SECRET de federation.py : ne plus les dériver du nom / ne plus les écrire en dur
 - [ ] Retirer adresses e-mail et détails de boîte mail de AGENTS.md et docs/brief.md, puis décider du sort de l'historique
 - [x] README : mettre Track 3, marqueurs de conflit poussés sur main résolus (Céline, 11/10)
-- [ ] Confirmer le passage officiel Track 1 → Track 3 auprès des organisateurs (annoncé le 10/10, voir Décisions)
+- [x] Confirmer le passage officiel Track 1 → Track 3 auprès des organisateurs : validé par l'organisation (confirmé par Céline le 11/10, la note manquait)

@@ -1,6 +1,6 @@
 # FIREBREAK — Plan de build en 6 étapes
 
-> Fin du hacking : dimanche 11 octobre 2026, 17 h. L'interface finale est faite par une collègue ; ce dépôt livre **le produit** (moteur, API, IA) et un dashboard de debug.
+> Calendrier : gel du code dimanche 11 octobre à 10 h, premier tour de pitch à 12 h, finale plus tard dans la journée (voir `goal.md`). L'interface finale est faite par une collègue ; ce dépôt livre **le produit** (moteur, API, IA) et un dashboard de debug.
 
 ## Point de départ (10 octobre, 18 h 40)
 
