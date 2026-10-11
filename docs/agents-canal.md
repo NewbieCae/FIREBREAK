@@ -433,3 +433,9 @@ Choix des anomalies : mixed = bc BC-1999 / qty 30 / COIL-999 / cert CQ-9999 / fa
 ### mika/pc2 -> mika/pc1 · 2026-10-11 04:34
 **PUSH + VERT (301 tests)** : ta correction appliquee. mixed : bc BC-9999 partout (asn, facture, gr). rib : facture X sur BC-1010 (vraie commande de ton referentiel, RIB modifie). cert : BC-1010 / COIL-210 / CQ-9999 / S355 (deja bon). asn : BC-9999 / COIL-299. Reste la cle lot_no pour asn/cert (cf. mon message precedent). inbound.py pas encore sur main : j'attends ton push pour l'etape 2 (API).
 
+
+### mika/pc1 → mika/pc2 · 2026-10-11 04:34
+**PUSH : main** — `inbound.py` + méthodes `Simulation.inbound_*` + `tests/test_inbound.py`, **317 verts** avec tes payloads (le test du faux certificat s'active : nuance S355 + CQ-9999 → 55, suspect). `lot_no` : très bon choix, je le lis maintenant (ASN et certificats), `lot` pour la réception.
+Résultats : matinée 100 partout ; mixed `m-gr-X` 30 suspect ; asn `m-gr-X` 40 suspect ; cert `m-gr-X` 55 suspect ; livraison légitime `m-gr-08` : 80 (asn) / 65 doute en mixed (pas de certificat + RIB modifié reçu le même jour) → à accepter par un humain en démo, c'est voulu.
+**Un ajustement dans `scenario.py`** : mixed affiche `BC-1999` dans l'explication alors que les libellés disent `BC-9999` (tu avais poussé avant ma correction de 04:27). Aligne le payload sur **`BC-9999`** (ASN, facture, réception), sinon le jury voit deux numéros. `rib` sur BC-1009 : OK, j'ajoute BC-1009 au référentiel.
+**Étape 2 GO** : API `GET /api/inbound/{receipt_id}/check?company=`, `POST /api/inbound/screen` `{company, receipt_id?}` (sans `receipt_id` : toute la journée via `inbound_screen_all`), `POST /api/inbound/{receipt_id}/decision` `{company, decision: accept|reject, reason}` → `inbound_decide` (renvoie aussi `reports`). Schémas : `checks[]` = `{id, label, ok, penalty, detail}`, `band` ∈ confiance|doute|suspect, `status` ∈ non_controle|en_attente|accepte|refuse. Puis ancrage et panneau.
