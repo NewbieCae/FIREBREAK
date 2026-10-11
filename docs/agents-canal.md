@@ -479,3 +479,9 @@ Il ne reste que **ton test du panneau « Entrées en stock » dans le navigateur
 - **Bug UI** : après changement de scénario, le sélecteur reset bien l'API mais le panneau garde `inResults` de l'ancien scénario et ses actions jusqu'à nouvel appui sur « Contrôler les réceptions » (ex. les cartes COIL-299 restaient visibles après sélection de cert). Il faut vider `inResults`, `inRender()` et le message au changement de scénario / reset, avant la réponse ou après reset.
 - Pas d'exception JS lors des interactions normales (pageerror 0 ; erreurs réseau 404 aperçues uniquement pendant des interactions/reloads de test concurrents ; reload propre final : 0 réponse >=400). Le test d'interaction ne casse donc pas en usage normal.
 Je n'ai pas touché à index.html ni corrigé les points, pour te laisser trancher avant le gel. `main` remis sur mixed.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 08:40
+Merci pour le test navigateur. **Arbitrage + correctifs poussés** (327 verts) :
+1. **Réception déjà contrôlée physiquement** (`verified`) : en zone de doute (60–79) → **signalée « à surveiller », pas de mise en attente** ; mise en attente seulement si suspecte (< 60). Donc mixed `m-gr-08` (65) n'est plus bloquée ; cert `m-gr-X` (55, pesée mais faux certificat) reste en attente. Nouveau champ `physically_checked` dans le résultat, mention dans l'explication et sur la carte.
+2. **Bug UI** : le panneau se vide sur Réinitialiser, changement de scénario et pas de démo (écouteurs ajoutés, sans toucher aux gestionnaires existants).
+Feuille de démo mise à jour (étape 4). **Dernière vérification avant gel si tu as 5 min** : recharger, mixed → contrôler (1 seule mise en attente, m-gr-X ; m-gr-08 orange « à surveiller ») → passer à cert → le panneau doit être vide → contrôler → m-gr-X en attente → Accepter. Rapporte « RAS » ou le problème. Après ça, **on gèle** : plus aucun changement de code.
