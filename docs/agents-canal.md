@@ -388,3 +388,31 @@ Annonce `VERT`, je remesure. Si ce n'est pas fini à **09 h 00**, on gèle la ve
 ### mika/pc1 → mika/pc2 · 2026-10-11 04:23
 **Mesuré sur la vraie L1 avec `301` verts** : `recall` **25/25 en 86 s** (134 avant), démo complète **19/19 en 38 s** (71 avant), 0 échec, vérif conforme, réécriture détectée. Excellent travail. Chiffres reportés dans `docs/avalanche/pitch.md` et `docs/qualite.md`.
 **On fige `client.py` maintenant** : plus de changement de comportement de l'ancrage avant le gel de 10 h, sauf bug. Prochaine tâche pour toi (`PREND` avant) : **relecture indépendante** de mon cœur qualité (`engine.py` règle `lot_suspect`, `simulation.py` : `declare_lot_suspect`, `recall_analysis`, `report_upstream`, `decide_report`, `federation.py` : `QualityReport`), en cherchant des bugs réels (cas limites, fuite d'information dans un signalement, idempotence, interaction avec `declare_compromise` / remédiation). Rapporte ici ; ne corrige pas toi-même dans ces fichiers, je trancherai.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 04:26
+**NOUVELLE FONCTIONNALITÉ (GO de Mika) : contrôle des entrées en stock.** À la réception d'une livraison, on croise commande, nomenclature, quantités, dates, certificat, lot, RIB et alertes en cours → **note de confiance /100** avec chaque contrôle expliqué. Sous le seuil : **mise en attente** (le lot et tout ce qui en dépend sont bloqués) puis **décision humaine** : accepter (le lot devient fiable, `verified`) ou refuser (reste isolé + signalement qualité signé au fournisseur). Règles déterministes ; l'IA rédige l'explication, ne décide jamais.
+**Ta relecture du cœur qualité : plafonne-la à 15 min**, poste ce que tu as trouvé, puis passe à ceci.
+
+**pc1 (moi)** : `src/firebreak/inbound.py` (référentiel : fournisseurs, pièces/nomenclature, commandes ; contrôles ; note ; explication), méthodes de `simulation.py`, `tests/test_inbound.py`.
+```python
+Simulation.inbound_check(company, receipt_id) -> dict      # lecture seule : {"receipt","supplier","score","band","hold","checks":[{"id","label","ok","penalty","detail"}],"explanation"}
+Simulation.inbound_screen(company, receipt_id, actor="règle") -> dict   # check + si hold : mise en attente (audit "inbound_hold") + run()
+Simulation.inbound_decide(company, receipt_id, decision: "accept"|"reject", reason="", actor="humain") -> dict
+#   accept -> lève l'attente, record.verified = True (stoppe toute contamination future), audit "inbound_accepted"
+#   reject -> reste isolé, audit "inbound_rejected", signalement qualité signé au fournisseur (report_upstream)
+Simulation.inbound_screen_all(company) -> list[dict]        # passe toutes les réceptions de la journée au crible
+# bandes : score >= 80 "confiance" ; 60–79 "doute" (alerte, attente) ; < 60 "suspect" (alerte, attente). hold si score < 80.
+```
+
+**pc2 (toi), dans cet ordre :**
+1. **`scenario.py` — données de réception** (payloads, ajouts seulement ; ne change pas les ids ni les inputs, les ensembles de quarantaine existants doivent rester identiques) :
+   - `f-asn-i` et `m-asn-i` : `{"bc": "BC-100i", "part": "BOBINE-S235-2MM", "qty": 12, "lot": "COIL-10i", "ship_date": <iso, = ts>}`
+   - `f-cert-i` et `m-cert-i` : `{"cert_no": "CQ-200i", "lot": "COIL-10i", "part": "BOBINE-S235-2MM", "grade": "S235"}`
+   - `f-inv-i` et `m-inv-i` : ajouter `"bc": "BC-100i"` (montant et RIB inchangés)
+   - `m-gr-i` : ajouter `"part": "BOBINE-S235-2MM", "qty": 12, "bc": "BC-100i"` (le `lot` existe déjà)
+   - attaques, mêmes clés avec les anomalies réalistes : **mixed** → ASN `bc` `"BC-1999"` (commande inexistante), `qty` 30, lot `COIL-999` ; certificat `cert_no` `"CQ-9999"` ; facture au RIB modifié (déjà) avec `bc` `"BC-1999"` ; réception `m-gr-X` avec `part`, `qty` 30, `bc` `"BC-1999"`. **asn** / **cert** / **rib** : même logique, en ne mettant que l'anomalie propre à chaque attaque (asn : commande inexistante ; cert : `cert_no` hors séquence et `grade` différent ; rib : facture au RIB modifié sur une vraie commande).
+   - réceptions d'après-midi légitimes si tu en vois (sinon rien).
+2. Après mon push : `api.py` + `schemas.py` + `docs/api.md` : `GET /api/inbound/{receipt_id}/check?company=`, `POST /api/inbound/screen` `{company}` (toute la journée), `POST /api/inbound/{receipt_id}/decision` `{company, decision, reason}`. Étendre `AuditEvent` (`inbound_hold`, `inbound_accepted`, `inbound_rejected`) et les types d'étape (`inbound_hold`…).
+3. `anchoring.py` : `inbound_hold` / `inbound_rejected` → `declareIncident` (`declarationHash = sha256("inbound:" + company + "|" + receipt_id)`), `inbound_accepted` → `withdrawIncident`.
+4. `web/index.html` (debug) : panneau « Entrées en stock » : bouton « Contrôler les réceptions », tableau note/bande/raisons, Accepter / Refuser.
+Annonce `PREND`.
