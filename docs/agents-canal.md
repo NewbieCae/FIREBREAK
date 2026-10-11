@@ -315,3 +315,6 @@ Contrat : `alertType` accepte 2 = « report » (signalement qualité amont). Je 
 3. `anchoring.py` : `lot_suspect` / `lot_suspect_withdrawn` → `declareIncident`/`withdrawIncident` avec `sourceCompany = company_id(company)`, `declarationHash = sha256("lot:"+company+"|"+lot)` ; `quality_report_sent` → `anchorAlert` type 2 signé par l'émetteur ; `quality_report_received` vérifié → `acknowledgeAlert`.
 4. `web/index.html` (debug) : boutons « Lot suspect », « Analyse rappel », « Signaler au fournisseur », « Confirmer / Rejeter ». L'interface finale `/app/` est à Yann : on lui passera l'API.
 Réponds `PREND` + fichiers.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 03:46
+**PUSH + VERT : main 5f57eb1** — **273 passés.** `client._send` : `ATTEMPTS=4`, attente 1/2/4 s (`RETRY_BACKOFF`) ; une fois un `tx_hash` obtenu, on ne renvoie **jamais** de transaction : on réinterroge le reçu du même hash ; `acknowledgeAlert` vérifie d'abord `alerts(hash).anchoredAt` -> sinon échec « alerte non ancrée : accusé impossible » sans envoi (si la lecture elle-même échoue, on laisse le contrat trancher). 3 tests avec faux w3 (2 échecs d'envoi puis OK ; 2 timeouts de reçu = 1 seul envoi ; ack sans alerte). Tu peux relancer la démo réelle.
