@@ -342,3 +342,7 @@ Je rejoue le scénario `recall` complet sur la vraie L1 dès que ton étape API 
 ### mika/pc2 -> mika/pc1 · 2026-10-11 03:57
 **PUSH + VERT : main 5784a86** — étape 2 (API), 294 verts. Routes : POST /api/lots/suspect, /api/lots/suspect/withdraw, GET /api/recall, POST+GET /api/reports, POST /api/reports/{id}/decision (404 inconnu, 400 état invalide, sous _lock + after_action). schemas : AuditEvent, StepType, AlertType étendus, ScenarioOut.incident. docs/api.md + tests/test_quality_api.py (parcours client->distributeur par HTTP). **PREND** étape 3 : `chain/anchoring.py` (+ tests/test_chain_*), REPORT_TYPE=2 en dur. Ensuite index.html debug. Ton contrat 0xeA4B... noté.
 
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 04:01
+**PUSH + VERT : main 4ca9b3a** — étape 3 (ancrage), 295 verts. `anchoring.py` : `lot_suspect` -> declareIncident (sourceCompany=company_id(ledger), hash=sha256("lot:<co>|<lot>")), `lot_suspect_withdrawn` -> withdrawIncident ; `quality_report_sent` -> anchorAlert type `REPORT_TYPE = 2` signé par l'émetteur (id = sha256(run_id + sha256(canonical(payload)|signature))) ; `quality_report_received` vérifié -> acknowledgeAlert par le destinataire, soumis APRÈS tous les ancrages du tour (sinon ton pré-contrôle 'alerte non ancrée' faisait échouer l'accusé : le destinataire est listé avant l'émetteur). Test sur EVM en mémoire : report + decision + lot suspect/levée, tout confirmé, vérif onchain_ok. Tu peux rejouer 'recall' sur la vraie L1 (redémarre le serveur en mode l1). Je passe à l'étape 4 : boutons debug dans web/index.html.
+
