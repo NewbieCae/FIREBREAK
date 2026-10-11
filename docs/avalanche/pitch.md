@@ -42,7 +42,9 @@ validateur, voir plus haut).
 ## Chiffres mesurés sur la vraie L1
 
 L1 Avalanche de l'équipe (chainId 569712, contrat
-`0x28cE7fcb60FA1592318594807eEE2Ec4Ee2F8D3B`, explorer
+`0xeA4BeAe1262B7BD19e3A18B1245ef100A454F0FC` depuis 04 h — type « signalement
+qualité » ajouté ; les mesures ci-dessous ont été faites sur le déploiement
+précédent `0x28cE7fcb…`, avec le même code d'ancrage —, explorer
 https://2hxmvtcr.firn.gg), mesurés par pc1 le 11/10 entre 01 h 50 et 03 h 40 :
 
 - **Les étapes de la démo répondent en 16 ms** (médiane, max 31 ms) : l'ancrage

@@ -122,7 +122,7 @@ def test_alert_type_and_unknown_ack_rejected(chain):
     w3, contract, accounts, _, _ = chain
     with pytest.raises(Exception):
         transact(w3, accounts["fournisseur"],
-                 contract.functions.anchorAlert(RUN, b"\x06" * 32, ids.company_id("fabricant"), 2))
+                 contract.functions.anchorAlert(RUN, b"\x06" * 32, ids.company_id("fabricant"), 3))
     with pytest.raises(Exception):
         transact(w3, accounts["fabricant"], contract.functions.acknowledgeAlert(b"\x07" * 32))
 
@@ -153,3 +153,14 @@ def test_revert_raises_transaction_failed_or_contract_error(chain):
     w3, contract, accounts, _, outsider = chain
     with pytest.raises((TransactionFailed, Exception)):
         transact(w3, outsider, contract.functions.anchorAudit(RUN, b"\x0d" * 32, 1))
+
+
+def test_quality_report_type_anchored_and_acknowledged(chain):
+    """Type 2 : signalement qualité du client vers son fournisseur (sens amont)."""
+    w3, contract, accounts, _, _ = chain
+    h = b"\x0e" * 32
+    transact(w3, accounts["fabricant"],
+             contract.functions.anchorAlert(RUN, h, ids.company_id("fournisseur"), 2))
+    assert contract.functions.alerts(h).call()[2] == 2
+    transact(w3, accounts["fournisseur"], contract.functions.acknowledgeAlert(h))
+    assert contract.functions.alerts(h).call()[4] > 0

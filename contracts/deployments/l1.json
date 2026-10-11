@@ -1,9 +1,9 @@
 {
   "network": "avalanche-l1",
   "chainId": 569712,
-  "address": "0x28cE7fcb60FA1592318594807eEE2Ec4Ee2F8D3B",
-  "deployBlock": 8,
-  "deployTx": "0x3f5d90cce0d2a6c7464c90f7103e7951690166b1381e01bf23d4996b5a035dba",
+  "address": "0xeA4BeAe1262B7BD19e3A18B1245ef100A454F0FC",
+  "deployBlock": 89,
+  "deployTx": "0xf7c71021c7a723e3071468752db8fccf670c28d0ec3575c23ffcc1cc10d72bb7",
   "admin": "0xe8B9241Ee923f6CF1cCD25B690543D497ceF23AA",
   "members": {
     "fournisseur": "0x842d9Dd1210CA172460D49820d18ff8b13D1B9B0",
@@ -18,6 +18,6 @@
     "client": "0xca8a97082377f84a18ccc4405188250cd83103bc1447b3a61f89fa26f5722370"
   },
   "abiSha256": "95a055ef6b420d4535d6293aaca406033180017ee57670de2a79675d56f8f3c5",
-  "sourceSha256": "3e794b5c6c3ca6348612993f407064b28d6a90b7fe7b59a994a7f7136f01867d",
-  "updatedAt": "2026-10-10T23:48:31+00:00"
+  "sourceSha256": "6231f557642e2f4bd0d3d60051396919ffc2d88110c1597891ae12cd8c0e401a",
+  "updatedAt": "2026-10-11T01:53:50+00:00"
 }

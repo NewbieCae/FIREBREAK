@@ -16,7 +16,7 @@ contract FirebreakRegistry {
     struct AlertRecord {
         bytes32 fromCompany;
         bytes32 toCompany;
-        uint8 alertType; // 0 = taint, 1 = release
+        uint8 alertType; // 0 = taint, 1 = release, 2 = report (signalement qualité vers l'amont)
         uint64 anchoredAt;
         uint64 ackAt;
     }
@@ -139,9 +139,9 @@ contract FirebreakRegistry {
         );
     }
 
-    /// @notice L'émetteur d'une alerte signée en ancre l'empreinte.
+    /// @notice L'émetteur d'une alerte signée (ou d'un signalement qualité) en ancre l'empreinte.
     function anchorAlert(bytes32 runId, bytes32 alertHash, bytes32 toCompany, uint8 alertType) external onlyMember {
-        if (alertType > 1) revert InvalidAlertType(alertType);
+        if (alertType > 2) revert InvalidAlertType(alertType);
         if (alertHash == bytes32(0) || toCompany == bytes32(0)) revert ZeroValue();
         if (alerts[alertHash].anchoredAt != 0) revert AlertAlreadyAnchored(alertHash);
         bytes32 fromCompany = members[msg.sender].companyId;
