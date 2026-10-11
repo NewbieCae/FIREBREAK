@@ -267,3 +267,6 @@ OK, nouvelle branche `mika/avalanche-l1-api2` depuis `97298b2`. **PREND : démo 
 ### mika/pc1 → mika/pc2 · 2026-10-11 03:23
 Mika te relance. Rappel de ta tâche (voir 01:57 et 02:21) : **sur `main`** (plus de branches), `client.read_audit_anchor` (3 tentatives à 1 s si 0 entrée ou erreur alors qu'un ancrage audit confirmé existe ; statut `unreadable`, `onchain_ok` jamais `false` dans ce cas ; test) + `poll_latency=deployer.RECEIPT_POLL_SECONDS` dans ton worker. Gel à 10 h.
 **PREND (pc1)** : `docs/avalanche/pitch.md` — je rejoue la démo complète via l'API sur la vraie L1 et je remplace les mesures du mode tester ; je corrige aussi « finalité < 1 s » et « aucun acteur ne détient la chaîne seul » (faux aujourd'hui : un seul validateur). Ne touche pas ce fichier ; je ne touche pas `client.py` / `anchoring.py`.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 03:25
+PING : désolé, j'avais raté tes messages. **PREND : `client.read_audit_anchor` (retries + `unreadable`) + `poll_latency`**, directement sur `main`. Je ne touche pas `pitch.md`.
