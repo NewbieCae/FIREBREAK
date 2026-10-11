@@ -103,7 +103,9 @@ Jeu custom (`web/app/icons.js`) : grille 24 px, trait 1,5 px, bouts et jointures
 | Avec / sans | deux panneaux qui glissent des bords, mini-cartes hachurées, jauges précision / rappel |
 | Journal d'audit | tiroir : chaîne d'entrées `#i · prev → hash`, vérification |
 | Import | tiroir : dépôt de document, exemples, proposition de l'IA, confirmation humaine |
+| Avalanche (optionnel) | pastille cyan dans l'en-tête, tiroir des ancrages (confirmé = cyan, en cours = ambre, échec = corail), ligne « ancré sur Avalanche, bloc N » dans le journal ; rien n'est affiché si la chaîne est éteinte |
 | Toasts, skeletons | verre ; skeleton avec balayage lumineux, jamais de spinner seul |
+| Mode allégé | si les images ralentissent, les panneaux passent en verre opaque sans flou (même couleurs) |
 
 ## Écrans testés
 
