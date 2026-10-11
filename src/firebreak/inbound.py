@@ -68,8 +68,8 @@ class Referentiel:
 
 def default_referentiels() -> dict[str, Referentiel]:
     """Référentiel du fabricant pour la journée de démo du 10/10/2026 :
-    commandes BC-1001 à BC-1008 (bobines du matin et livraison de 14 h 45)
-    et BC-1010 (bobine COIL-210 attendue l'après-midi), toutes chez Aciers
+    commandes BC-1001 à BC-1008 (bobines du matin et livraison de 14 h 45),
+    BC-1009 (facture du scénario rib) et BC-1010 (bobine COIL-210 attendue l'après-midi), toutes chez Aciers
     Durand. Une commande absente (ex. BC-9999) est une commande inconnue."""
     from .scenario import RIB_OK  # import local : scenario importe simulation
 
@@ -84,6 +84,7 @@ def default_referentiels() -> dict[str, Referentiel]:
         due = day.replace(hour=8, minute=30) + timedelta(minutes=30 * (i - 1) + 40)
         orders[f"BC-{1000 + i}"] = PurchaseOrder(f"BC-{1000 + i}", "fournisseur", part, 12, "S235", due)
     orders["BC-1008"] = PurchaseOrder("BC-1008", "fournisseur", part, 12, "S235", day.replace(hour=15))
+    orders["BC-1009"] = PurchaseOrder("BC-1009", "fournisseur", part, 12, "S235", day.replace(hour=16))
     orders["BC-1010"] = PurchaseOrder("BC-1010", "fournisseur", part, 12, "S235", day.replace(hour=14, minute=40))
     fabricant = Referentiel(
         suppliers={"fournisseur": supplier},
