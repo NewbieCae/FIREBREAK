@@ -60,6 +60,7 @@ With vs without: without Firebreak (cut off the supplier and its direct customer
 
 ## Decisions
 
+- 10/11 12:05 (Yann): English demo video with voice-over ready in `assets/video/firebreak-demo-en.mp4` (3 min 20); silent French version in `assets/video/firebreak-demo.mp4`.
 - 11/10 (Mika): the whole repo (docs, scripts, user-visible texts) is translated into English; user-visible texts and docs are in English from now on (see `AGENTS.md`).
 - 11/10 05:55 (Yann): to redeploy on Vercel when the last commit is not Yann's (otherwise Vercel blocks it): `git archive HEAD | tar -x -C <folder>`, copy `.vercel/` into it, then `vercel deploy --prod` from that folder. Reminder: on Vercel, state lives in memory per instance; a multi-step flow can get lost if two requests land on two instances, hence the local demo as the priority.
 - 11/10 04:50 (Yann): new interface design, to be reused in the slides: black background `#050506`, healthy in neutral white, coral = blocked, amber = recovery, blue `#6e95ff` = proof; Geist font; logo = grid of dots cut by a bar. Everything is in `design.md`.
