@@ -212,7 +212,7 @@ class Simulation:
         ce qui en dépend, chez elle puis chez ses clients (alertes signées).
         Son fournisseur n'est pas déclaré compromis : ses autres lots, ses
         factures et ses paiements continuent."""
-        ids = self._lot_records(company, lot)
+        ids = self._ref_records(company, lot)  # numéro de lot ou id de record
         marks = self.audit_marks()
         ledger = self.ledgers[company]
         ledger.mark_suspect(ids, reason)
@@ -226,7 +226,7 @@ class Simulation:
     def withdraw_lot_suspect(self, company: str, lot: str,
                              actor: Actor = "humain") -> list[str]:
         """Lève la suspicion (analyse concluante) : les levées partent en cascade."""
-        ids = self._lot_records(company, lot)
+        ids = self._ref_records(company, lot)  # numéro de lot ou id de record
         ledger = self.ledgers[company]
         active = [rid for rid in ids if rid in ledger.suspects]
         if not active:

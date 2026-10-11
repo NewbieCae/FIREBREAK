@@ -167,3 +167,10 @@ def test_internal_only_lot_cannot_be_reported(sim):
     # elle-même issue de données reçues : choisir un record purement interne).
     with pytest.raises(ValueError):
         sim.report_upstream("fabricant", "m-mnt-a1", "x")
+
+
+def test_declare_by_record_id_too(sim):
+    assert sim.declare_lot_suspect("fabricant", "m-gr-04", "défaut") == ["m-gr-04"]
+    assert quarantined(sim) == COIL_104_SCOPE
+    assert sim.withdraw_lot_suspect("fabricant", "m-gr-04") == ["m-gr-04"]
+    assert quarantined(sim) == set()
