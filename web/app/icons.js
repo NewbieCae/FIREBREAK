@@ -1,8 +1,8 @@
-// Jeu d'icônes FIREBREAK : grille 24 px, trait 1,5 px, bouts arrondis, mono-trait.
-// Toutes dessinées à la main sur la même grille (marge 2–3 px, rayons 1,5–2).
+// FIREBREAK icon set: 24 px grid, 1.5 px stroke, round caps, single stroke.
+// All hand-drawn on the same grid (2–3 px margin, 1.5–2 radii).
 
 const P = {
-  // Les 8 familles de records (+ opérations internes)
+  // The 8 record families (+ internal operations)
   order: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V4"/><path d="M9 10h6M9 13.5h6M9 17h3.5"/>',
   asn: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 15h7M13 12.5l2.5 2.5-2.5 2.5"/>',
   cert: '<circle cx="12" cy="9.5" r="5.5"/><path d="M9.5 14.5 8 21l4-2.2 4 2.2-1.5-6.5"/><path d="m10 9.6 1.4 1.4 2.6-2.7"/>',
@@ -13,13 +13,13 @@ const P = {
   receipt: '<path d="M4 13.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4.5"/><path d="M4 13.5h4l1.5 2.5h5l1.5-2.5h4"/><path d="M12 3v8M8.75 7.75 12 11l3.25-3.25"/>',
   internal: '<path d="M5 4v3M5 11v9M12 4v9M12 17v3M19 4v1M19 9v11"/><circle cx="5" cy="9" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="19" cy="7" r="2"/>',
 
-  // Les 4 entreprises : usine, atelier, camion, boutique
+  // The 4 companies: factory, workshop, truck, shop
   supplier: '<path d="M3 20V11l5 3v-3l5 3V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v15"/><path d="M2 20h20M7 17h2M12 17h2"/>',
   maker: '<circle cx="12" cy="12" r="3"/><path d="M12 2.75v2.5M12 18.75v2.5M2.75 12h2.5M18.75 12h2.5M5.46 5.46l1.77 1.77M16.77 16.77l1.77 1.77M5.46 18.54l1.77-1.77M16.77 7.23l1.77-1.77"/><circle cx="12" cy="12" r="6.25"/>',
   distributor: '<path d="M13 16V6H3.5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1H5M9 16h6M13 9h4.2l3.3 3.6V15a1 1 0 0 1-1 1H19"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/>',
   customer: '<path d="M3.5 9 5 4h14l1.5 5"/><path d="M3.5 9a2.83 2.83 0 0 0 5.67 0 2.83 2.83 0 0 0 5.66 0 2.83 2.83 0 0 0 5.67 0"/><path d="M5 11.5V20h14v-8.5M10 20v-4.5h4V20"/>',
 
-  // Sémantique
+  // Semantics
   gate: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3M12 14.5V17"/>',
   gateOpen: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 7.75-1.4M12 14.5V17"/>',
   verified: '<path d="M12 3 19.5 6v5.5c0 4.5-3.2 8.2-7.5 9.5-4.3-1.3-7.5-5-7.5-9.5V6z"/><path d="m8.75 12.25 2.25 2.25 4.25-4.5"/>',
@@ -37,7 +37,7 @@ const P = {
   human: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
   source: '<path d="M4 12a8 8 0 1 0 8-8"/><path d="M12 4 9 1.75M12 4 9 6.25"/><circle cx="12" cy="12" r="2.5"/>',
 
-  // Interface
+  // UI
   reset: '<path d="M4 12a8 8 0 1 0 2.35-5.65"/><path d="M4 4v4.5h4.5"/>',
   replay: '<path d="M4 12a8 8 0 1 0 2.35-5.65"/><path d="M4 4v4.5h4.5"/><path d="m10.25 9.25 4.5 2.75-4.5 2.75z"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
@@ -68,8 +68,8 @@ export const COMPANY_ICON = {
   client: 'customer',
 };
 
-// Logo : une grille de points (la forêt, les opérations) coupée par une barre
-// verticale (le pare-feu). À gauche, ce qui brûle ; à droite, ce qui est protégé.
+// Logo: a grid of dots (the forest, the operations) cut by a vertical bar
+// (the firebreak). On the left, what burns; on the right, what is protected.
 export function logo(cls = '') {
   const near = [4, 10].flatMap((x, i) => [5, 12, 19].map((y, j) =>
     `<circle class="l-dot near" cx="${x}" cy="${y}" r="2.2" style="animation-delay:${(i * 3 + j) * 0.07}s"/>`)).join('');

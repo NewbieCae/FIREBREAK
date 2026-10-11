@@ -1,10 +1,10 @@
-"""Généalogie des lots, à la manière d'un TransformationEvent EPCIS.
+"""Lot genealogy, in the style of an EPCIS TransformationEvent.
 
-Une transformation consomme des lots (bobines reçues, lots intermédiaires)
-et produit un lot : le record produit a pour `inputs` les records des lots
-consommés et porte `payload = {"lot": <produit>, "input_lots": [...]}`.
-La contamination suit donc la généalogie sans règle spéciale : un lot
-fabriqué avec un lot contaminé est contaminé, les autres continuent.
+A transformation consumes lots (received coils, intermediate lots)
+and produces a lot: the produced record has the consumed lots' records
+as `inputs` and carries `payload = {"lot": <produced>, "input_lots": [...]}`.
+Taint therefore follows the genealogy with no special rule: a lot made
+from a tainted lot is tainted, the others keep going.
 """
 
 from __future__ import annotations
@@ -26,13 +26,13 @@ def transformation_payload(consumed: list[Record], output_lot: str,
 
 
 def records_of_lot(ledger: Ledger, lot: str) -> list[str]:
-    """Records d'un registre qui portent ce lot, dans l'ordre d'insertion."""
+    """Records of a ledger that carry this lot, in insertion order."""
     return [rid for rid, r in ledger.records.items() if lot_of(r) == lot]
 
 
 def lot_genealogy(ledger: Ledger, lot: str) -> dict:
-    """Lots en amont (consommés, directement ou non) et en aval (fabriqués
-    avec ce lot) dans le registre d'une entreprise."""
+    """Upstream lots (consumed, directly or not) and downstream lots (made
+    with this lot) in a company's ledger."""
     carriers = records_of_lot(ledger, lot)
     if not carriers:
         raise KeyError(lot)

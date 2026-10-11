@@ -1,5 +1,5 @@
-# finswag — instructions pour Claude Code
+# finswag — instructions for Claude Code
 
-Les instructions du projet sont dans `AGENTS.md` à la racine. Lis-le en entier au démarrage, et applique le « Protocole d'équipe » à chaque itération : synchronisation, mise à jour de `sessions/<membre>.md` et de `goal.md`, puis push.
+The project instructions are in `AGENTS.md` at the repo root. Read it in full at startup, and apply the "Team protocol" on every iteration: sync, update `sessions/<member>.md` and `goal.md`, then push.
 
 @../AGENTS.md

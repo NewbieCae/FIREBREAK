@@ -1,4 +1,4 @@
-"""Les quatre scénarios : ensembles de quarantaine raisonnés à la main."""
+"""The four scenarios: quarantine sets reasoned out by hand."""
 
 import pytest
 
@@ -12,26 +12,26 @@ EXPECTED = {
         "d-ship-X", "d-gr-X", "d-out-X",
         "c-ship-X", "c-gr-X",
     },
-    # Fraude au RIB : tout ce que le fournisseur émet après 14:00 (dont la facture
-    # légitime F-3008), les copies reçues, la fiche fournisseur modifiée et le
-    # paiement qui en dépend. Le contre-appel (verified) protège le paiement F-3008.
-    # Aucun objet physique : rien ne part vers le distributeur.
+    # RIB fraud: everything the supplier issues after 14:00 (including the
+    # legitimate invoice F-3008), the received copies, the modified supplier record
+    # and the payment depending on it. The callback (verified) protects payment F-3008.
+    # No physical goods: nothing goes to the distributor.
     "rib": {
         "f-bank-X", "f-inv-X", "f-inv-08",
         "m-bank-X", "m-inv-X", "m-inv-08", "m-vendor-X", "m-pay-X",
     },
-    # Faux certificat : la réception pesée (verified) arrête la contamination de
-    # l'ASN, mais la libération qualité dépend du certificat. LOT-901 contient
-    # COIL-210, ASM-950 contient LOT-901 : bloqués jusqu'au client. LOT-902 continue.
+    # Fake certificate: the weighed goods receipt (verified) stops the taint from
+    # the ASN, but the quality release depends on the certificate. LOT-901 contains
+    # COIL-210, ASM-950 contains LOT-901: blocked down to the customer. LOT-902 continues.
     "cert": {
         "f-asn-X", "f-cert-X",
         "m-asn-X", "m-cert-X", "m-qc-X", "m-lot-901", "m-asm-950", "m-ship-950",
         "d-ship-950", "d-gr-950", "d-out-950",
         "c-ship-950", "c-gr-950",
     },
-    # Faux ASN : réception sans contrôle, stock fantôme, lot lancé dessus,
-    # expédition, réservation, réexpédition, planning chantier. L'ASN légitime
-    # BC-1008 est suspect (fenêtre) mais sa réception contrôlée arrête tout.
+    # Fake ASN: unchecked goods receipt, phantom stock, lot started on it,
+    # shipment, reservation, reshipment, site schedule. The legitimate ASN
+    # BC-1008 is suspect (window) but its checked goods receipt stops everything.
     "asn": {
         "f-asn-X", "f-asn-08",
         "m-asn-X", "m-asn-08", "m-gr-X", "m-stock-X", "m-lot-X", "m-ship-X",
@@ -47,7 +47,7 @@ GATES_BLOCKED = {
     "asn": {"m-lot-X", "m-ship-X", "d-out-X"},
 }
 
-STOPPERS = {  # record verified dont une entrée est contaminée
+STOPPERS = {  # verified record with a tainted input
     "mixed": "m-gr-08",
     "rib": "m-call-08",
     "cert": "m-gr-X",
@@ -61,7 +61,7 @@ def _declared(name):
     return sim
 
 
-AFTERNOON = {  # activité légitime d'après-midi au fabricant (+ copies chez d)
+AFTERNOON = {  # legitimate afternoon activity at the manufacturer (+ copies at d)
     *[f"m-lot-a{i}" for i in range(1, 7)],
     *[f"m-qc-a{i}" for i in range(1, 7)],
     *[f"m-pack-a{i}" for i in range(1, 7)],
@@ -116,11 +116,11 @@ def test_scenario_invariants(name):
 
 @pytest.mark.parametrize("name", sorted(EXPECTED))
 def test_afternoon_never_quarantined(name):
-    """Les ~40 records légitimes d'après-midi ne doivent JAMAIS entrer en
-    quarantaine : ils ne dépendent d'aucune donnée fournisseur post-14 h."""
+    """The ~40 legitimate afternoon records must NEVER enter quarantine:
+    they depend on no supplier data after 2 pm."""
     sim = _declared(name)
     records = _records(sim)
-    assert AFTERNOON <= set(records), name  # présents dans les 4 scénarios
+    assert AFTERNOON <= set(records), name  # present in all 4 scenarios
     assert all(records[i].status == "ok" for i in AFTERNOON), name
 
 
@@ -166,7 +166,7 @@ def test_quality_scenarios_have_incident_and_no_taint(name):
 
 
 def test_quality_thread_coil_104():
-    """COIL-104 nourrit LOT-504 et LOT-A40 ; le paiement fournisseur reste ok."""
+    """COIL-104 feeds LOT-504 and LOT-A40; the supplier payment stays ok."""
     records = _records(build_simulation("lot"))
     assert records["m-gr-04"].payload["lot"] == "COIL-104"
     assert "m-gr-04" in records["m-lot-04"].inputs

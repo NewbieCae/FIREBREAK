@@ -18,7 +18,7 @@ def _events(sim, company):
     return [e["event"] for e in sim.ledgers[company].audit.entries()]
 
 
-# -- chaîne de hash -----------------------------------------------------------
+# -- hash chain ---------------------------------------------------------------
 
 def test_chain_links_entries():
     log = AuditLog("x")
@@ -36,7 +36,7 @@ def test_verify_detects_first_tampered_index():
     audit = sim.ledgers["fabricant"].audit
     assert len(audit) > 5
     assert sim.audit_verify()["ok"] is True
-    audit._entries[3]["details"]["rule"] = "falsifié"
+    audit._entries[3]["details"]["rule"] = "tampered"
     res = sim.audit_verify()
     assert res["ok"] is False
     assert res["first_broken"] == {"company": "fabricant", "index": 3}
@@ -55,11 +55,11 @@ def test_verify_detects_deleted_entry():
 def test_entries_returned_are_copies():
     sim = _sim_declared()
     audit = sim.ledgers["fabricant"].audit
-    audit.entries()[0]["actor"] = "intrus"
+    audit.entries()[0]["actor"] = "intruder"
     assert audit.verify() is None
 
 
-# -- contenu du journal -------------------------------------------------------
+# -- log content -------------------------------------------------------------
 
 def test_journal_records_full_response():
     sim = _sim_declared()
@@ -98,7 +98,7 @@ def test_journal_has_no_partner_business_data():
     assert "m-ship-X" not in blob and "FR76" not in blob
 
 
-# -- levées fédérées ----------------------------------------------------------
+# -- federated releases ------------------------------------------------------
 
 def test_valid_release_frees_downstream_to_client():
     sim = _sim_declared()
@@ -109,7 +109,7 @@ def test_valid_release_frees_downstream_to_client():
     assert {(a.sender, a.recipient) for a in releases} == {
         ("fabricant", "distributeur"), ("distributeur", "client")}
     assert all(a.verified for a in releases)
-    # le paiement au RIB frauduleux reste bloqué : seule la branche remédiée est levée
+    # the payment to the fraudulent RIB stays blocked: only the remediated branch is released
     assert sim.find_record("m-pay-X").status == "quarantined"
 
 
@@ -134,10 +134,10 @@ def test_forged_release_rejected_downstream_stays_quarantined():
                 if e["event"] == "alert_received" and not e["details"]["verified"]]
     assert len(rejected) == 1
     assert rejected[0]["details"]["type"] == "release"
-    assert rejected[0]["details"]["outcome"].startswith("rejetée")
+    assert rejected[0]["details"]["outcome"].startswith("rejected")
 
 
-# -- déclarations multiples et retrait ----------------------------------------
+# -- multiple declarations and withdrawal -------------------------------------
 
 def test_withdraw_returns_to_initial_state():
     sim = _sim_declared()
@@ -163,19 +163,19 @@ def test_withdraw_without_declaration_fails():
     try:
         sim.withdraw_compromise("fournisseur")
     except ValueError as exc:
-        assert "aucune déclaration" in str(exc)
+        assert "no active declaration" in str(exc)
     else:
-        raise AssertionError("retrait accepté sans déclaration")
+        raise AssertionError("withdrawal accepted without a declaration")
 
 
 def test_redeclare_keeps_earliest_since():
     later = COMPROMISED_SINCE.replace(hour=15)
     sim = build_simulation()
     sim.declare_compromise("fournisseur", later)
-    assert "f-asn-X" not in _q(sim)  # 14:10, avant 15:00
+    assert "f-asn-X" not in _q(sim)  # 14:10, before 15:00
     sim.declare_compromise("fournisseur", COMPROMISED_SINCE)
     assert _q(sim) == EXPECTED_QUARANTINED
-    sim.declare_compromise("fournisseur", later)  # plus récente : ignorée
+    sim.declare_compromise("fournisseur", later)  # later: ignored
     assert _q(sim) == EXPECTED_QUARANTINED
     decls = sim.ledgers["fabricant"].declarations
     assert len(decls) == 1 and decls[0].since == COMPROMISED_SINCE
@@ -189,7 +189,7 @@ def test_two_sources_withdraw_one_keeps_other():
     sim.withdraw_compromise("fournisseur")
     remaining = _q(sim)
     assert remaining and not any(r.startswith(("f-", "m-")) for r in remaining)
-    # d-ship-X vient du fabricant, il n'est plus suspect ; ce que le
-    # distributeur produit après 14:00 l'est toujours
+    # d-ship-X comes from the manufacturer, it is no longer suspect; what the
+    # distributor produces after 14:00 still is
     assert "d-ship-X" not in remaining
     assert "d-out-X" in remaining

@@ -1,29 +1,29 @@
-"""Import GS1 EPCIS 2.0 (JSON / JSON-LD) → records d'un registre Firebreak.
+"""GS1 EPCIS 2.0 import (JSON / JSON-LD) → records of a Firebreak ledger.
 
-Sous-ensemble géré (le reste est ignoré et signalé, jamais deviné) :
-- document : `type: "EPCISDocument"`, événements dans `epcisBody.eventList` ;
-- événements : ObjectEvent, AggregationEvent, TransformationEvent
-  (AssociationEvent, TransactionEvent et `errorDeclaration` sont ignorés) ;
-- champs lus : eventTime, eventID, bizStep, action, disposition, bizLocation,
+Supported subset (the rest is ignored and reported, never guessed):
+- document: `type: "EPCISDocument"`, events in `epcisBody.eventList`;
+- events: ObjectEvent, AggregationEvent, TransformationEvent
+  (AssociationEvent, TransactionEvent and `errorDeclaration` are ignored);
+- fields read: eventTime, eventID, bizStep, action, disposition, bizLocation,
   readPoint, sourceList, destinationList, epcList, quantityList, parentID,
   childEPCs, childQuantityList, inputEPCList, outputEPCList,
   inputQuantityList, outputQuantityList.
 
-Règles de conversion (déterministes) :
-- un événement = un record, dans l'ordre de eventTime ;
-- `origin` = entreprise propriétaire du lieu (bizLocation, sinon readPoint),
-  reconnue par son préfixe entreprise GS1 ; sans lieu : l'entreprise qui
-  importe ; lieu inconnu : événement ignoré ;
-- `inputs` = dernier record qui a produit chacun des objets consommés
-  (EPC ou classe de lot), y compris les records déjà importés ;
-- objets consommés / produits : ObjectEvent epcList+quantityList (les
-  mêmes) ; AggregationEvent enfants (+ parent) → parent et enfants ;
-  TransformationEvent input* → output* (généalogie des lots) ;
-- `gate` : expédition (bizStep shipping) ou transformation faites par
-  l'entreprise elle-même ;
-- `verified` : contrôle (bizStep inspecting) conforme fait par l'entreprise
-  elle-même ;
-- une expédition d'un partenaire devient un `asn` dans le registre.
+Conversion rules (deterministic):
+- one event = one record, in eventTime order;
+- `origin` = company that owns the location (bizLocation, else readPoint),
+  recognized by its GS1 company prefix; no location: the importing
+  company; unknown location: event ignored;
+- `inputs` = last record that produced each of the consumed objects
+  (EPC or lot class), including records already imported;
+- consumed / produced objects: ObjectEvent epcList+quantityList (the
+  same); AggregationEvent children (+ parent) → parent and children;
+  TransformationEvent input* → output* (lot genealogy);
+- `gate`: shipment (bizStep shipping) or transformation done by the
+  company itself;
+- `verified`: conformant inspection (bizStep inspecting) done by the
+  company itself;
+- a partner's shipment becomes an `asn` in the ledger.
 """
 
 from __future__ import annotations
@@ -50,10 +50,10 @@ KIND_BY_BIZSTEP = {
 }
 
 DISPOSITIONS_FR = {
-    "conformant": "conforme",
-    "non_conformant": "non conforme",
-    "in_transit": "en transit",
-    "in_progress": "en cours",
+    "conformant": "conformant",
+    "non_conformant": "non-conformant",
+    "in_transit": "in transit",
+    "in_progress": "in progress",
 }
 
 
@@ -69,8 +69,8 @@ class EpcisImport:
 
 
 def cbv_term(value: str | None) -> str | None:
-    """« urn:epcglobal:cbv:bizstep:shipping », « https://ref.gs1.org/cbv/BizStep-shipping »
-    ou « shipping » → « shipping »."""
+    """"urn:epcglobal:cbv:bizstep:shipping", "https://ref.gs1.org/cbv/BizStep-shipping"
+    or "shipping" → "shipping"."""
     if not value:
         return None
     term = re.split(r"[:/]", value)[-1]
@@ -78,7 +78,7 @@ def cbv_term(value: str | None) -> str | None:
 
 
 def lot_of(identifier: str) -> str | None:
-    """Lot d'une classe LGTIN (URN ou GS1 Digital Link /10/)."""
+    """Lot of an LGTIN class (URN or GS1 Digital Link /10/)."""
     if identifier.startswith("urn:epc:class:lgtin:"):
         return identifier.rsplit(".", 1)[-1]
     m = re.search(r"/10/([^/?#]+)", identifier)
@@ -88,7 +88,7 @@ def lot_of(identifier: str) -> str | None:
 def short_name(identifier: str) -> str:
     tail = re.split(r"[:/.]", identifier.rstrip("/"))[-1]
     if identifier.startswith("urn:epc:id:sscc:") or "/00/" in identifier:
-        return f"palette {tail}"
+        return f"pallet {tail}"
     return lot_of(identifier) or tail
 
 
@@ -125,7 +125,7 @@ def _ids(event: dict, list_key: str, qty_key: str) -> list[str]:
 
 
 def _objects(event: dict) -> tuple[list[str], list[str]]:
-    """(objets consommés, objets produits) de l'événement."""
+    """(consumed objects, produced objects) of the event."""
     etype = event["type"]
     if etype == "TransformationEvent":
         return (_ids(event, "inputEPCList", "inputQuantityList"),
@@ -153,42 +153,42 @@ def _label(kind: str, event: dict, consumed: list[str], produced: list[str],
     if kind == "packing":
         parent = event.get("parentID")
         children = [i for i in consumed if i != parent]
-        return f"Palettisation {names(children)} → {short_name(parent) if parent else '?'}"
+        return f"Palletization {names(children)} → {short_name(parent) if parent else '?'}"
     objs = names(produced or consumed)
     if kind == "asn":
-        return f"Avis d'expédition {origin_name} — {objs}"
+        return f"Shipping notice {origin_name} — {objs}"
     if kind == "shipment":
-        return f"Expédition {objs}"
+        return f"Shipment {objs}"
     if kind == "goods_receipt":
-        return f"Réception {objs}"
+        return f"Receipt {objs}"
     if kind == "quality_check":
-        verdict = DISPOSITIONS_FR.get(disposition or "", disposition or "sans verdict")
-        return f"Contrôle qualité {objs} ({verdict})"
+        verdict = DISPOSITIONS_FR.get(disposition or "", disposition or "no verdict")
+        return f"Quality check {objs} ({verdict})"
     if kind == "stock_entry":
-        return f"Mise en stock {objs}"
-    return f"Événement EPCIS {cbv_term(event.get('bizStep')) or event['type']} — {objs}"
+        return f"Stock entry {objs}"
+    return f"EPCIS event {cbv_term(event.get('bizStep')) or event['type']} — {objs}"
 
 
 def parse_epcis(doc: object, company: str, companies: list[Company],
                 existing: dict[str, Record], id_prefix: str,
                 taken_ids: set[str] | None = None) -> EpcisImport:
-    """Convertit un document EPCIS en records pour le registre `company`.
-    `existing` = records déjà dans ce registre ; `taken_ids` = identifiants
-    déjà pris dans toute la simulation. Ne modifie rien : l'appelant ajoute
-    les records au registre."""
+    """Converts an EPCIS document into records for the `company` ledger.
+    `existing` = records already in this ledger; `taken_ids` = identifiers
+    already taken across the whole simulation. Changes nothing: the caller
+    adds the records to the ledger."""
     taken = set(existing) | (taken_ids or set())
     if not isinstance(doc, dict) or doc.get("type") != "EPCISDocument":
-        raise EpcisError("document EPCIS attendu (type: EPCISDocument)")
+        raise EpcisError("EPCIS document expected (type: EPCISDocument)")
     body = doc.get("epcisBody")
     events = body.get("eventList") if isinstance(body, dict) else None
     if not isinstance(events, list):
-        raise EpcisError("epcisBody.eventList manquant")
+        raise EpcisError("epcisBody.eventList missing")
     if len(events) > MAX_EVENTS:
-        raise EpcisError(f"trop d'événements ({len(events)} > {MAX_EVENTS})")
+        raise EpcisError(f"too many events ({len(events)} > {MAX_EVENTS})")
 
     names = {c.id: c.name for c in companies}
     result = EpcisImport(events=len(events))
-    last: dict[str, str] = {}  # objet EPC -> dernier record qui l'a produit
+    last: dict[str, str] = {}  # EPC object -> last record that produced it
     for r in existing.values():
         for obj in r.payload.get("epc_outputs", []):
             last[obj] = r.id
@@ -198,17 +198,17 @@ def parse_epcis(doc: object, company: str, companies: list[Company],
         etype = event.get("type") if isinstance(event, dict) else None
         if etype not in SUPPORTED:
             result.ignored.append({"index": index, "type": etype,
-                                   "reason": "type d'événement non géré"})
+                                   "reason": "unsupported event type"})
             continue
         if event.get("errorDeclaration"):
             result.ignored.append({"index": index, "type": etype,
-                                   "reason": "déclaration d'erreur (errorDeclaration)"})
+                                   "reason": "error declaration (errorDeclaration)"})
             continue
         try:
             ts = to_scenario_time(datetime.fromisoformat(event["eventTime"]))
         except (KeyError, TypeError, ValueError):
             result.ignored.append({"index": index, "type": etype,
-                                   "reason": "eventTime absent ou invalide"})
+                                   "reason": "eventTime missing or invalid"})
             continue
         parsed.append((ts, index, event))
     parsed.sort(key=lambda p: (p[0], p[1]))
@@ -220,12 +220,12 @@ def parse_epcis(doc: object, company: str, companies: list[Company],
         origin = owner_of(location, companies) if location else company
         if origin is None:
             result.ignored.append({"index": index, "type": etype,
-                                   "reason": f"lieu GLN inconnu : {location}"})
+                                   "reason": f"unknown GLN location: {location}"})
             continue
         consumed, produced = _objects(event)
         if not consumed and not produced:
             result.ignored.append({"index": index, "type": etype,
-                                   "reason": "aucun objet (EPC ou lot)"})
+                                   "reason": "no object (EPC or lot)"})
             continue
         biz_step = cbv_term(event.get("bizStep"))
         disposition = cbv_term(event.get("disposition"))

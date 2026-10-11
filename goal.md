@@ -1,94 +1,95 @@
 # GOAL — finswag / FIREBREAK
 
-> Fichier **partagé par toute l'équipe**. Chaque agent le met à jour à la fin de chaque itération (voir `AGENTS.md` → « Protocole d'équipe »).
-> On modifie seulement les lignes qui ont changé et on n'efface jamais le travail d'un autre. En cas de conflit Git, on garde les deux versions.
+> File **shared by the whole team**. Every agent updates it at the end of each iteration (see `AGENTS.md` → "Team protocol").
+> Only change the lines that changed and never erase someone else's work. On a Git conflict, keep both versions.
 
-## Objectif
+## Goal
 
-Livrer **FIREBREAK, le pare-feu des supply chains**, au hackathon Secure Horizons (Track 3 · Uncharted Frontiers) :
-une démo de 3 minutes qui montre qu'en cas de compromission d'un partenaire, on bloque **uniquement les opérations contaminées** (3 sur 100, pas 100), avec une décision prouvable et des alertes signées entre entreprises.
+Deliver **FIREBREAK, the supply-chain firewall**, at the Secure Horizons hackathon (Track 3 · Uncharted Frontiers):
+a 3-minute demo showing that when a partner is compromised, we block **only the contaminated operations** (3 out of 100, not 100), with a provable decision and signed alerts between companies.
 
-- **Rendu : dimanche 11 octobre 2026, 12 h : premier tour de pitch** (5 min + 2 min de questions). Les finalistes repitchent plus tard dans la journée (3 min + 3 min de questions, voir `docs/pitch-firebreak.md`).
-- Gel du code visé : dimanche **10 h**, puis répétition du pitch jusqu'à 12 h.
-- Idée : `docs/firebreak.md` · Concurrents : `docs/benchmark-firebreak.md` · Plan : `docs/plan.md` · API : `docs/api.md`.
+- **Deadline: Sunday 11 October 2026, 12:00: first pitch round** (5 min + 2 min of questions). Finalists pitch again later in the day (3 min + 3 min of questions, see `docs/pitch-firebreak.md`).
+- Target code freeze: Sunday **10:00**, then pitch rehearsal until 12:00.
+- Idea: `docs/firebreak.md` · Competitors: `docs/benchmark-firebreak.md` · Plan: `docs/plan.md` · API: `docs/api.md`.
 
-## Équipe
+## Team
 
-| Membre | GitHub | Session | Rôle |
+| Member | GitHub | Session | Role |
 |---|---|---|---|
-| Yann | Sc4rville | `sessions/yann.md` | Produit : moteur, API, IA |
-| Céline | NewbieCae | `sessions/celine.md` | Banc d'essai : preuve chiffrée de l'efficacité (`synth.py`, `scripts/bench.py`) |
-| Maria | magraku | `sessions/maria.md` | à préciser (proposé : slides du pitch selon `design.md` + test de l'interface en 1920×1080) |
-| Mika | mncodol | `sessions/mika.md` | Avalanche L1 (preuves on-chain) et scénarios qualité (lot suspect, rappel), avec deux agents (pc1, pc2) |
+| Yann | Sc4rville | `sessions/yann.md` | Product: engine, API, AI |
+| Céline | NewbieCae | `sessions/celine.md` | Test bench: quantified proof of effectiveness (`synth.py`, `scripts/bench.py`) |
+| Maria | magraku | `sessions/maria.md` | to be defined (proposed: pitch slides following `design.md` + testing the interface at 1920×1080) |
+| Mika | mncodol | `sessions/mika.md` | Avalanche L1 (on-chain proofs) and quality scenarios (suspect lot, recall), with two agents (pc1, pc2) |
 
-L'interface finale (`web/app/`, sur `/app/`) est faite par Yann, à partir de `docs/api.md` et du brief `docs/brief-ui.md` ; design dans `design.md`.
+The final interface (`web/app/`, at `/app/`) is built by Yann, from `docs/api.md` and the `docs/brief-ui.md` brief; design in `design.md`.
 
-## Avancement du plan en 6 étapes
+## Progress of the 6-step plan
 
-| # | Étape | État | Commit / note |
+| # | Step | Status | Commit / note |
 |---|---|---|---|
-| 1 | Consolider le socle et figer le contrat API | Fait | `37cf8dd` |
-| 2 | Fédération complète et journal d'audit | Fait | `5ea8486` |
-| 3 | Scénarios réalistes et import EPCIS | Fait | `6560a9c`, `76711ec` |
-| 4 | Timeline et événements live (SSE) | Fait | `fe5ff07`, `c0476e5` (compteurs € = paiements uniquement) |
-| 5 | IA : Bedrock et lecture de documents | Fait | `434abde` |
-| 6 | Prêt pour la démo | Fait | `9307ad8` — `bash scripts/demo.sh`, script `docs/demo.md`, chiffres `uv run python -m firebreak.demo_figures` |
+| 1 | Consolidate the foundation and freeze the API contract | Done | `37cf8dd` |
+| 2 | Full federation and audit log | Done | `5ea8486` |
+| 3 | Realistic scenarios and EPCIS import | Done | `6560a9c`, `76711ec` |
+| 4 | Timeline and live events (SSE) | Done | `fe5ff07`, `c0476e5` (€ counters = payments only) |
+| 5 | AI: Bedrock and document reading | Done | `434abde` |
+| 6 | Demo-ready | Done | `9307ad8` — `bash scripts/demo.sh`, script `docs/demo.md`, figures `uv run python -m firebreak.demo_figures` |
 
-Tests : 267 verts (`uv run pytest -q`), état au 11 octobre à 02 h 50.
+Tests: 267 green (`uv run pytest -q`), as of 11 October at 02:50.
 
-Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h ; source : `uv run python -m firebreak.demo_figures`) : 17 opérations bloquées sur 193, 4 actions irréversibles bloquées, 5 210 € de paiement frauduleux bloqué, 92 102 € de paiements qui continuent.
-Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 54 opérations bloquées dont 42 saines, et 5 contaminées passent quand même jusqu'au client ; avec Firebreak, 17 bloquées, 0 saine, 0 fuite.
+Demo figures (mixed scenario, supplier compromised since 14:00; source: `uv run python -m firebreak.demo_figures`): 17 operations blocked out of 193, 4 irreversible actions blocked, €5,210 of fraudulent payment blocked, €92,102 of payments still flowing.
+With vs without: without Firebreak (cut off the supplier and its direct customers), 54 operations blocked of which 42 healthy, and 5 contaminated ones still get through to the customer; with Firebreak, 17 blocked, 0 healthy, 0 leaks.
 
-## Prochaines actions
+## Next actions
 
-- [x] Étape 4 : timeline et flux SSE (`/api/timeline`, `/api/events`, bouton « Rejouer »).
-- [x] Interface finale branchée sur l'API (`docs/api.md`), selon le brief `docs/brief-ui.md` (Yann) — `web/app/`, servie sur http://localhost:8000/app/ (`bash scripts/demo.sh` l'ouvre) : les 8 écrans du brief, bonus compris (import, vue partenaire), preuves Avalanche si la chaîne est active, les 5 gestes à la flèche droite. Testée en 1440×900 et 1920×1080 sur les 4 scénarios.
-- [x] Étape 6 : mode démo (`FIREBREAK_DEMO=1`, `/api/demo/step`, flèche droite), script `docs/demo.md`, test de bout en bout.
-- [x] Banc d'essai : balayages de sensibilité (taille 5/8/12 entreprises à 60 opérations chacune, bruit hors fédération 0/10/30 %) avant de figer les chiffres (Céline) — section « Sensibilité » de `docs/bench-results.md`, données dans `bench/sensitivity.csv`. **Les 4 conclusions de la fiche de défense tiennent** (C < B en collatéraux à toutes les tailles, ratio 4,5× à 9×, qui augmente avec la taille ; rappel C 100 % à p=0 ; à p=0,3, C sous B en rappel ; D rattrape des fuites quel que soit le bruit, mais 7 sains bloqués par fuite rattrapée à 30 % de bruit). Chiffres principaux et `bench/results.csv` inchangés à l'octet.
-- [x] Banc d'essai v2 : gates fuités, pire cas / 5e centile, ventilation par entreprise compromise, politique D « Firebreak + prudence », limites écrites par le script (Céline). **⚠️ Chiffres publiés changés le 11/10** (toutes les entreprises tirées + 10 % de réceptions hors fédération) : p=0 → Firebreak 9,6 sains bloqués contre 43,2 pour B (4,5× moins), rappel 100 % contre 98,5 %, 0 action irréversible fuitée ; p=0,3 → rappel C 93,4 %, D 97,9 %. `docs/bench-results.md`, `docs/fiche-defense.md`, l'exemple de `docs/api.md` et `tests/test_compare.py` sont à jour ; `/api/compare` lit le CSV.
-- [x] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux (bouton « Avec vs sans » + étape 3 de la démo), `/api/compare`, banc d'essai de Céline, cas JLR et CDK sourcés (Yann).
-- [x] Fusion Avalanche dans `main` (Yann, 02 h 30). Reste à Mika : bug `read_audit_anchor` (statut `unreadable`, 3 tentatives) et mesures réelles dans `docs/avalanche/pitch.md`, directement sur `main`.
-- [x] Déploiement Vercel de l'interface et de l'API (Yann) : https://firebreak-zeta.vercel.app, `vercel deploy --prod` depuis la racine.
-- [x] Scénarios qualité dans les deux sens (Mika) : lot suspect sans blacklister le fournisseur, analyse de rappel depuis un produit fini, signalement qualité signé vers l'amont avec décision au cas par cas ; scénarios `lot` et `recall`, API (`docs/api.md`), panneau de debug, ancrage Avalanche. Validé sur la vraie L1 (25 preuves, 0 échec). 295 tests verts.
-- [x] Afficher le parcours qualité (`lot`, `recall`) dans l'interface finale `/app/` (Yann) : gestes guidés dans le dock (« Étape 2/6 · Distributeur »), tiroir d'analyse de rappel, levée du lot ; « Avec vs sans » masqué sur ces scénarios (pas de déclaration à comparer).
-- [x] Refonte visuelle de `/app/` en registre keynote (Yann) : noir, horizon granuleux, sans boîtes, Geist, nouveau logo ; `design.md` réécrit.
-- [x] Envoi des ancrages optimisé (Mika, pc2) : démo 19/19 en ~40 s, rappel 25/25 en ~80 s sur la vraie L1.
-- [x] Contrôle des entrées en stock (Mika) : note de confiance /100 de chaque réception (commande, pièce, quantité, date, certificat, lot, RIB, alertes), mise en attente sous 80, décision humaine (accepter / refuser + signalement au fournisseur). Sur les 3 attaques, le lot piégé est arrêté à la réception. API, ancrage, panneau de debug ; feuille de démo `docs/demo-avalanche-qualite.md`. Répétition sur la vraie L1 à 08 h 40 : 60 preuves, 0 échec.
-- [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
-- [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
-- [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
+- [x] Step 4: timeline and SSE stream (`/api/timeline`, `/api/events`, "Replay" button).
+- [x] Final interface wired to the API (`docs/api.md`), following the `docs/brief-ui.md` brief (Yann) — `web/app/`, served at http://localhost:8000/app/ (`bash scripts/demo.sh` opens it): the 8 screens of the brief, bonuses included (import, partner view), Avalanche proofs if the chain is active, the 5 actions on the right arrow. Tested at 1440×900 and 1920×1080 on the 4 scenarios.
+- [x] Step 6: demo mode (`FIREBREAK_DEMO=1`, `/api/demo/step`, right arrow), script `docs/demo.md`, end-to-end test.
+- [x] Test bench: sensitivity sweeps (size 5/8/12 companies with 60 operations each, off-federation noise 0/10/30%) before freezing the figures (Céline) — "Sensitivity" section of `docs/bench-results.md`, data in `bench/sensitivity.csv`. **The 4 conclusions of the defence sheet hold** (C < B in collateral at every size, ratio 4.5× to 9×, growing with size; C recall 100% at p=0; at p=0.3, C below B in recall; D catches leaks whatever the noise, but 7 healthy blocked per leak caught at 30% noise). Main figures and `bench/results.csv` unchanged byte for byte.
+- [x] Test bench v2: leaked gates, worst case / 5th percentile, breakdown by compromised company, policy D "Firebreak + caution", limits written by the script (Céline). **⚠️ Published figures changed on 11/10** (all companies drawn + 10% off-federation receipts): p=0 → Firebreak 9.6 healthy blocked versus 43.2 for B (4.5× fewer), recall 100% versus 98.5%, 0 irreversible action leaked; p=0.3 → recall C 93.4%, D 97.9%. `docs/bench-results.md`, `docs/fiche-defense.md`, the example in `docs/api.md` and `tests/test_compare.py` are up to date; `/api/compare` reads the CSV.
+- [x] "With vs without Firebreak" wow effect: split screen ("With vs without" button + step 3 of the demo), `/api/compare`, Céline's test bench, sourced JLR and CDK cases (Yann).
+- [x] Avalanche merged into `main` (Yann, 02:30). Left for Mika: `read_audit_anchor` bug (`unreadable` status, 3 attempts) and real measurements in `docs/avalanche/pitch.md`, directly on `main`.
+- [x] Vercel deployment of the interface and the API (Yann): https://firebreak-zeta.vercel.app, `vercel deploy --prod` from the root.
+- [x] Quality scenarios in both directions (Mika): suspect lot without blacklisting the supplier, recall analysis from a finished product, signed quality report sent upstream with a case-by-case decision; `lot` and `recall` scenarios, API (`docs/api.md`), debug panel, Avalanche anchoring. Validated on the real L1 (25 proofs, 0 failures). 295 tests green.
+- [x] Show the quality flow (`lot`, `recall`) in the final interface `/app/` (Yann): guided actions in the dock ("Step 2/6 · Distributor"), recall analysis drawer, lot release; "With vs without" hidden on these scenarios (no declaration to compare).
+- [x] Visual redesign of `/app/` in keynote style (Yann): black, grainy horizon, no boxes, Geist, new logo; `design.md` rewritten.
+- [x] Optimised anchoring submission (Mika, pc2): demo 19/19 in ~40 s, recall 25/25 in ~80 s on the real L1.
+- [x] Inbound stock control (Mika): trust score /100 for each receipt (order, part, quantity, date, certificate, lot, bank details (RIB), alerts), put on hold below 80, human decision (accept / refuse + report to the supplier). On all 3 attacks, the rigged lot is stopped at receipt. API, anchoring, debug panel; demo sheet `docs/demo-avalanche-qualite.md`. Rehearsal on the real L1 at 08:40: 60 proofs, 0 failures.
+- [ ] Code freeze at 10:00: `demo-freeze` tag (Yann).
+- [ ] Pitch and slides (build on `docs/benchmark-firebreak.md`).
+- [ ] Notion: invite the 3 teammates with edit access (to be done by hand via Share).
 
-## Décisions
+## Decisions
 
-- 11/10 05 h 55 (Yann) : pour redéployer sur Vercel quand le dernier commit n'est pas de Yann (sinon Vercel le bloque) : `git archive HEAD | tar -x -C <dossier>`, copier `.vercel/` dedans, puis `vercel deploy --prod` depuis ce dossier. Rappel : sur Vercel l'état vit en mémoire par instance ; un parcours en plusieurs étapes peut se perdre si deux requêtes tombent sur deux instances, d'où la démo en local en priorité.
-- 11/10 04 h 50 (Yann) : nouveau design de l'interface, à reprendre dans les slides : fond noir `#050506`, le sain en blanc neutre, corail = bloqué, ambre = reprise, bleu `#6e95ff` = preuve ; police Geist ; logo = grille de points coupée par une barre. Tout est dans `design.md`.
-- 11/10 03 h 45 (Mika) : on ne blackliste pas un fournisseur pour un problème qualité : on isole le lot en cause, au cas par cas, sur décision humaine ; les alertes vont dans les deux sens (vers l'aval : alertes signées ; vers l'amont : signalements qualité signés).
+- 11/10 (Mika): the whole repo (docs, scripts, user-visible texts) is translated into English; user-visible texts and docs are in English from now on (see `AGENTS.md`).
+- 11/10 05:55 (Yann): to redeploy on Vercel when the last commit is not Yann's (otherwise Vercel blocks it): `git archive HEAD | tar -x -C <folder>`, copy `.vercel/` into it, then `vercel deploy --prod` from that folder. Reminder: on Vercel, state lives in memory per instance; a multi-step flow can get lost if two requests land on two instances, hence the local demo as the priority.
+- 11/10 04:50 (Yann): new interface design, to be reused in the slides: black background `#050506`, healthy in neutral white, coral = blocked, amber = recovery, blue `#6e95ff` = proof; Geist font; logo = grid of dots cut by a bar. Everything is in `design.md`.
+- 11/10 03:45 (Mika): we do not blacklist a supplier over a quality problem: we isolate the lot at fault, case by case, on a human decision; alerts go both ways (downstream: signed alerts; upstream: signed quality reports).
 
-- 11/10 04 h 00 (Yann) : messagerie lisible. À l'affichage, l'agent résume chaque message en 1 à 3 phrases simples. À l'envoi, message court et humain, en phrases construites ; les termes techniques sont permis s'ils restent synthétiques, mais pas d'inventaire de chemins, routes ou identifiants (les détails vont dans docs/). Voir AGENTS.md, section Messagerie.
-- 11/10 03 h 50 (Céline) : Track 3 validé par l'organisation. Calendrier : premier pitch à 12 h, finale plus tard dans la journée pour les finalistes.
+- 11/10 04:00 (Yann): readable messaging. On display, the agent summarises each message in 1 to 3 simple sentences. On sending, a short, human message in proper sentences; technical terms are allowed if they stay concise, but no inventory of paths, routes or identifiers (details go in docs/). See AGENTS.md, Messaging section.
+- 11/10 03:50 (Céline): Track 3 validated by the organisers. Schedule: first pitch at 12:00, final later in the day for the finalists.
 
-- 11/10 03 h 30 (Céline) : chiffres de chaîne cités = ceux de la vraie L1 (≈ 2 s par preuve, 12 ancrages en ≈ 24 s), annoncés « mesurés sur notre démo » ; on dit « un seul validateur en démo, les membres du consortium en production » ; la ligne « actions irréversibles à p=0,3 » passe de la diapo Preuve à la diapo Limites.
+- 11/10 03:30 (Céline): chain figures quoted = those of the real L1 (≈ 2 s per proof, 12 anchorings in ≈ 24 s), announced as "measured on our demo"; we say "a single validator in the demo, the consortium members in production"; the line "irreversible actions at p=0.3" moves from the Proof slide to the Limits slide.
 
-- 11/10 02 h 50 (Céline) : le pitch assume la blockchain. `docs/pitch-firebreak.md` (question 8, diapos 4 et 7, déroulé de la démo aligné sur les 5 gestes de `/app/` et sur 193 opérations), `docs/firebreak.md`, `docs/benchmark-firebreak.md`, `docs/api.md` (limite du journal → ancrage Avalanche), README : « les règles décident, l'IA explique, la blockchain prouve ». TradeLens : arrêt annoncé fin 2022, fermeture début 2023.
+- 11/10 02:50 (Céline): the pitch owns the blockchain. `docs/pitch-firebreak.md` (question 8, slides 4 and 7, demo run-through aligned with the 5 actions of `/app/` and with 193 operations), `docs/firebreak.md`, `docs/benchmark-firebreak.md`, `docs/api.md` (log limit → Avalanche anchoring), README: "the rules decide, the AI explains, the blockchain proves". TradeLens: shutdown announced end of 2022, closed early 2023.
 
-- 11/10 02 h 50 (Yann) : interface + API déployées sur Vercel : **https://firebreak-zeta.vercel.app** (fonction Python unique `api/index.py`, IA simulée, chaîne off). Plan de secours de la démo si le portable lâche. État en mémoire par instance : faire « Réinitialiser » avant la démo.
-- 11/10 02 h 30 (Yann) : la partie Avalanche de Mika (`mika/avalanche-l1`) est **fusionnée dans `main`** (267 tests verts). Désactivée par défaut (`FIREBREAK_CHAIN=off`), contrat déployé sur la L1 de test (`contracts/deployments/l1.json`). Contrat API 1.4.0. Les branches `mika/*` sont intégrées : on repart tous de `main`.
-- 11/10 (Yann) : interface finale en HTML/CSS/JS natif dans `web/app/`, servie par l'API sur `/app/` (pas de Node, pas de build, polices auto-hébergées). Contrat API 1.3.0 : ajout de `truth.ids` à `/api/compare`.
-- 11/10 (Céline) : banc v2 — l'entreprise compromise est tirée parmi toutes (client final compris) ; politique D = C + signal « provenance manquante » lu dans l'état du moteur seulement, présentée comme borne haute ; 10 % de réceptions légitimes hors fédération ajoutées comme bruit.
+- 11/10 02:50 (Yann): interface + API deployed on Vercel: **https://firebreak-zeta.vercel.app** (single Python function `api/index.py`, simulated AI, chain off). Backup plan for the demo if the laptop fails. State in memory per instance: hit "Reset" before the demo.
+- 11/10 02:30 (Yann): Mika's Avalanche part (`mika/avalanche-l1`) is **merged into `main`** (267 tests green). Disabled by default (`FIREBREAK_CHAIN=off`), contract deployed on the test L1 (`contracts/deployments/l1.json`). API contract 1.4.0. The `mika/*` branches are integrated: everyone starts again from `main`.
+- 11/10 (Yann): final interface in native HTML/CSS/JS in `web/app/`, served by the API at `/app/` (no Node, no build, self-hosted fonts). API contract 1.3.0: `truth.ids` added to `/api/compare`.
+- 11/10 (Céline): bench v2 — the compromised company is drawn from all of them (end customer included); policy D = C + "missing provenance" signal read from the engine state only, presented as an upper bound; 10% legitimate off-federation receipts added as noise.
 
-- Track 3 annoncé aux organisateurs, le 10 octobre.
+- Track 3 announced to the organisers, on 10 October.
 
-- 10/10 : banc d'essai — vérité terrain = descendants par toutes les vraies dépendances des records émis par l'entreprise compromise après `since`, `verified` exclus (même sémantique que le moteur).
+- 10/10: test bench — ground truth = descendants, through all real dependencies, of the records issued by the compromised company after `since`, `verified` excluded (same semantics as the engine).
 
-- 10/10 : on construit FIREBREAK, pensé pour le Track 3, au lieu des pistes du Track 1 du brief initial.
-- 10/10 : stack Python 3.12 + uv + FastAPI + networkx ; IA simulée par défaut, Bedrock en option.
-- 10/10 : le blocage est décidé par des règles sur le graphe, jamais par l'IA.
-- 11/10 : pas de branches, tout sur `main`, pull au début et push à la fin de chaque itération ; conflits arbitrés par l'agent (`AGENTS.md` → « Conflits Git »). L'équipe se parle via `messages.md` (`scripts/messages.py`).
+- 10/10: we build FIREBREAK, designed for Track 3, instead of the Track 1 options of the initial brief.
+- 10/10: stack Python 3.12 + uv + FastAPI + networkx; simulated AI by default, Bedrock as an option.
+- 10/10: blocking is decided by rules on the graph, never by the AI.
+- 11/10: no branches, everything on `main`, pull at the start and push at the end of every iteration; conflicts arbitrated by the agent (`AGENTS.md` → "Git conflicts"). The team talks via `messages.md` (`scripts/messages.py`).
 
-## Blocages
+## Blockers
 
-- [x] Banc d'essai : générateur à graine + 3 politiques + CSV (Céline) — chiffres v1 caducs (4,3×, 11,4 contre 49,5, 91,6 %), remplacés par la v2 ci-dessus. Reproduire : `uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3`
-- [ ] Clés de signature et PAIR_SECRET de federation.py : ne plus les dériver du nom / ne plus les écrire en dur
-- [ ] Retirer adresses e-mail et détails de boîte mail de AGENTS.md et docs/brief.md, puis décider du sort de l'historique
-- [x] README : mettre Track 3, marqueurs de conflit poussés sur main résolus (Céline, 11/10)
-- [x] Confirmer le passage officiel Track 1 → Track 3 auprès des organisateurs : validé par l'organisation (confirmé par Céline le 11/10, la note manquait)
+- [x] Test bench: seeded generator + 3 policies + CSV (Céline) — v1 figures obsolete (4.3×, 11.4 versus 49.5, 91.6%), replaced by v2 above. Reproduce: `uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3`
+- [ ] Signing keys and PAIR_SECRET in federation.py: stop deriving them from the name / stop hard-coding them
+- [ ] Remove e-mail addresses and mailbox details from AGENTS.md and docs/brief.md, then decide what to do with the history
+- [x] README: switch to Track 3, conflict markers pushed to main resolved (Céline, 11/10)
+- [x] Confirm the official switch Track 1 → Track 3 with the organisers: validated by the organisers (confirmed by Céline on 11/10, the note was missing)

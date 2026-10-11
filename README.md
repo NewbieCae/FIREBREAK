@@ -1,59 +1,58 @@
 # finswag — FIREBREAK
 
-Dépôt privé du projet finswag, Team 14 au hackathon Secure Horizons, Track 3 « Uncharted Frontiers » (projet FIREBREAK, pare-feu des supply chains).
+Private repo of the finswag project, Team 14 at the Secure Horizons hackathon, Track 3 "Uncharted Frontiers" (FIREBREAK project, a firewall for supply chains).
 
-## Le pitch en 3 lignes
+## The pitch in 3 lines
 
-Quand un partenaire d'une supply chain est compromis, FIREBREAK met en
-quarantaine **uniquement les opérations contaminées** — trouvées par un
-graphe de dépendances aux règles vérifiables — laisse tourner le reste,
-et propage des alertes signées aux partenaires sans divulguer leurs
-données commerciales. L'IA n'explique que des décisions déjà prises par
-les règles — elle ne bloque rien.
+When a supply-chain partner is compromised, FIREBREAK quarantines
+**only the contaminated operations** — found through a dependency graph
+with verifiable rules — keeps the rest running, and propagates signed
+alerts to partners without disclosing their business data. The AI only
+explains decisions already made by the rules — it blocks nothing.
 
 ## Architecture
 
-- `src/firebreak/` — moteur : `engine.py` (registres + propagation BFS,
-  seeds par origine/fenêtre ou jetons d'alerte, règles `verified`/`released`),
-  `federation.py` (alertes Ed25519 à jetons opaques), `simulation.py`
-  (point fixe + timeline), `audit.py` (journaux chaînés par hash),
-  `scenario.py` (4 scénarios : mixed / rib / cert / asn),
-  `ingest/` (documents fournisseurs + EPCIS 2.0), `ai.py`
-  (mock déterministe, Bedrock en option avec repli mock), `api.py` (FastAPI),
-  `chain/` (ancrage des preuves sur une L1 Avalanche, optionnel et non
-  bloquant, `FIREBREAK_CHAIN=off|tester|l1`).
-- `contracts/` — contrat `FirebreakRegistry.sol` (empreintes d'alertes,
-  d'accusés, de déclarations et de journaux ; écriture réservée aux membres) ;
-  plan et pitch dans [docs/avalanche/](docs/avalanche/README.md).
-- `web/app/` — **interface finale** (salle de contrôle, HTML/CSS/JS sans build), servie sur `/app/` ; design dans [design.md](design.md).
-- `web/index.html` — dashboard de debug (Cytoscape, rejeu pas à pas,
-  pilotage démo au clic ou flèche droite).
-- `tests/` — suite pytest (moteur, fédération, scénarios, timeline, démo).
-- `docs/` — [produit](docs/firebreak.md), [contrat API](docs/api.md),
-  [script de démo](docs/demo.md), [plan](docs/plan.md),
-  [benchmark](docs/benchmark-firebreak.md), [brief de l'interface](docs/brief-ui.md).
+- `src/firebreak/` — engine: `engine.py` (records + BFS propagation,
+  seeds by origin/window or alert tokens, `verified`/`released` rules),
+  `federation.py` (Ed25519 alerts with opaque tokens), `simulation.py`
+  (fixed point + timeline), `audit.py` (hash-chained logs),
+  `scenario.py` (4 scenarios: mixed / rib / cert / asn),
+  `ingest/` (supplier documents + EPCIS 2.0), `ai.py`
+  (deterministic mock, optional Bedrock with mock fallback), `api.py` (FastAPI),
+  `chain/` (proof anchoring on an Avalanche L1, optional and non-blocking,
+  `FIREBREAK_CHAIN=off|tester|l1`).
+- `contracts/` — `FirebreakRegistry.sol` contract (fingerprints of alerts,
+  acknowledgements, declarations and logs; writes restricted to members);
+  plan and pitch in [docs/avalanche/](docs/avalanche/README.md).
+- `web/app/` — **final interface** (control room, HTML/CSS/JS with no build step), served at `/app/`; design in [design.md](design.md).
+- `web/index.html` — debug dashboard (Cytoscape, step-by-step replay,
+  demo driven by click or right arrow).
+- `tests/` — pytest suite (engine, federation, scenarios, timeline, demo).
+- `docs/` — [product](docs/firebreak.md), [API contract](docs/api.md),
+  [demo script](docs/demo.md), [plan](docs/plan.md),
+  [benchmark](docs/benchmark-firebreak.md), [interface brief](docs/brief-ui.md).
 
-## Lancer la démo
+## Running the demo
 
 ```bash
-bash scripts/demo.sh        # uv sync → serveur :8000 → navigateur
+bash scripts/demo.sh        # uv sync → server :8000 → browser
 uv run pytest -q            # tests
-uv run python -m firebreak.demo_figures   # les chiffres du pitch (reproductible)
+uv run python -m firebreak.demo_figures   # the pitch figures (reproducible)
 ```
 
-Interface : http://localhost:8000/app/ — dashboard de debug : http://localhost:8000 — API interactive : http://localhost:8000/docs.
+Interface: http://localhost:8000/app/ — debug dashboard: http://localhost:8000 — interactive API: http://localhost:8000/docs.
 
-Secrets : voir `.env.example` (jamais de vraie clé dans le dépôt). Sans configuration, les clés de signature et les jetons de la fédération sont aléatoires à chaque lancement.
+Secrets: see `.env.example` (never a real key in the repo). Without configuration, the signing keys and federation tokens are random on every start.
 
-Variables : `FIREBREAK_DEMO=1` (scénario figé, IA mock, cadence de rejeu) ;
-`FIREBREAK_AI=bedrock` + `AWS_REGION` + identifiants AWS pour l'explainer
-Bedrock ([détails](docs/api.md#ia--bedrock-et-repli-mock)).
+Variables: `FIREBREAK_DEMO=1` (fixed scenario, mock AI, replay pacing);
+`FIREBREAK_AI=bedrock` + `AWS_REGION` + AWS credentials for the Bedrock
+explainer ([details](docs/api.md#ai-bedrock-and-mock-fallback)).
 
-## Coordination d'équipe
+## Team coordination
 
-- [goal.md](goal.md) (objectif et avancement partagés),
-  [sessions/](sessions/) (une session par membre), protocole dans
+- [goal.md](goal.md) (shared goal and progress),
+  [sessions/](sessions/) (one session per member), protocol in
   [AGENTS.md](AGENTS.md).
-- [Page Notion — brief et coordination](https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e)
+- [Notion page — brief and coordination](https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e)
 
-Le brief prévoit AWS Bedrock et Avalanche Fuji. Le produit retenu est FIREBREAK (voir `goal.md`) : Bedrock pour l'explainer, et une L1 Avalanche dédiée (et non Fuji) pour ancrer les preuves.
+The brief calls for AWS Bedrock and Avalanche Fuji. The chosen product is FIREBREAK (see `goal.md`): Bedrock for the explainer, and a dedicated Avalanche L1 (not Fuji) to anchor the proofs.

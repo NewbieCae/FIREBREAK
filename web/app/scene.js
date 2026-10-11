@@ -1,26 +1,26 @@
-// La scène : carte de la chaîne, flux de particules, effets de causalité,
-// chiffres, fil d'événements et lecture du flux SSE.
+// The scene: chain map, particle flows, causality effects,
+// numbers, event feed and SSE stream playback.
 import { S, $, $$, api, el, emit, showTip, hideTip, companyName, REDUCED, EASE, wait, API } from './core.js';
 import { icon, COMPANY_ICON } from './icons.js';
 import * as F from './format.js';
 
-// Le sain est neutre (blanc) : seul l'anormal porte une couleur (design.md).
+// Healthy is neutral (white): only the abnormal gets a colour (design.md).
 const OK = '244, 244, 245';
 const Q = '255, 85, 69';
 const R = '255, 176, 46';
 const A = '110, 149, 255';
-const SPEED = 0.6; // s entre deux étapes SSE (brief : 0,3 à 0,8 s)
+const SPEED = 0.6; // s between two SSE steps (brief: 0.3 to 0.8 s)
 
-const dots = new Map();      // id → bouton .dot
-const pos = new Map();       // id → {x, y} dans le repère de la carte
+const dots = new Map();      // id → .dot button
+const pos = new Map();       // id → {x, y} in map coordinates
 const panels = new Map();    // company → article
-let flows = [];              // arêtes cross animées
-// Accès de diagnostic depuis la console (lecture seule).
+let flows = [];              // animated cross edges
+// Diagnostic access from the console (read-only).
 window.__firebreak = { S, pos, dots, flows: () => flows };
-const flashing = new Map();  // id → échéance du flash ambre (particules)
+const flashing = new Map();  // id → amber flash deadline (particles)
 
 // =====================================================================
-// État → affichage
+// State → display
 // =====================================================================
 
 export function applyState(st, { render = false } = {}) {
@@ -37,14 +37,14 @@ export function applyState(st, { render = false } = {}) {
   setKpis(currentCounters(), { animate: !render });
 }
 
-// Compteurs de l'API (global, ou par entreprise en vue partenaire).
+// API counters (global, or per company in partner view).
 function currentCounters() {
   const c = S.state.counters;
   return S.view === 'all' ? c.global : c.per_company[S.view];
 }
 
-// Mêmes définitions que l'API (docs/api.md → Compteurs), calculées sur les
-// statuts affichés : sert uniquement pendant une animation en vue partenaire.
+// Same definitions as the API (docs/api.md → Counters), computed on the
+// displayed statuses: only used during an animation in partner view.
 function localCounters(company) {
   const out = { total: 0, quarantined: 0, released: 0, gates_blocked: 0, amount_blocked: 0, amount_flowing: 0 };
   for (const r of S.state.records) {
@@ -66,7 +66,7 @@ function localCounters(company) {
 }
 
 // =====================================================================
-// Carte
+// Map
 // =====================================================================
 
 function renderMap() {
@@ -82,7 +82,7 @@ function renderMap() {
     p.tabIndex = 0;
     p.setAttribute('aria-label', `${c.name}, ${c.role}`);
     p.innerHTML = `
-      <span class="c-tag">Compromis</span>
+      <span class="c-tag">Compromised</span>
       <div class="c-head">
         <div class="c-ico">${icon(COMPANY_ICON[c.id] || 'maker')}</div>
         <div style="min-width:0">
@@ -91,12 +91,12 @@ function renderMap() {
         </div>
       </div>
       <div class="c-counts">
-        <span class="ok"><i></i><b data-ok>0</b> continuent</span>
-        <span class="q"><i></i><b data-q>0</b> <span data-ql>bloquées</span></span>
-        <span class="r"><i></i><b data-r>0</b> <span data-rl>libérée</span></span>
+        <span class="ok"><i></i><b data-ok>0</b> flowing</span>
+        <span class="q"><i></i><b data-q>0</b> <span data-ql>blocked</span></span>
+        <span class="r"><i></i><b data-r>0</b> <span data-rl>released</span></span>
       </div>
       <div class="fams"></div>
-      <div class="c-foot"><button data-audit="${F.esc(c.id)}" title="Journal d'audit · ${F.esc(c.name)}">${icon('audit', 's16')}<span>Journal</span><span class="mono" data-head>—</span><span></span></button></div>
+      <div class="c-foot"><button data-audit="${F.esc(c.id)}" title="Audit log · ${F.esc(c.name)}">${icon('audit', 's16')}<span>Log</span><span class="mono" data-head>—</span><span></span></button></div>
       <div class="privacy"></div>`;
     const fams = p.querySelector('.fams');
     for (const f of F.FAMILIES) {
@@ -123,7 +123,7 @@ function renderMap() {
     p.style.animation = `rise 420ms ${EASE} ${ci * 70}ms both`;
   });
   applyView();
-  // Mesure immédiate, puis après l'entrée animée des panneaux (≈ 650 ms).
+  // Measure now, then after the panels' entry animation (≈ 650 ms).
   measure();
   setTimeout(measure, 120);
   setTimeout(measure, 900);
@@ -149,15 +149,15 @@ export function refreshCounts() {
     p.querySelector('[data-ok]').textContent = F.n(flow);
     p.querySelector('[data-q]').textContent = F.n(c.quarantined);
     p.querySelector('[data-r]').textContent = F.n(c.released);
-    p.querySelector('[data-rl]').textContent = c.released > 1 ? 'libérées' : 'libérée';
-    p.querySelector('[data-ql]').textContent = c.quarantined > 1 ? 'bloquées' : 'bloquée';
+    p.querySelector('[data-rl]').textContent = 'released';
+    p.querySelector('[data-ql]').textContent = 'blocked';
     p.querySelector('.c-counts .q').classList.toggle('zero', c.quarantined === 0);
     p.querySelector('.c-counts .r').classList.toggle('zero', c.released === 0);
   }
 }
 
-// En vue partenaire, un registre ne sait qu'une source est compromise que
-// s'il a lui-même enregistré la déclaration (sinon il ne reçoit que des jetons).
+// In partner view, a ledger only knows a source is compromised if it
+// recorded the declaration itself (otherwise it only receives tokens).
 function knowsCompromise(cid) {
   if (S.view === 'all' || cid === S.view) return true;
   return (S.state.declarations || []).some((d) => d.ledger === S.view && d.source === cid);
@@ -167,12 +167,12 @@ function setCompromised(cid, on) {
   panels.get(cid)?.classList.toggle('compromised', on && knowsCompromise(cid));
 }
 
-// En vue partenaire, le fil ne montre que les événements du registre choisi.
+// In partner view, the feed only shows events from the selected ledger.
 function filterFeed() {
   for (const row of $$('#feed .ev')) row.hidden = S.view !== 'all' && row.dataset.co !== S.view;
 }
 
-// Positions des points dans le repère de la carte (canvas et calque SVG).
+// Dot positions in map coordinates (canvas and SVG layer).
 export function measure() {
   const map = $('#map');
   const mr = map.getBoundingClientRect();
@@ -189,7 +189,7 @@ export function measure() {
 }
 
 // =====================================================================
-// Flux : particules le long des arêtes inter-entreprises (canvas, sous le verre)
+// Flows: particles along inter-company edges (canvas, under the glass)
 // =====================================================================
 
 const canvas = () => $('#flows');
@@ -244,8 +244,8 @@ function flowFor(a, b) {
   return flows.find((f) => f.s === a && f.t === b);
 }
 
-// Garde-fou de fluidité : si les images ralentissent nettement (machine de
-// projection modeste), les panneaux de la carte passent en verre opaque, sans flou.
+// Smoothness safeguard: if frames slow down noticeably (modest projection
+// machine), the map panels switch to opaque glass, without blur.
 let slowFrames = 0, sampled = 0;
 function watchFps(raw) {
   if (document.body.classList.contains('lite') || document.hidden) return;
@@ -253,7 +253,7 @@ function watchFps(raw) {
   if (sampled >= 180) {
     if (slowFrames / sampled > 0.5) {
       document.body.classList.add('lite');
-      console.info('[firebreak] images lentes : verre de la carte sans flou');
+      console.info('[firebreak] slow frames: map glass without blur');
     }
     sampled = 0; slowFrames = 0;
   }
@@ -297,7 +297,7 @@ function frame(t) {
 }
 
 // =====================================================================
-// Effets de causalité (calque SVG au-dessus des panneaux)
+// Causality effects (SVG layer above the panels)
 // =====================================================================
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -407,7 +407,7 @@ function crossMark(id) {
   fadeOut(g, 1600, 500);
 }
 
-// Enveloppe scellée qui file le long d'une arête inter-entreprises.
+// Sealed envelope travelling along an inter-company edge.
 function envelope(a, b, rgb, dur = 520) {
   const f = flowFor(a, b) || (pos.get(a) && pos.get(b) ? { pts: bezierPts(pos.get(a), pos.get(b)) } : null);
   if (!f) return wait(0);
@@ -442,7 +442,7 @@ function envelopeAlong(pts, rgb, dur) {
   });
 }
 
-// Signalement qualité : enveloppe d'un registre à l'autre (vers l'amont).
+// Quality report: envelope from one ledger to another (upstream).
 function panelEnvelope(from, to, rgb = A, dur = 700) {
   const a = panels.get(from), b = panels.get(to);
   if (!a || !b) return wait(0);
@@ -457,7 +457,7 @@ function panelEnvelope(from, to, rgb = A, dur = 700) {
 }
 
 // =====================================================================
-// Statuts animés
+// Animated statuses
 // =====================================================================
 
 function setStatus(id, s, { flash = false } = {}) {
@@ -474,7 +474,7 @@ function setStatus(id, s, { flash = false } = {}) {
 }
 
 // =====================================================================
-// Chiffres
+// Numbers
 // =====================================================================
 
 const tweens = new WeakMap();
@@ -502,18 +502,18 @@ export function setKpis(c, { animate = true, total } = {}) {
   tween($('#kpiFraud [data-v]'), c.amount_blocked || 0, F.n, animate);
   tween($('#kpiFraud [data-gates]'), c.gates_blocked || 0, F.n, animate);
   const quality = !!S.state.scenario?.incident;
-  $('#kpiFraud .k-label span').textContent = quality ? 'Paiements retenus' : 'Paiement frauduleux bloqué';
-  $('#kpiFraud [data-gates-l]').textContent = (c.gates_blocked || 0) > 1 ? 'actions irréversibles bloquées' : 'action irréversible bloquée';
+  $('#kpiFraud .k-label span').textContent = quality ? 'Payments withheld' : 'Fraudulent payment blocked';
+  $('#kpiFraud [data-gates-l]').textContent = (c.gates_blocked || 0) > 1 ? 'irreversible actions blocked' : 'irreversible action blocked';
   tween($('#kpiFlowing [data-v]'), c.amount_flowing || 0, F.n, animate);
   $('#kpiBlocked').classList.toggle('hot', c.quarantined > 0);
   $('#kpiFraud').classList.toggle('hot', (c.amount_blocked || 0) > 0);
   $('#kpiFlowing [data-scope]').textContent = S.view === 'all'
-    ? 'sur toute la chaîne'
-    : `chez ${F.ROLE_LABEL[S.view] || companyName(S.view)}`;
+    ? 'across the whole chain'
+    : `at ${F.ROLE_LABEL[S.view] || companyName(S.view)}`;
 }
 
 // =====================================================================
-// Vue partenaire : les registres des autres sont du verre dépoli
+// Partner view: the other ledgers are frosted glass
 // =====================================================================
 
 export function applyView() {
@@ -529,24 +529,24 @@ export function applyView() {
       (a.from === cid && a.to === S.view) || (a.from === S.view && a.to === cid));
     const rows = alerts.slice(-4).map((a) => {
       const inbound = a.to === S.view;
-      const kind = a.type === 'release' ? 'levée' : 'contamination';
+      const kind = a.type === 'release' ? 'release' : 'contamination';
       const bad = a.verified === false;
       return `<div class="p-alert surface ${bad ? 'bad' : ''}">${icon(bad ? 'alertBad' : 'alert', 's16')}
-        <span>${inbound ? 'Reçue' : 'Envoyée'} · ${kind}</span>
-        <span class="mono">${F.n(a.tokens_count)} jeton${a.tokens_count > 1 ? 's' : ''}</span></div>`;
+        <span>${inbound ? 'Received' : 'Sent'} · ${kind}</span>
+        <span class="mono">${F.n(a.tokens_count)} token${a.tokens_count > 1 ? 's' : ''}</span></div>`;
     }).join('');
     priv.innerHTML = `${icon('lockKey')}
-      <div class="p-title">Registre privé · ${F.esc(companyName(cid))}</div>
+      <div class="p-title">Private ledger · ${F.esc(companyName(cid))}</div>
       <div class="p-sub">${alerts.length
-        ? 'Seules les alertes signées passent : des jetons opaques, ni libellé ni montant.'
-        : 'Rien ne sort de ce registre. Aucune alerte échangée avec vous.'}</div>
+        ? 'Only signed alerts get through: opaque tokens, no label or amount.'
+        : 'Nothing leaves this ledger. No alerts exchanged with you.'}</div>
       ${rows ? `<div class="p-alerts">${rows}</div>` : ''}`;
   }
   setKpis(currentCounters(), { animate: true });
 }
 
 // =====================================================================
-// Fil d'événements
+// Event feed
 // =====================================================================
 
 const feed = () => $('#feed');
@@ -564,16 +564,16 @@ function feedEmpty() {
   const st = S.state;
   const box = el('div', 'feed-empty surface');
   box.innerHTML = st
-    ? `<b>Aucun incident.</b>${F.n(st.records.length)} opérations circulent entre ${st.companies.length} entreprises. ${st.scenario?.incident
-      ? 'Un défaut qualité va être signalé : Firebreak isole le lot en cause et ce qui en dérive, sans couper le fournisseur.'
-      : 'Déclarez une compromission : Firebreak isole uniquement ce qui est contaminé.'}`
+    ? `<b>No incident.</b>${F.n(st.records.length)} operations flow between ${st.companies.length} companies. ${st.scenario?.incident
+      ? 'A quality defect is about to be reported: Firebreak isolates the faulty lot and what derives from it, without cutting off the supplier.'
+      : 'Declare a compromise: Firebreak isolates only what is contaminated.'}`
     : '<span class="sk line"></span><span class="sk line"></span>';
   feed().append(box);
 }
 
 function updateFeedCount() {
   $('#feedCount').textContent = feedSteps ? String(feedSteps) : '';
-  $('#feedCount').title = `${feedSteps} étape${feedSteps > 1 ? 's' : ''}`;
+  $('#feedCount').title = `${feedSteps} step${feedSteps > 1 ? 's' : ''}`;
 }
 
 function feedGroup(title) {
@@ -586,8 +586,8 @@ function feedGroup(title) {
 }
 
 function stepText(step) {
-  if (step.type === 'document_confirmed') return `Document confirmé par un humain et inscrit au registre ${F.esc(companyName(step.company))} : « ${F.esc(S.recs.get(step.record)?.label || step.record)} ».`;
-  if (step.type === 'epcis_import') return `Import EPCIS dans le registre ${F.esc(companyName(step.company))}.`;
+  if (step.type === 'document_confirmed') return `Document confirmed by a human and recorded in the ${F.esc(companyName(step.company))} ledger: “${F.esc(S.recs.get(step.record)?.label || step.record)}”.`;
+  if (step.type === 'epcis_import') return `EPCIS import into the ${F.esc(companyName(step.company))} ledger.`;
   return step.text || '';
 }
 
@@ -601,7 +601,7 @@ function feedAdd(group, step, animate) {
   if (step.record) row.dataset.record = step.record;
   row.dataset.co = step.company || '';
   if (S.view !== 'all' && step.company !== S.view) row.hidden = true;
-  const label = step.type.startsWith('alert') ? `${meta.label}${isRelease ? ' · levée' : ''}` : meta.label;
+  const label = step.type.startsWith('alert') ? `${meta.label}${isRelease ? ' · release' : ''}` : meta.label;
   row.innerHTML = `<span class="ev-ico">${icon(bad ? 'alertBad' : meta.icon, 's16')}</span>
     <span><span class="ev-meta"><span class="mono">${F.hm(step.ts)}</span><span>${label}</span><span>· ${F.esc(F.ROLE_SHORT[step.company] || step.company || '')}</span></span>
     <span class="ev-text">${F.richText(stepText(step))}</span></span>`;
@@ -619,10 +619,10 @@ export function feedLoad(steps, title) {
 }
 
 // =====================================================================
-// Lecture du flux SSE
+// SSE stream playback
 // =====================================================================
 
-// Statuts d'avant la dernière action, reconstruits en remontant la timeline.
+// Statuses before the last action, rebuilt by walking the timeline backwards.
 export function snapshotBefore(steps) {
   const status = new Map(S.status);
   const compromised = new Set(S.compromised);
@@ -654,7 +654,7 @@ function restore(snap) {
 
 async function* sse(signal) {
   const res = await fetch(`${API}/api/events?speed=${SPEED}`, { signal, headers: { Accept: 'text/event-stream' } });
-  if (!res.ok || !res.body) throw new Error('Flux en direct indisponible.');
+  if (!res.ok || !res.body) throw new Error('Live stream unavailable.');
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = '';
@@ -672,7 +672,7 @@ async function* sse(signal) {
   }
 }
 
-// Repli si le flux SSE échoue : la même séquence d'un coup, cadencée ici.
+// Fallback if the SSE stream fails: the same sequence in one go, paced here.
 async function* paced(steps, signal) {
   for (const s of steps) {
     if (signal.aborted) return;
@@ -687,8 +687,8 @@ function setProgress(k) {
   bar.querySelector('span').style.width = `${Math.round((k ?? 0) * 100)}%`;
 }
 
-// Joue la dernière action pas à pas puis pose l'état final de l'API.
-// `final` : réponse complète de l'action (null = l'état courant).
+// Plays the last action step by step, then applies the final API state.
+// `final`: full response of the action (null = the current state).
 export async function play({ final = null, title, snapshot = null, source = null } = {}) {
   S.abort?.abort();
   const ctrl = new AbortController();
@@ -699,11 +699,11 @@ export async function play({ final = null, title, snapshot = null, source = null
   try {
     const { steps } = await api('GET', '/api/timeline', undefined, { signal: ctrl.signal });
     if (!steps.length) { applyState(target); return; }
-    // Séquence de guérison (remédiation, retrait) : aucune nouvelle contamination.
+    // Healing sequence (remediation, withdrawal): no new contamination.
     S.healing = steps.some((s) => s.type === 'release' || s.type === 'remediation' || s.type === 'withdrawal' || s.type === 'lot_suspect_withdrawn')
       && !steps.some((s) => s.type === 'seed' || s.type === 'quarantine' || s.type === 'gate_blocked');
     emit('playing', true);
-    // Nouveaux records (ingestion) : on pose la nouvelle carte, puis l'état d'avant.
+    // New records (ingestion): lay out the new map, then the previous state.
     let born = [];
     if (final && final.records.length !== S.state.records.length) {
       const old = new Set(S.recs.keys());
@@ -720,7 +720,7 @@ export async function play({ final = null, title, snapshot = null, source = null
       d?.classList.add('new');
       d?.addEventListener('animationend', () => d.classList.remove('new'), { once: true });
     }
-    const group = feedGroup(title || 'Rejeu');
+    const group = feedGroup(title || 'Replay');
     const total = steps.length;
     const src = source ?? [...S.compromised][0];
     let stream;
@@ -735,7 +735,7 @@ export async function play({ final = null, title, snapshot = null, source = null
       }
     } catch (e) {
       if (e.name === 'AbortError' || ctrl.signal.aborted) return;
-      // Flux coupé : on termine avec la timeline (même contenu).
+      // Stream cut: finish with the timeline (same content).
       for await (const step of paced(steps.slice(n), ctrl.signal)) { n++; setProgress(n / total); await onStep(group, step, src, ctrl.signal); }
     }
     await wait(450);
@@ -832,7 +832,7 @@ async function onStep(group, step, source, signal) {
 }
 
 // =====================================================================
-// Interactions sur la carte : infobulle, lignée, clic → preuve
+// Map interactions: tooltip, lineage, click → proof
 // =====================================================================
 
 function lineage(id) {
@@ -867,7 +867,7 @@ function tipFor(id) {
   const s = S.status.get(id);
   const st = F.STATUS[s] || { label: s, cls: 'n' };
   const amt = r.payload?.amount != null ? ` · ${F.eur(r.payload.amount)}` : '';
-  const flags = [r.gate ? 'action irréversible' : '', r.verified ? 'vérifiée' : ''].filter(Boolean).join(' · ');
+  const flags = [r.gate ? 'irreversible action' : '', r.verified ? 'verified' : ''].filter(Boolean).join(' · ');
   return `<div class="tt">${F.esc(r.label)}</div>
     <div class="td"><span>${F.kindLabel(r.kind)}${amt}</span></div>
     <div class="td"><span class="mono">${F.hm(r.ts)}</span><span class="st-${st.cls}">● ${st.label}</span>${flags ? `<span>${flags}</span>` : ''}</div>`;

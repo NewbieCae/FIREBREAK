@@ -1,4 +1,4 @@
-"""Client, ancrage et réécriture : sans réseau, sans contrat compilé."""
+"""Client, anchoring and rewriting: no network, no compiled contract."""
 
 import time
 from datetime import datetime
@@ -38,7 +38,7 @@ def _compromised():
     return sim, anchorer
 
 
-def test_null_chain_est_inerte():
+def test_null_chain_is_inert():
     chain = NullChain()
     rec = chain.submit(ChainOp("audit", "fabricant", "anchorAudit"))
     assert rec.status == "disabled"
@@ -47,16 +47,16 @@ def test_null_chain_est_inerte():
     assert chain.read_audit_anchor(b"\0" * 32, "fabricant") is None
 
 
-def test_mode_off_donne_null_chain():
+def test_off_mode_gives_null_chain():
     assert isinstance(get_chain_client(ChainConfig(mode="off")), NullChain)
 
 
-def test_tester_sans_mnemonique_est_connecte():
+def test_tester_without_mnemonic_is_connected():
     chain = get_chain_client(ChainConfig(mode="tester"))
     assert chain.status()["connected"] is True
 
 
-def test_tester_ancrage_de_bout_en_bout():
+def test_tester_anchoring_end_to_end():
     chain = get_chain_client(ChainConfig(mode="tester"))
     sim = build_simulation()
     anchorer = Anchorer(chain)
@@ -69,7 +69,7 @@ def test_tester_ancrage_de_bout_en_bout():
         [(r.kind, r.status, r.error) for r in recs]
 
 
-def test_tester_rejouer_la_demo_ne_echoue_pas():
+def test_tester_replaying_the_demo_does_not_fail():
     chain = get_chain_client(ChainConfig(mode="tester"))
     anchorer = Anchorer(chain)
     for _ in range(2):
@@ -113,7 +113,7 @@ def _web3_chain_with_fake_contract(reads, monkeypatch):
     return chain, client_mod
 
 
-def test_lecture_onchain_retente_puis_reussit(monkeypatch):
+def test_onchain_read_retries_then_succeeds(monkeypatch):
     head = bytes.fromhex("ab" * 32)
     chain, mod = _web3_chain_with_fake_contract(
         [(b"", 0, 0), RuntimeError("429"), (head, 5, 1)], monkeypatch)
@@ -123,7 +123,7 @@ def test_lecture_onchain_retente_puis_reussit(monkeypatch):
     assert got["anchored_entries"] == 5 and got["anchored_head"] == head.hex()
 
 
-def test_lecture_onchain_illisible_n_est_pas_non_ancre(monkeypatch):
+def test_unreadable_onchain_read_is_not_unanchored(monkeypatch):
     chain, _ = _web3_chain_with_fake_contract([(b"", 0, 0)], monkeypatch)
     assert chain.read_audit_anchor(b"\0" * 32, "fabricant") is None
     chain._records.append(AnchorRecord(1, "audit", "fabricant", "0x" + "ab" * 32,
@@ -131,7 +131,7 @@ def test_lecture_onchain_illisible_n_est_pas_non_ancre(monkeypatch):
     assert chain.read_audit_anchor(b"\0" * 32, "fabricant") == {"unreadable": True}
 
 
-def test_verify_onchain_illisible_ne_dit_pas_falsifie():
+def test_unreadable_verify_onchain_does_not_claim_tampering():
     class Unreadable(FakeChain):
         def read_audit_anchor(self, run_id, company):
             return {"unreadable": True}
@@ -187,13 +187,13 @@ def _send_fakes(monkeypatch, fail_sends=0, fail_receipts=0, alert_anchored_at=1)
         def send_raw_transaction(self, raw):
             state["sends"] += 1
             if state["sends"] <= fail_sends:
-                raise ConnectionError("réseau")
+                raise ConnectionError("network")
             return bytes.fromhex("11" * 32)
 
         def wait_for_transaction_receipt(self, h, timeout, poll_latency):
             state["receipts"] += 1
             if state["receipts"] <= fail_receipts:
-                raise TimeoutError("reçu")
+                raise TimeoutError("receipt")
             return {"status": 1, "blockNumber": 9}
 
     class W3:
@@ -209,14 +209,14 @@ def _op(fn):
     return ChainOp("alert", "fabricant", fn, args, "0x" + "01" * 32)
 
 
-def test_envoi_retente_avec_attente_puis_confirme(monkeypatch):
+def test_send_retries_with_backoff_then_confirms(monkeypatch):
     chain, state = _send_fakes(monkeypatch, fail_sends=2)
     rec = chain.submit(_op("anchorAlert"))
     chain.flush(5)
     assert rec.status == "confirmed" and state["sends"] == 3
 
 
-def test_reçu_manquant_ne_renvoie_pas_de_transaction(monkeypatch):
+def test_missing_receipt_does_not_resend_transaction(monkeypatch):
     chain, state = _send_fakes(monkeypatch, fail_receipts=2)
     rec = chain.submit(_op("anchorAlert"))
     chain.flush(5)
@@ -224,14 +224,14 @@ def test_reçu_manquant_ne_renvoie_pas_de_transaction(monkeypatch):
     assert state["sends"] == 1 and state["receipts"] == 3
 
 
-def test_ack_sans_alerte_ancree_echoue_clairement(monkeypatch):
+def test_ack_without_anchored_alert_fails_clearly(monkeypatch):
     import firebreak.chain.client as mod
     monkeypatch.setattr(mod, "ACK_WAIT", 0.1)
     monkeypatch.setattr(mod, "ACK_POLL", 0.02)
     chain, state = _send_fakes(monkeypatch, alert_anchored_at=0)
     rec = chain.submit(_op("acknowledgeAlert"))
     chain.flush(5)
-    assert rec.status == "failed" and "alerte non ancrée" in rec.error
+    assert rec.status == "failed" and "alert not anchored" in rec.error
 
 
 def _parallel_chain(monkeypatch, companies, delay=0.1):
@@ -300,13 +300,13 @@ def _timed(chain, companies, per_company=3):
     return time.monotonic() - start
 
 
-def test_envois_en_parallele_par_compte(monkeypatch):
+def test_parallel_sends_per_account(monkeypatch):
     one = _timed(_parallel_chain(monkeypatch, ["a"]), ["a"])
     four = _timed(_parallel_chain(monkeypatch, list("abcd")), list("abcd"))
     assert four < 2 * one
 
 
-def test_ack_soumis_avant_son_alerte_finit_apres_elle(monkeypatch):
+def test_ack_submitted_before_its_alert_finishes_after_it(monkeypatch):
     chain = _parallel_chain(monkeypatch, ["a", "b"], delay=0.2)
     h = b"\7" * 32
     ack = chain.submit(ChainOp("ack", "b", "acknowledgeAlert", (h,), "0x01"))
@@ -384,7 +384,7 @@ def _rpc_chain(monkeypatch, send_errors=(), receipts=None):
     return chain, calls
 
 
-def test_nonce_local_gaz_fixe_et_prix_en_cache(monkeypatch):
+def test_local_nonce_fixed_gas_and_cached_price(monkeypatch):
     chain, calls = _rpc_chain(monkeypatch)
     recs = [chain.submit(ChainOp("audit", "a", "anchorAudit", (b"\0" * 32,), "0x01"))
             for _ in range(4)]
@@ -395,7 +395,7 @@ def test_nonce_local_gaz_fixe_et_prix_en_cache(monkeypatch):
     assert calls["send"] == 4 and calls["receipt"] == 4
 
 
-def test_nonce_too_low_resynchronise(monkeypatch):
+def test_nonce_too_low_resyncs(monkeypatch):
     chain, calls = _rpc_chain(monkeypatch, send_errors=[ValueError("nonce too low")])
     rec = chain.submit(ChainOp("audit", "a", "anchorAudit", (b"\0" * 32,), "0x01"))
     chain.flush(5)
@@ -403,7 +403,7 @@ def test_nonce_too_low_resynchronise(monkeypatch):
     assert calls["nonce"] == 2 and calls["send"] == 2
 
 
-def test_ack_reverte_une_fois_puis_reussit(monkeypatch):
+def test_ack_reverts_once_then_succeeds(monkeypatch):
     chain, calls = _rpc_chain(monkeypatch, receipts=[0, 1])
     rec = chain.submit(ChainOp("ack", "a", "acknowledgeAlert", (b"\1" * 32,), "0x01"))
     chain.flush(5)
@@ -412,7 +412,7 @@ def test_ack_reverte_une_fois_puis_reussit(monkeypatch):
 
 
 
-def test_l1_injoignable_ne_leve_pas():
+def test_unreachable_l1_does_not_raise():
     cfg = ChainConfig(mode="l1", rpc_url="http://127.0.0.1:1", chain_id=1,
                       mnemonic="test test test test test test test test test "
                                "test test junk")
@@ -422,7 +422,7 @@ def test_l1_injoignable_ne_leve_pas():
     assert rec.status == "failed"
 
 
-def test_anchorer_ancre_alertes_acks_incidents_audits():
+def test_anchorer_anchors_alerts_acks_incidents_audits():
     sim, anchorer = _compromised()
     anchorer.after_action(sim, "compromise")
     kinds = [o.kind for o in anchorer.client.ops]
@@ -432,7 +432,7 @@ def test_anchorer_ancre_alertes_acks_incidents_audits():
     assert kinds.count("alert") == n_alerts
 
 
-def test_anchorer_pas_de_doublon():
+def test_anchorer_no_duplicate():
     sim, anchorer = _compromised()
     anchorer.after_action(sim, "compromise")
     n = len(anchorer.client.ops)
@@ -440,19 +440,19 @@ def test_anchorer_pas_de_doublon():
     assert len(anchorer.client.ops) == n
 
 
-def test_verify_onchain_puis_reecriture_detectee():
+def test_verify_onchain_then_rewrite_detected():
     sim, anchorer = _compromised()
     anchorer.after_action(sim, "compromise")
     res = anchorer.verify_onchain(sim)
     assert all(v["matches"] for v in res.values() if v)
 
     rewrite_journal(sim, "fabricant", "alert_received")
-    assert sim.ledgers["fabricant"].audit.verify() is None  # local : intègre
+    assert sim.ledgers["fabricant"].audit.verify() is None  # local: intact
     res = anchorer.verify_onchain(sim)
     assert res["fabricant"]["matches"] is False
 
 
-def test_rewrite_entree_absente():
+def test_rewrite_missing_entry():
     sim = build_simulation()
     with pytest.raises(ValueError):
-        rewrite_journal(sim, "fabricant", "inexistant")
+        rewrite_journal(sim, "fabricant", "nonexistent")

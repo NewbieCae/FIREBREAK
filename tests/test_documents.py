@@ -34,7 +34,7 @@ def extract(name, company="fabricant", known=None):
     return MockExtractor().extract(sample_text(name), company, PARTIES, known)
 
 
-# -- extraction mock (regex) -----------------------------------------------------
+# -- mock extraction (regex) -----------------------------------------------------
 
 
 def test_invoice_with_modified_rib_pdf():
@@ -42,7 +42,7 @@ def test_invoice_with_modified_rib_pdf():
     assert out["source"] == "mock"
     assert out["kind"] == "invoice"
     assert out["origin"] == "fournisseur"
-    assert out["label"] == "Facture reçue F-9999 — nouveau RIB"
+    assert out["label"] == "Received invoice F-9999 — new bank details"
     p = out["payload"]
     assert p["amount"] == 5210
     assert p["rib"] == RIB_FRAUD
@@ -58,7 +58,7 @@ def test_shipping_notice_mail():
     out = extract("avis-expedition.eml")
     assert out["kind"] == "asn"
     assert out["origin"] == "fournisseur"
-    assert out["label"] == "ASN reçu — BC-1009"
+    assert out["label"] == "Received ASN — BC-1009"
     assert {"BC-1009", "BL-4409"} <= set(out["payload"]["references"])
     assert out["payload"]["dates"][:2] == ["2026-10-10", "2026-10-12"]
     assert "rib" not in out["payload"]
@@ -104,7 +104,7 @@ def test_extractor_selection(monkeypatch):
     assert isinstance(get_extractor(), BedrockExtractor)
 
 
-# -- extraction Bedrock (faux client) ------------------------------------------------
+# -- Bedrock extraction (fake client) ----------------------------------------------
 
 
 class FakeClient:
@@ -134,7 +134,7 @@ def test_bedrock_extraction_valid():
     assert out["confidence"] == 0.93
     assert out["payload"]["rib"] == RIB_FRAUD
     assert out["payload"]["amount"] == 5210
-    assert out["label"] == "Facture reçue F-9999 — nouveau RIB"
+    assert out["label"] == "Received invoice F-9999 — new bank details"
 
 
 @pytest.mark.parametrize("patch", [

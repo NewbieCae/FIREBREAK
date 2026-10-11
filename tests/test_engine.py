@@ -22,7 +22,7 @@ def _rec(rid, origin="evil", ts=None, inputs=(), verified=False, gate=False,
 def ledger():
     led = Ledger("test")
     led.add(_rec("seed-new", ts=datetime(2026, 10, 10, 15, 0)))          # seed
-    led.add(_rec("seed-old", ts=datetime(2026, 10, 10, 13, 0)))         # avant since
+    led.add(_rec("seed-old", ts=datetime(2026, 10, 10, 13, 0)))         # before since
     led.add(_rec("other", origin="honest"))
     led.add(_rec("a", origin="test", inputs=["seed-new"]))
     led.add(_rec("b", origin="test", inputs=["a"]))
@@ -49,7 +49,7 @@ def test_transitive_propagation(ledger):
 
 def test_verified_stops_propagation(ledger):
     assert "v" not in q(ledger)
-    assert "w" not in q(ledger)  # descendant d'un record vérifié : épargné
+    assert "w" not in q(ledger)  # descendant of a verified record: spared
 
 
 def test_taint_path(ledger):
@@ -62,7 +62,7 @@ def test_released_stops_and_frees_descendants(ledger):
     ledger.records["a"].status = "released"
     ledger.recompute()
     assert ledger.records["a"].status == "released"
-    assert q(ledger) == {"seed-new"}  # b libéré : ne dépendait que de a
+    assert q(ledger) == {"seed-new"}  # b freed: it only depended on a
 
 
 def test_idempotent_recompute(ledger):

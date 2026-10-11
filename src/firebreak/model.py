@@ -1,9 +1,9 @@
-"""Modèle de données Firebreak.
+"""Firebreak data model.
 
-Un Record est un événement métier enregistré dans le registre (Ledger)
-d'une seule entreprise. La dépendance entre records d'un même registre
-est exprimée par `inputs` ; les échanges entre entreprises ne circulent
-que via des jetons opaques (`token`) et des alertes signées.
+A Record is a business event recorded in the ledger (Ledger) of a single
+company. Dependencies between records of the same ledger are expressed
+by `inputs`; exchanges between companies only travel through opaque
+tokens (`token`) and signed alerts.
 """
 
 from __future__ import annotations
@@ -20,32 +20,32 @@ class Company:
     id: str
     name: str
     role: str
-    gs1_prefix: str = ""  # préfixe entreprise GS1 : relie GLN/SGLN EPCIS à l'entreprise
+    gs1_prefix: str = ""  # GS1 company prefix: links EPCIS GLN/SGLN to the company
 
 
 @dataclass
 class Record:
-    id: str  # unique globalement, ex. "fab-0042"
-    company: str  # entreprise propriétaire du registre
-    origin: str  # entreprise émettrice de la donnée
+    id: str  # globally unique, e.g. "fab-0042"
+    company: str  # company that owns the ledger
+    origin: str  # company that issued the data
     kind: str  # purchase_order, asn, quality_cert, invoice, payment…
     ts: datetime
-    label: str  # libellé humain en français
-    inputs: list[str] = field(default_factory=list)  # ids de records du MÊME registre
-    gate: bool = False  # action irréversible : paiement, expédition, lancement prod.
-    verified: bool = False  # confirmé par une source de confiance
+    label: str  # human-readable label
+    inputs: list[str] = field(default_factory=list)  # record ids from the SAME ledger
+    gate: bool = False  # irreversible action: payment, shipment, production start
+    verified: bool = False  # confirmed by a trusted source
     payload: dict = field(default_factory=dict)
-    token: str | None = None  # référence opaque inter-entreprises (records reçus)
+    token: str | None = None  # opaque cross-company reference (received records)
     status: Status = "ok"
-    taint_path: list[str] | None = None  # preuve explicable : du seed jusqu'à ce record
+    taint_path: list[str] | None = None  # explainable evidence: from the seed to this record
 
 
 def payment_amount(record: Record) -> float:
-    """Montant comptabilisé d'un record : uniquement les paiements.
+    """Amount counted for a record: payments only.
 
-    Les montants des factures/ASN n'ont pas cours légal ici — compter les
-    documents qui portent un montant compterait les mêmes euros plusieurs
-    fois (facture émise + copie reçue + paiement)."""
+    Invoice/ASN amounts do not count here: counting every document that
+    carries an amount would count the same euros several times
+    (issued invoice + received copy + payment)."""
     if record.kind != "payment":
         return 0.0
     amount = record.payload.get("amount", 0)

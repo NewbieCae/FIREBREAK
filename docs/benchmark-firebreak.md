@@ -1,87 +1,87 @@
-# FIREBREAK — Benchmark des concurrents
+# FIREBREAK — Competitor benchmark
 
-> Ce que fait le marché, ce qui manque, et ce qui nous différencie.
-> Sources : sites officiels des acteurs, consultés le 10 octobre 2026. Aucun produit testé en main propre.
+> What the market does, what's missing, and what sets us apart.
+> Sources: the vendors' official websites, consulted on October 10, 2026. No product tested hands-on.
 
-## En bref
+## In short
 
-Le marché sait dire **quel fournisseur est dangereux**, ou **quelle machine isoler** chez soi.
-Personne ne dit **quelles opérations métier précises** (commandes, livraisons, paiements) ont été contaminées par les données d'un partenaire compromis, ni ne les met en quarantaine sans bloquer le reste.
+The market can tell **which supplier is dangerous**, or **which machine to isolate** in-house.
+Nobody says **which specific business operations** (orders, deliveries, payments) were contaminated by a compromised partner's data, or quarantines them without blocking everything else.
 
-## Les concurrents
+## The competitors
 
-### 1. Notation cyber des fournisseurs (TPRM)
+### 1. Supplier cyber ratings (TPRM)
 
-| Acteur | Ce qu'ils offrent |
+| Vendor | What they offer |
 |---|---|
-| [SecurityScorecard](https://securityscorecard.com) | Notes de sécurité des fournisseurs vues de l'extérieur, surveillance continue, questionnaires, agents IA (TITAN AI), service géré de réponse aux incidents supply chain (MAX). |
-| [Bitsight](https://www.bitsight.com) | Notes de sécurité, surveillance continue des tiers, exposition de la supply chain (Beacon), veille dark web. |
-| [UpGuard](https://www.upguard.com) | Risque fournisseurs, surface d'attaque, questionnaires automatisés par IA. |
-| [Black Kite](https://blackkite.com) | Risque cyber des tiers, chiffrage financier du risque (Open FAIR), probabilité de ransomware. |
-| [RiskRecon (Mastercard)](https://www.riskrecon.com) | Notes cyber, évaluations, suivi de la remédiation avec les fournisseurs. |
-| [Panorays](https://www.panorays.com), [Mitratech Prevalent](https://mitratech.com/products/prevalent/) | Évaluation des fournisseurs, questionnaires, conformité. |
+| [SecurityScorecard](https://securityscorecard.com) | Outside-in supplier security ratings, continuous monitoring, questionnaires, AI agents (TITAN AI), managed supply chain incident response service (MAX). |
+| [Bitsight](https://www.bitsight.com) | Security ratings, continuous third-party monitoring, supply chain exposure (Beacon), dark web intelligence. |
+| [UpGuard](https://www.upguard.com) | Supplier risk, attack surface, AI-automated questionnaires. |
+| [Black Kite](https://blackkite.com) | Third-party cyber risk, financial risk quantification (Open FAIR), ransomware likelihood. |
+| [RiskRecon (Mastercard)](https://www.riskrecon.com) | Cyber ratings, assessments, remediation tracking with suppliers. |
+| [Panorays](https://www.panorays.com), [Mitratech Prevalent](https://mitratech.com/products/prevalent/) | Supplier assessment, questionnaires, compliance. |
 
-**Limite :** ils raisonnent au niveau **du fournisseur entier**. Ils voient l'entreprise de l'extérieur, pas les commandes qu'elle a touchées chez vous. Leur réponse type : « surveiller » ou « couper ».
+**Limit:** they reason at the level of **the whole supplier**. They see the company from the outside, not the orders it touched at your end. Their typical answer: "monitor" or "cut off".
 
-### 2. Risque supply chain physique
+### 2. Physical supply chain risk
 
-| Acteur | Ce qu'ils offrent |
+| Vendor | What they offer |
 |---|---|
-| [Interos](https://www.interos.ai) | Cartographie des fournisseurs sur plusieurs rangs, alertes (cyber, sanctions, tarifs, réputation). |
-| [Everstream](https://www.everstream.ai) | Jumeau numérique du réseau, alertes IA, visibilité sur les sous-traitants. |
-| [Resilinc](https://www.resilinc.com) | Veille sur les perturbations fournisseurs (catastrophes, pénuries, sites). |
+| [Interos](https://www.interos.ai) | Multi-tier supplier mapping, alerts (cyber, sanctions, tariffs, reputation). |
+| [Everstream](https://www.everstream.ai) | Network digital twin, AI alerts, visibility into subcontractors. |
+| [Resilinc](https://www.resilinc.com) | Monitoring of supplier disruptions (disasters, shortages, sites). |
 
-**Limite :** ils détectent qu'un fournisseur ou un site est **touché**, pas que **ses données** ont faussé vos opérations.
+**Limit:** they detect that a supplier or a site is **affected**, not that **its data** has corrupted your operations.
 
-### 3. Confinement de brèche (réseau)
+### 3. Breach containment (network)
 
-| Acteur | Ce qu'ils offrent |
+| Vendor | What they offer |
 |---|---|
-| [Illumio](https://www.illumio.com) | Microsegmentation : isole les machines et les flux réseau pour empêcher une attaque de se propager. |
-| EDR / XDR (CrowdStrike, SentinelOne…) | Isolement des postes et serveurs compromis. |
+| [Illumio](https://www.illumio.com) | Microsegmentation: isolates machines and network flows to stop an attack from spreading. |
+| EDR / XDR (CrowdStrike, SentinelOne…) | Isolation of compromised endpoints and servers. |
 
-**Limite :** le confinement se fait **dans une seule entreprise**, au niveau **réseau et machines**. Une fausse confirmation de livraison passe par un canal légitime : le réseau ne la voit pas.
+**Limit:** containment happens **within a single company**, at the **network and machine** level. A fake delivery confirmation comes through a legitimate channel: the network doesn't see it.
 
-### 4. Traçabilité des données et des artefacts
+### 4. Data and artifact traceability
 
-| Acteur | Ce qu'ils offrent |
+| Vendor | What they offer |
 |---|---|
-| [OpenLineage](https://openlineage.io) | Standard open source de lignage : d'où vient chaque jeu de données, analyse d'impact. |
-| [SLSA](https://slsa.dev), Sigstore, Snyk… | Provenance et intégrité du **code** et des paquets logiciels. |
-| TradeLens (Maersk × IBM) | Registre blockchain partagé pour le transport maritime. Arrêté début 2023, faute d'adoption par l'écosystème. |
+| [OpenLineage](https://openlineage.io) | Open source lineage standard: where each dataset comes from, impact analysis. |
+| [SLSA](https://slsa.dev), Sigstore, Snyk… | Provenance and integrity of **code** and software packages. |
+| TradeLens (Maersk × IBM) | Shared blockchain ledger for maritime shipping. Shut down in early 2023 for lack of ecosystem adoption. |
 
-**Limite :** le lignage reste **interne** et **sans action** (il explique, il ne bloque pas). SLSA protège le code, pas les flux métier. TradeLens montre qu'un registre commun imposé à toute la filière est difficile à faire adopter.
+**Limit:** lineage stays **internal** and **passive** (it explains, it doesn't block). SLSA protects code, not business flows. TradeLens shows that a common ledger imposed on a whole industry is hard to get adopted.
 
-### 5. Partage de menaces
+### 5. Threat sharing
 
-| Acteur | Ce qu'ils offrent |
+| Vendor | What they offer |
 |---|---|
-| [MISP](https://www.misp-project.org), ISAC sectoriels | Partage d'indicateurs techniques entre organisations (IP, malwares, campagnes). |
+| [MISP](https://www.misp-project.org), sector ISACs | Sharing of technical indicators between organizations (IPs, malware, campaigns). |
 
-**Limite :** on partage des **indicateurs techniques**, pas « telle opération chez vous dépend d'une donnée suspecte ».
+**Limit:** what's shared is **technical indicators**, not "this operation at your end depends on suspicious data".
 
-## Tableau de synthèse
+## Summary table
 
-| | Notation fournisseurs | Supply chain physique | Confinement réseau | Lignage / provenance | Partage de menaces | **Firebreak** |
+| | Supplier ratings | Physical supply chain | Network containment | Lineage / provenance | Threat sharing | **Firebreak** |
 |---|---|---|---|---|---|---|
-| Niveau d'analyse | Fournisseur | Fournisseur / site | Machine / flux | Jeu de données / code | Indicateur | **Opération métier** |
-| Entre entreprises | Oui | Oui | Non | Non | Oui | **Oui** |
-| Bloque quelque chose | Non | Non | Oui | Non | Non | **Oui, ciblé** |
-| Laisse passer le sain | — | — | Partiellement | — | — | **Oui** |
-| Décision explicable | Note | Score | Règles réseau | Graphe | — | **Chemin dans le graphe** |
+| Level of analysis | Supplier | Supplier / site | Machine / flow | Dataset / code | Indicator | **Business operation** |
+| Across companies | Yes | Yes | No | No | Yes | **Yes** |
+| Blocks something | No | No | Yes | No | No | **Yes, targeted** |
+| Lets healthy traffic through | — | — | Partially | — | — | **Yes** |
+| Explainable decision | Rating | Score | Network rules | Graph | — | **Path in the graph** |
 
-## Recommandation
+## Recommendation
 
-**Notre phrase :**
+**Our line:**
 
-> Les autres disent quel fournisseur est dangereux. Firebreak dit quelles commandes sont touchées, les met en quarantaine, et laisse tourner tout le reste.
+> Others tell you which supplier is dangerous. Firebreak tells you which orders are affected, quarantines them, and keeps everything else running.
 
-**Ce qui nous différencie, en trois points :**
+**What sets us apart, in three points:**
 
-1. **La granularité : l'opération, pas le fournisseur.** 3 commandes touchées sur 100, on bloque 3, pas 100. C'est notre seule promesse, il faut la démontrer en démo.
-2. **Une décision prouvable.** Le blocage vient d'un chemin dans le graphe de dépendances, que l'on peut montrer à un auditeur. L'IA explique et prépare la reprise ; elle ne décide pas.
-3. **Une alerte entre partenaires sans fuite de données.** Chaque entreprise garde ses données ; seules des alertes signées circulent. Pas de registre commun de données à imposer (la leçon TradeLens) : la L1 Avalanche ne reçoit que des empreintes, pour prouver qui a prévenu qui et que les journaux n'ont pas été réécrits.
+1. **Granularity: the operation, not the supplier.** 3 orders affected out of 100, we block 3, not 100. It's our one promise, and we have to prove it in the demo.
+2. **A provable decision.** The block comes from a path in the dependency graph that can be shown to an auditor. The AI explains and prepares recovery; it doesn't decide.
+3. **Alerts between partners without data leakage.** Each company keeps its data; only signed alerts are exchanged. No common data ledger to impose (the TradeLens lesson): the Avalanche L1 only receives fingerprints, to prove who warned whom and that the logs have not been rewritten.
 
-**À ne pas faire :** se battre sur la notation des fournisseurs (marché saturé) ou présenter un chatbot de score de risque.
+**Don't:** compete on supplier ratings (saturated market) or present a risk-score chatbot.
 
-**Positionnement conseillé :** **complément**, pas concurrent. SecurityScorecard ou Bitsight lèvent l'alerte « ce fournisseur est compromis » ; Firebreak prend le relais et fait le tri opération par opération.
+**Recommended positioning:** **complement**, not competitor. SecurityScorecard or Bitsight raise the "this supplier is compromised" alert; Firebreak takes over and sorts things out operation by operation.

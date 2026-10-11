@@ -1,11 +1,11 @@
-"""Banc d'essai Firebreak : 4 politiques × N graines × taux de dépendances cachées.
+"""Firebreak benchmark: 4 policies × N seeds × hidden-dependency rates.
 
     uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3
 
-Écrit bench/results.csv (une ligne par graine, p et politique) et
-docs/bench-results.md (moyenne ± IC 95 %, pire cas, 5e centile, part des
-mondes avec fuite, ventilation par entreprise compromise, limites).
-Aucun appel réseau ni LLM.
+Writes bench/results.csv (one row per seed, p and policy) and
+docs/bench-results.md (mean ± 95% CI, worst case, 5th percentile, share of
+worlds with a leak, breakdown by compromised company, limitations).
+No network or LLM calls.
 """
 
 from __future__ import annotations
@@ -24,18 +24,18 @@ METRICS = ["leaks", "leaked_gates", "collateral", "healthy_preserved", "precisio
 FIELDS = ["seed", "p_hidden", "policy", "compromised", "records", "contaminated",
           "contaminated_gates", "blocked", *METRICS, "fp_origin_rule"]
 LABELS = {
-    "leaks": "Fuites (contaminés non bloqués)",
-    "leaked_gates": "Actions irréversibles fuitées (contaminées, gate, non bloquées)",
-    "collateral": "Dégâts collatéraux (sains bloqués)",
-    "healthy_preserved": "Activité saine préservée",
-    "precision": "Précision",
-    "recall": "Rappel",
+    "leaks": "Leaks (contaminated, not blocked)",
+    "leaked_gates": "Leaked irreversible actions (contaminated, gate, not blocked)",
+    "collateral": "Collateral damage (healthy blocked)",
+    "healthy_preserved": "Healthy activity preserved",
+    "precision": "Precision",
+    "recall": "Recall",
 }
 PERCENT = {"healthy_preserved", "precision", "recall"}
 NAN = float("nan")
 
 
-# -- statistiques ------------------------------------------------------------
+# -- statistics --------------------------------------------------------------
 
 
 def clean(values: list[float]) -> list[float]:
@@ -43,8 +43,8 @@ def clean(values: list[float]) -> list[float]:
 
 
 def mean_ci(values: list[float]) -> tuple[float, float, int]:
-    """Moyenne et demi-largeur de l'IC 95 % (approximation normale),
-    en ignorant les NaN (métrique non définie)."""
+    """Mean and 95% CI half-width (normal approximation), ignoring NaN
+    (undefined metric)."""
     xs = clean(values)
     n = len(xs)
     if n == 0:
@@ -57,7 +57,7 @@ def mean_ci(values: list[float]) -> tuple[float, float, int]:
 
 
 def percentile(values: list[float], q: float) -> float:
-    """Centile q ∈ [0, 1], interpolation linéaire, NaN ignorés."""
+    """Percentile q ∈ [0, 1], linear interpolation, NaN ignored."""
     xs = sorted(clean(values))
     if not xs:
         return NAN
@@ -71,7 +71,7 @@ def share(values: list[float], pred) -> float:
     return sum(1 for v in values if pred(v)) / len(values) if values else NAN
 
 
-# -- exécution ---------------------------------------------------------------
+# -- run ---------------------------------------------------------------------
 
 
 def run(seeds: int, ps: list[float], n_companies: int, n_ops: int) -> list[dict]:
@@ -97,20 +97,20 @@ def write_csv(rows: list[dict], path: Path, fields: list[str] = FIELDS) -> None:
                         for k, v in row.items()})
 
 
-# -- sensibilité ---------------------------------------------------------------
+# -- sensitivity ---------------------------------------------------------------
 
-OPS_PER_COMPANY = 60  # balayage de taille : même densité par registre
+OPS_PER_COMPANY = 60  # size sweep: same density per ledger
 SENS_FIELDS = ["sweep", "n_companies", "n_ops", "p_external", "mean_clients", *FIELDS]
 
 
 def run_sensitivity(seeds: int, sizes: list[int], noises: list[float],
                     ps: list[float]) -> list[dict]:
-    """Deux balayages, mêmes graines que le banc principal :
-    - « taille » : n entreprises, OPS_PER_COMPANY × n opérations, bruit par défaut ;
-    - « bruit » : 5 entreprises, 300 opérations, part p_external de réceptions
-      hors fédération."""
-    configs = [("taille", n, OPS_PER_COMPANY * n, P_EXTERNAL) for n in sizes]
-    configs += [("bruit", 5, 300, x) for x in noises]
+    """Two sweeps, same seeds as the main benchmark:
+    - "size": n companies, OPS_PER_COMPANY × n operations, default noise;
+    - "noise": 5 companies, 300 operations, a p_external share of receptions
+      from outside the federation."""
+    configs = [("size", n, OPS_PER_COMPANY * n, P_EXTERNAL) for n in sizes]
+    configs += [("noise", 5, 300, x) for x in noises]
     rows = []
     for sweep, n, ops, ext in configs:
         for p in ps:
@@ -130,7 +130,7 @@ def run_sensitivity(seeds: int, sizes: list[int], noises: list[float],
 def render_sensitivity(rows: list[dict], sizes: list[int], noises: list[float],
                        ps: list[float]) -> list[str]:
     def vals(sweep, key, p, policy, metric):
-        field = "n_companies" if sweep == "taille" else "p_external"
+        field = "n_companies" if sweep == "size" else "p_external"
         return [float(r[metric]) for r in rows
                 if r["sweep"] == sweep and r[field] == key
                 and r["p_hidden"] == p and r["policy"] == policy]
@@ -144,170 +144,170 @@ def render_sensitivity(rows: list[dict], sizes: list[int], noises: list[float],
     pols = list(POLICIES)
     head = "| | " + " | ".join(f"{k} — {POLICIES[k]}" for k in pols) + " |"
     sep = "|---|" + "---|" * len(pols)
-    seeds = len(vals("taille", sizes[0], ps[0], "A", "leaks")) if sizes else 0
+    seeds = len(vals("size", sizes[0], ps[0], "A", "leaks")) if sizes else 0
     lines = [
-        "## Sensibilité",
+        "## Sensitivity",
         "",
-        f"Mêmes graines que le banc principal ({seeds} par configuration), "
-        "entreprise compromise tirée parmi toutes, p = "
-        + " et ".join(f"{p:g}" for p in ps) + ". Données : `bench/sensitivity.csv`.",
+        f"Same seeds as the main benchmark ({seeds} per configuration), "
+        "compromised company drawn from all companies, p = "
+        + " and ".join(f"{p:g}" for p in ps) + ". Data: `bench/sensitivity.csv`.",
         "",
     ]
     if sizes:
         lines += [
-            "### Taille de la chaîne",
+            "### Chain size",
             "",
-            f"{OPS_PER_COMPANY} opérations par entreprise : "
-            + ", ".join(f"{n} entreprises → {OPS_PER_COMPANY * n} opérations"
+            f"{OPS_PER_COMPANY} operations per company: "
+            + ", ".join(f"{n} companies → {OPS_PER_COMPANY * n} operations"
                         for n in sizes)
-            + f". Bruit hors fédération : {P_EXTERNAL:.0%}.",
+            + f". Out-of-federation noise: {P_EXTERNAL:.0%}.",
             "",
         ]
         drawn = []
         for n in sizes:
             comp = [r["compromised"] for r in rows
-                    if r["sweep"] == "taille" and r["n_companies"] == n
+                    if r["sweep"] == "size" and r["n_companies"] == n
                     and r["p_hidden"] == ps[0] and r["policy"] == "A"]
             counts = {f"e{i}": comp.count(f"e{i}") for i in range(n)}
             missing = [c for c, k in counts.items() if k == 0]
             drawn.append(
-                f"- {n} entreprises : chaque entreprise compromise de "
-                f"{min(counts.values())} à {max(counts.values())} fois"
-                + (f" ; ⚠️ jamais tirées : {', '.join(missing)}" if missing
-                   else f", y compris la dernière (`e{n - 1}`)") + ".")
+                f"- {n} companies: each company compromised "
+                f"{min(counts.values())} to {max(counts.values())} times"
+                + (f"; ⚠️ never drawn: {', '.join(missing)}" if missing
+                   else f", including the last one (`e{n - 1}`)") + ".")
         lines += drawn + [""]
         tables = [
-            ("Fuites (contaminés non bloqués)",
-             lambda n, p, k: num(avg("taille", n, p, k, "leaks"))),
-            ("Dégâts collatéraux (sains bloqués)",
-             lambda n, p, k: num(avg("taille", n, p, k, "collateral"))),
-            ("Rappel", lambda n, p, k: pct(avg("taille", n, p, k, "recall"))),
-            ("Mondes avec au moins une fuite (toute opération / action irréversible)",
-             lambda n, p, k: f"{pct(leak_share('taille', n, p, k))} / "
-                             f"{pct(leak_share('taille', n, p, k, 'leaked_gates'))}"),
+            ("Leaks (contaminated, not blocked)",
+             lambda n, p, k: num(avg("size", n, p, k, "leaks"))),
+            ("Collateral damage (healthy blocked)",
+             lambda n, p, k: num(avg("size", n, p, k, "collateral"))),
+            ("Recall", lambda n, p, k: pct(avg("size", n, p, k, "recall"))),
+            ("Worlds with at least one leak (any operation / irreversible action)",
+             lambda n, p, k: f"{pct(leak_share('size', n, p, k))} / "
+                             f"{pct(leak_share('size', n, p, k, 'leaked_gates'))}"),
         ]
         for title, cell in tables:
             lines += [f"#### {title}", "", head, sep]
             for n in sizes:
                 for p in ps:
-                    lines.append(f"| {n} entr. · p = {p:g} | "
+                    lines.append(f"| {n} cos. · p = {p:g} | "
                                  + " | ".join(cell(n, p, k) for k in pols) + " |")
             lines.append("")
 
     if noises:
         lines += [
-            "### Bruit des réceptions hors fédération (politique D)",
+            "### Out-of-federation reception noise (policy D)",
             "",
-            "5 entreprises, 300 opérations. Part des réceptions venues d'hors "
-            "fédération (légitimes, sans jeton) : "
+            "5 companies, 300 operations. Share of receptions coming from outside "
+            "the federation (legitimate, no token): "
             + ", ".join(f"{x:.0%}" for x in noises)
-            + ". C sert de référence : le bruit ne la trompe que si la réception "
-            "arrive chez l'entreprise compromise. Changer le bruit change aussi les "
-            "tirages suivants du générateur : les mondes ne sont pas strictement "
-            "identiques d'une ligne à l'autre, d'où les petites variations de C.",
+            + ". C is the baseline: noise only misleads it when the reception "
+            "lands at the compromised company. Changing the noise also changes the "
+            "generator's subsequent draws: worlds are not strictly identical from "
+            "one row to the next, hence the small variations in C.",
             "",
-            "| Bruit · p | Sains bloqués C / D | Précision C / D | Rappel C / D "
-            "| Mondes avec fuite C / D |",
+            "| Noise · p | Healthy blocked C / D | Precision C / D | Recall C / D "
+            "| Worlds with a leak C / D |",
             "|---|---|---|---|---|",
         ]
         for x in noises:
             for p in ps:
-                c = lambda m: avg("bruit", x, p, "C", m)  # noqa: E731
-                d = lambda m: avg("bruit", x, p, "D", m)  # noqa: E731
+                c = lambda m: avg("noise", x, p, "C", m)  # noqa: E731
+                d = lambda m: avg("noise", x, p, "D", m)  # noqa: E731
                 lines.append(
                     f"| {x:.0%} · p = {p:g} | {num(c('collateral'))} / "
                     f"{num(d('collateral'))} | {pct(c('precision'))} / "
                     f"{pct(d('precision'))} | {pct(c('recall'))} / {pct(d('recall'))} "
-                    f"| {pct(leak_share('bruit', x, p, 'C'))} / "
-                    f"{pct(leak_share('bruit', x, p, 'D'))} |")
+                    f"| {pct(leak_share('noise', x, p, 'C'))} / "
+                    f"{pct(leak_share('noise', x, p, 'D'))} |")
         lines.append("")
 
-    # -- limites et conclusions, chiffrées par le script --
-    lines += ["### Limites et conclusions de la sensibilité", ""]
+    # -- limitations and conclusions, computed by the script --
+    lines += ["### Sensitivity: limitations and conclusions", ""]
     p0, pmax = ps[0], ps[-1]
     checks: list[tuple[str, bool]] = []
     if sizes:
         lines.append(
-            "- **Les relations entre entreprises se densifient avec la taille** "
-            "(générateur inchangé) : "
-            + ", ".join(f"{avg('taille', n, p0, 'A', 'mean_clients'):.2f} client(s) "
-                        f"direct(s) par entreprise à {n}" for n in sizes)
-            + ". Le blocage des partenaires (B) touche donc plus d'entreprises "
-            "quand la chaîne grandit ; part des opérations réellement contaminées : "
+            "- **Inter-company relationships get denser with size** "
+            "(unchanged generator): "
+            + ", ".join(f"{avg('size', n, p0, 'A', 'mean_clients'):.2f} direct "
+                        f"customer(s) per company at {n}" for n in sizes)
+            + ". Partner blocking (B) therefore hits more companies "
+            "as the chain grows; share of operations actually contaminated: "
             + ", ".join(
-                f"{pct(avg('taille', n, p0, 'A', 'contaminated') / avg('taille', n, p0, 'A', 'records'))}"
-                f" à {n}" for n in sizes) + ".")
+                f"{pct(avg('size', n, p0, 'A', 'contaminated') / avg('size', n, p0, 'A', 'records'))}"
+                f" at {n}" for n in sizes) + ".")
         ratios = []
         for n in sizes:
             for p in ps:
-                cb, cc = avg("taille", n, p, "B", "collateral"), avg("taille", n, p, "C", "collateral")
+                cb, cc = avg("size", n, p, "B", "collateral"), avg("size", n, p, "C", "collateral")
                 ratios.append((n, p, cb, cc))
         lines.append(
-            "- **Collatéraux B / C** : "
-            + ", ".join(f"{cb / cc:.1f}× à {n} entr., p = {p:g}" if cc else
-                        f"C = 0 à {n} entr., p = {p:g}" for n, p, cb, cc in ratios) + ".")
-        checks.append(("Firebreak bloque moins d'opérations saines que le blocage "
-                       "des partenaires, à toutes les tailles et tous les p",
+            "- **Collateral B / C**: "
+            + ", ".join(f"{cb / cc:.1f}× at {n} cos., p = {p:g}" if cc else
+                        f"C = 0 at {n} cos., p = {p:g}" for n, p, cb, cc in ratios) + ".")
+        checks.append(("Firebreak blocks fewer healthy operations than partner "
+                       "blocking, at every size and every p",
                        all(cc < cb for _, _, cb, cc in ratios)))
-        checks.append((f"le rappel de Firebreak vaut 100 % à p = {p0:g} à toutes les tailles",
-                       all(abs(avg("taille", n, p0, "C", "recall") - 1) < 1e-9
+        checks.append((f"Firebreak's recall is 100% at p = {p0:g} at every size",
+                       all(abs(avg("size", n, p0, "C", "recall") - 1) < 1e-9
                            for n in sizes)))
         if pmax != p0:
             lines.append(
-                f"- **Dépendances manquantes selon la taille** (p = {pmax:g}) : rappel C "
-                + ", ".join(f"{pct(avg('taille', n, pmax, 'C', 'recall'))} à {n}"
+                f"- **Missing dependencies by size** (p = {pmax:g}): C recall "
+                + ", ".join(f"{pct(avg('size', n, pmax, 'C', 'recall'))} at {n}"
                             for n in sizes)
-                + " ; rappel B "
-                + ", ".join(f"{pct(avg('taille', n, pmax, 'B', 'recall'))} à {n}"
+                + "; B recall "
+                + ", ".join(f"{pct(avg('size', n, pmax, 'B', 'recall'))} at {n}"
                             for n in sizes)
-                + " ; mondes où C laisse passer une action irréversible "
-                + ", ".join(f"{pct(leak_share('taille', n, pmax, 'C', 'leaked_gates'))}"
-                            f" à {n}" for n in sizes) + ".")
-            checks.append((f"à p = {pmax:g}, le rappel moyen de Firebreak reste sous "
-                           "celui du blocage des partenaires (compromis assumé)",
-                           all(avg("taille", n, pmax, "C", "recall")
-                               < avg("taille", n, pmax, "B", "recall") for n in sizes)))
+                + "; worlds where C lets an irreversible action through "
+                + ", ".join(f"{pct(leak_share('size', n, pmax, 'C', 'leaked_gates'))}"
+                            f" at {n}" for n in sizes) + ".")
+            checks.append((f"at p = {pmax:g}, Firebreak's mean recall stays below "
+                           "partner blocking's (accepted trade-off)",
+                           all(avg("size", n, pmax, "C", "recall")
+                               < avg("size", n, pmax, "B", "recall") for n in sizes)))
     if noises and pmax != p0:
         parts, gains = [], []
         for x in noises:
-            dc = avg("bruit", x, pmax, "D", "collateral") - avg("bruit", x, pmax, "C", "collateral")
-            dl = avg("bruit", x, pmax, "C", "leaks") - avg("bruit", x, pmax, "D", "leaks")
+            dc = avg("noise", x, pmax, "D", "collateral") - avg("noise", x, pmax, "C", "collateral")
+            dl = avg("noise", x, pmax, "C", "leaks") - avg("noise", x, pmax, "D", "leaks")
             gains.append(dl > 0)
-            parts.append(f"à {x:.0%} de bruit, D rattrape {dl:.1f} fuite(s) pour "
-                         f"{dc:+.1f} sain(s) bloqué(s)"
-                         + (f", soit {dc / dl:.1f} sain(s) bloqué(s) par fuite rattrapée"
+            parts.append(f"at {x:.0%} noise, D catches {dl:.1f} leak(s) for "
+                         f"{dc:+.1f} healthy blocked"
+                         + (f", i.e. {dc / dl:.1f} healthy blocked per leak caught"
                             if dl > 0 else ""))
-        lines.append(f"- **Prix du signal « provenance manquante »** (p = {pmax:g}) : "
-                     + " ; ".join(parts) + ".")
+        lines.append(f"- **Cost of the \"missing provenance\" signal** (p = {pmax:g}): "
+                     + "; ".join(parts) + ".")
         x0 = noises[0]
         lines.append(
-            f"- À {x0:.0%} de bruit et p = {p0:g}, D bloque "
-            f"{avg('bruit', x0, p0, 'D', 'collateral') - avg('bruit', x0, p0, 'C', 'collateral'):+.1f} "
-            "sain(s) de plus que C : sans réception hors fédération, le signal "
-            "n'a aucun faux positif, ce qui n'arrive pas dans une vraie supply chain. "
-            "D reste une borne haute.")
-        checks.append((f"D rattrape des fuites de C à p = {pmax:g} quel que soit le bruit",
+            f"- At {x0:.0%} noise and p = {p0:g}, D blocks "
+            f"{avg('noise', x0, p0, 'D', 'collateral') - avg('noise', x0, p0, 'C', 'collateral'):+.1f} "
+            "more healthy operation(s) than C: with no out-of-federation reception, the "
+            "signal has no false positives, which never happens in a real supply chain. "
+            "D remains an upper bound.")
+        checks.append((f"D catches leaks missed by C at p = {pmax:g} whatever the noise",
                        all(gains)))
-    lines += ["", "Conclusions de `docs/fiche-defense.md` mises à l'épreuve :", ""]
-    lines += [f"- {'✅ inchangée' if ok else '⚠️ MODIFIÉE'} : {text}." for text, ok in checks]
+    lines += ["", "Conclusions from `docs/fiche-defense.md` put to the test:", ""]
+    lines += [f"- {'✅ unchanged' if ok else '⚠️ CHANGED'}: {text}." for text, ok in checks]
     lines.append("")
     return lines
 
 
-# -- rapport -----------------------------------------------------------------
+# -- report ------------------------------------------------------------------
 
 
 def pct(x: float) -> str:
-    return "n/d" if math.isnan(x) else f"{x:.1%}"
+    return "n/a" if math.isnan(x) else f"{x:.1%}"
 
 
 def num(x: float) -> str:
-    return "n/d" if math.isnan(x) else f"{x:.1f}"
+    return "n/a" if math.isnan(x) else f"{x:.1f}"
 
 
 def fmt(metric: str, m: float, h: float) -> str:
     if math.isnan(m):
-        return "n/d"
+        return "n/a"
     if metric in PERCENT:
         return f"{m:.1%} ± {h:.1%}"
     if metric == "leaked_gates":
@@ -346,52 +346,52 @@ def render(rows: list[dict], seeds: int, ps: list[float], n_companies: int,
     excluded = [c for c, n in n_by_company.items() if n == 0]
 
     lines = [
-        "# Banc d'essai Firebreak — résultats",
+        "# Firebreak benchmark — results",
         "",
-        f"> Généré par `{command}`. Ne pas éditer à la main.",
+        f"> Generated by `{command}`. Do not edit by hand.",
         "",
-        f"{seeds} mondes synthétiques par valeur de p ({n_companies} entreprises, "
-        f"{n_ops} opérations chacun, générateur `src/firebreak/synth.py`). "
-        "Dans chaque monde, une entreprise tirée au hasard parmi **toutes** "
-        "(du fournisseur amont `e0` au client final "
-        f"`e{n_companies - 1}`) est compromise à partir d'une heure `since`. "
-        "**Vérité terrain** : ses records émis après `since` et tous leurs "
-        "descendants par les *vraies* dépendances, sauf les records `verified`. "
-        "Le moteur ne voit que les dépendances *enregistrées* : chaque vraie "
-        "dépendance (entrée d'un record ou envoi entre entreprises) est cachée "
-        "avec la probabilité **p**. Un envoi caché laisse une réception sans "
-        f"jeton ni lien. En plus, {P_EXTERNAL:.0%} des réceptions viennent d'hors "
-        "fédération : légitimes, elles aussi sans jeton, donc indiscernables "
-        "dans les registres.",
+        f"{seeds} synthetic worlds per value of p ({n_companies} companies, "
+        f"{n_ops} operations each, generator `src/firebreak/synth.py`). "
+        "In each world, a company drawn at random from **all** of them "
+        "(from the upstream supplier `e0` to the final customer "
+        f"`e{n_companies - 1}`) is compromised from a time `since` onwards. "
+        "**Ground truth**: its records issued after `since` and all their "
+        "descendants through the *true* dependencies, except `verified` records. "
+        "The engine only sees *recorded* dependencies: each true "
+        "dependency (a record's input or a send between companies) is hidden "
+        "with probability **p**. A hidden send leaves a reception with no "
+        f"token or link. In addition, {P_EXTERNAL:.0%} of receptions come from outside "
+        "the federation: they are legitimate, also have no token, and are therefore "
+        "indistinguishable in the ledgers.",
         "",
-        "Entreprises compromises tirées (à p = "
-        f"{ps[0]:g}) : " + ", ".join(f"`{c}` ({n})" for c, n in n_by_company.items())
+        "Compromised companies drawn (at p = "
+        f"{ps[0]:g}): " + ", ".join(f"`{c}` ({n})" for c, n in n_by_company.items())
         + ".",
         "",
     ]
     if excluded:
-        lines += [f"⚠️ Jamais tirées comme compromises : {', '.join(excluded)} "
-                  "(trop peu de graines ou exclusion de modélisation).", ""]
+        lines += [f"⚠️ Never drawn as compromised: {', '.join(excluded)} "
+                  "(too few seeds or modelling exclusion).", ""]
     else:
-        lines += ["Aucune entreprise n'est exclue du tirage.", ""]
+        lines += ["No company is excluded from the draw.", ""]
     lines += [
-        "Politiques, appliquées au même monde :",
+        "Policies, applied to the same world:",
         "",
-        "- **A — Alerte seule** : on prévient tout le monde, rien n'est bloqué.",
-        "- **B — Blocage fournisseur + partenaires** : tout record daté de `since` "
-        "ou après chez l'entreprise compromise et ses clients directs est bloqué "
-        "(la réponse « on coupe le fournisseur »).",
-        "- **C — Firebreak** : le moteur du dépôt (`Simulation.declare_compromise`), "
-        "propagation sur le graphe enregistré + alertes signées.",
-        "- **D — Firebreak + prudence** (banc uniquement) : C, plus la quarantaine "
-        "des réceptions **sans provenance enregistrée** (sans jeton ni lien) datées "
-        "de `since` ou après chez les partenaires directs connus de l'entreprise "
-        "compromise, et de tout ce qui en dépend dans le graphe enregistré. "
-        "D exploite le signal « provenance manquante », lu uniquement dans l'état "
-        "du moteur : jamais la vérité terrain ni le drapeau « dépendance cachée ».",
+        "- **A — Alert only**: everyone is warned, nothing is blocked.",
+        "- **B — Block supplier + partners**: every record dated `since` "
+        "or later at the compromised company and its direct customers is blocked "
+        "(the \"cut off the supplier\" response).",
+        "- **C — Firebreak**: the repository's engine (`Simulation.declare_compromise`), "
+        "propagation over the recorded graph + signed alerts.",
+        "- **D — Firebreak + caution** (benchmark only): C, plus quarantine "
+        "of receptions **with no recorded provenance** (no token or link) dated "
+        "`since` or later at the known direct partners of the compromised "
+        "company, and of everything that depends on them in the recorded graph. "
+        "D uses the \"missing provenance\" signal, read only from engine "
+        "state: never the ground truth nor the \"hidden dependency\" flag.",
         "",
-        "Valeurs : moyenne ± demi-largeur de l'IC 95 % (approximation normale). "
-        "« n/d » : non défini (A ne bloque rien, donc pas de précision).",
+        "Values: mean ± 95% CI half-width (normal approximation). "
+        "\"n/a\": undefined (A blocks nothing, so it has no precision).",
         "",
     ]
 
@@ -400,22 +400,22 @@ def render(rows: list[dict], seeds: int, ps: list[float], n_companies: int,
             m, *mean_ci(rep.vals(p, k, m))[:2]))
 
     lines += rep.table(
-        "Rappel : queue de distribution (moyenne / 5e centile / pire cas)",
+        "Recall: distribution tail (mean / 5th percentile / worst case)",
         lambda p, k: " / ".join(pct(x) for x in (
             rep.avg(p, k, "recall"),
             percentile(rep.vals(p, k, "recall"), 0.05),
             min(clean(rep.vals(p, k, "recall")), default=NAN))))
     lines += rep.table(
-        "Mondes avec au moins une fuite (toute opération / action irréversible)",
+        "Worlds with at least one leak (any operation / irreversible action)",
         lambda p, k: " / ".join(pct(share(rep.vals(p, k, m), lambda v: v > 0))
                                 for m in ("leaks", "leaked_gates")))
 
-    lines += ["## Ventilation par entreprise compromise", "",
-              "Cellule : rappel moyen · sains bloqués · actions irréversibles fuitées "
-              "(moyennes par monde). `e0` est le plus en amont.", ""]
+    lines += ["## Breakdown by compromised company", "",
+              "Cell: mean recall · healthy blocked · leaked irreversible actions "
+              "(per-world means). `e0` is the furthest upstream.", ""]
     for p in ps:
         lines += [f"### p = {p:g}", "",
-                  "| Compromise | Mondes | " + " | ".join(POLICIES) + " |",
+                  "| Compromised | Worlds | " + " | ".join(POLICIES) + " |",
                   "|---|---|" + "---|" * len(POLICIES)]
         for c in rep.companies:
             cells = [f"{pct(rep.avg(p, k, 'recall', c))} · "
@@ -430,67 +430,66 @@ def render(rows: list[dict], seeds: int, ps: list[float], n_companies: int,
     mc, hc, _ = mean_ci(sizes)
     mg, _, _ = mean_ci(gates)
     mt, _, _ = mean_ci(rep.vals(ps[0], "A", "records"))
-    lines += ["## Lecture", "",
-              f"- Un monde compte en moyenne {mt:.0f} records, dont {mc:.1f} ± {hc:.1f} "
-              f"réellement contaminés, parmi lesquels {mg:.1f} actions irréversibles "
-              "(paiement, expédition, lancement de production)."]
+    lines += ["## Reading the results", "",
+              f"- A world has {mt:.0f} records on average, of which {mc:.1f} ± {hc:.1f} "
+              f"are actually contaminated, including {mg:.1f} irreversible actions "
+              "(payment, shipment, production launch)."]
     for p in ps:
         cb, cc = rep.avg(p, "B", "collateral"), rep.avg(p, "C", "collateral")
-        ratio = f"{cb / cc:.1f} fois moins" if cc else "aucune"
+        ratio = f"{cb / cc:.1f} times fewer" if cc else "no"
         lines.append(
-            f"- p = {p:g} : Firebreak bloque {ratio} d'opérations saines que le "
-            f"blocage des partenaires ({cc:.1f} contre {cb:.1f}), pour un rappel de "
-            f"{pct(rep.avg(p, 'C', 'recall'))} contre {pct(rep.avg(p, 'B', 'recall'))} "
-            f"et {rep.avg(p, 'C', 'leaked_gates'):.2f} action(s) irréversible(s) "
-            f"fuitée(s) contre {rep.avg(p, 'B', 'leaked_gates'):.2f}.")
+            f"- p = {p:g}: Firebreak blocks {ratio} healthy operations than "
+            f"partner blocking ({cc:.1f} vs {cb:.1f}), for a recall of "
+            f"{pct(rep.avg(p, 'C', 'recall'))} vs {pct(rep.avg(p, 'B', 'recall'))} "
+            f"and {rep.avg(p, 'C', 'leaked_gates'):.2f} leaked irreversible "
+            f"action(s) vs {rep.avg(p, 'B', 'leaked_gates'):.2f}.")
     lines += [
-        f"- **A** laisse passer toute la contamination (rappel 0), dont "
-        f"{rep.avg(ps[0], 'A', 'leaked_gates'):.1f} actions irréversibles par monde "
-        "en moyenne : c'est le coût de « prévenir sans agir ».",
-        "- **B** ne dépend pas de p (elle n'utilise aucune dépendance enregistrée). "
-        "Elle arrête presque toute la contamination dans ces mondes, au prix d'une "
-        "grosse part d'activité saine bloquée.",
+        f"- **A** lets all contamination through (recall 0), including "
+        f"{rep.avg(ps[0], 'A', 'leaked_gates'):.1f} irreversible actions per world "
+        "on average: that is the cost of \"warning without acting\".",
+        "- **B** does not depend on p (it uses no recorded dependency). "
+        "It stops almost all contamination in these worlds, at the cost of "
+        "blocking a large share of healthy activity.",
         "",
     ]
 
-    # -- limites, chiffrées par le script --
+    # -- limitations, computed by the script --
     p0, pmax = ps[0], ps[-1]
     fp_c = rep.avg(p0, "C", "collateral")
     fp_origin = rep.avg(p0, "C", "fp_origin_rule")
-    lines += ["## Limites", ""]
+    lines += ["## Limitations", ""]
     lines.append(
-        f"- **Règle d'origine prudente.** À p = {p0:g}, Firebreak bloque {num(fp_c)} "
-        f"opérations saines par monde, dont {num(fp_origin)} "
-        f"({pct(fp_origin / fp_c if fp_c else NAN)}) à cause de la règle d'origine : "
-        "toute donnée attribuée à l'entreprise compromise après `since` est mise "
-        "en quarantaine, même si c'est la copie d'une donnée antérieure ou vérifiée, "
-        "ainsi que ce qui en dépend. C'est un choix prudent du moteur, pas une erreur "
-        "de propagation.")
+        f"- **Cautious origin rule.** At p = {p0:g}, Firebreak blocks {num(fp_c)} "
+        f"healthy operations per world, {num(fp_origin)} of them "
+        f"({pct(fp_origin / fp_c if fp_c else NAN)}) because of the origin rule: "
+        "any data attributed to the compromised company after `since` is "
+        "quarantined, even if it is a copy of earlier or verified data, "
+        "along with whatever depends on it. This is a deliberately cautious engine "
+        "choice, not a propagation error.")
     lines.append(
-        f"- **Dépendances manquantes.** Firebreak ne voit que ce qui est tracé. Le "
-        f"rappel de C passe de {pct(rep.avg(p0, 'C', 'recall'))} à p = {p0:g} à "
-        f"{pct(rep.avg(pmax, 'C', 'recall'))} à p = {pmax:g} (5e centile "
-        f"{pct(percentile(rep.vals(pmax, 'C', 'recall'), 0.05))}, pire cas "
-        f"{pct(min(clean(rep.vals(pmax, 'C', 'recall')), default=NAN))}) ; à p = "
+        f"- **Missing dependencies.** Firebreak only sees what is recorded. C's "
+        f"recall drops from {pct(rep.avg(p0, 'C', 'recall'))} at p = {p0:g} to "
+        f"{pct(rep.avg(pmax, 'C', 'recall'))} at p = {pmax:g} (5th percentile "
+        f"{pct(percentile(rep.vals(pmax, 'C', 'recall'), 0.05))}, worst case "
+        f"{pct(min(clean(rep.vals(pmax, 'C', 'recall')), default=NAN))}); at p = "
         f"{pmax:g}, {pct(share(rep.vals(pmax, 'C', 'leaked_gates'), lambda v: v > 0))} "
-        "des mondes laissent passer au moins une action irréversible contaminée.")
+        "of worlds let at least one contaminated irreversible action through.")
     gain = rep.avg(pmax, "D", "recall") - rep.avg(pmax, "C", "recall")
     cost = rep.avg(pmax, "D", "collateral") - rep.avg(pmax, "C", "collateral")
     cost0 = rep.avg(p0, "D", "collateral") - rep.avg(p0, "C", "collateral")
     lines.append(
-        "- **D exploite le signal « provenance manquante ».** À p = "
-        f"{pmax:g}, D récupère {gain * 100:+.1f} points de rappel sur C pour "
-        f"{cost:+.1f} opérations saines bloquées par monde ; à p = {p0:g}, "
-        f"où rien n'est caché, D ne coûte que le bruit ({cost0:+.1f}) des "
-        "réceptions légitimes d'hors fédération. Son gain repose sur une "
-        "hypothèse du simulateur : une dépendance d'envoi manquante laisse "
-        "toujours une trace visible (une réception non attribuée). Une "
-        "dépendance interne manquante ne laisse aucune trace, et D ne la "
-        "rattrape pas. Les chiffres de D sont donc une **borne haute** pour "
-        "ce signal.")
+        "- **D uses the \"missing provenance\" signal.** At p = "
+        f"{pmax:g}, D gains {gain * 100:+.1f} recall points over C for "
+        f"{cost:+.1f} healthy operations blocked per world; at p = {p0:g}, "
+        f"where nothing is hidden, D only costs the noise ({cost0:+.1f}) of "
+        "legitimate out-of-federation receptions. Its gain rests on a "
+        "simulator assumption: a missing send dependency always leaves a "
+        "visible trace (an unattributed reception). A missing internal "
+        "dependency leaves no trace, and D does not catch it. D's figures "
+        "are therefore an **upper bound** for this signal.")
     lines += [
-        "- Tout est simulé : les chiffres décrivent notre modèle de supply chain, "
-        "pas une entreprise réelle.",
+        "- Everything is simulated: the figures describe our supply chain model, "
+        "not a real company.",
         "",
     ]
     return "\n".join(lines + (sensitivity or []))
@@ -500,18 +499,18 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--seeds", type=int, default=500)
     ap.add_argument("--p", default="0,0.1,0.2,0.3",
-                    help="taux de dépendances cachées, séparés par des virgules")
+                    help="hidden-dependency rates, comma-separated")
     ap.add_argument("--companies", type=int, default=5)
     ap.add_argument("--ops", type=int, default=300)
     ap.add_argument("--csv", type=Path, default=ROOT / "bench" / "results.csv")
     ap.add_argument("--md", type=Path, default=ROOT / "docs" / "bench-results.md")
     ap.add_argument("--sizes", default="5,8,12",
-                    help=f"sensibilité : nombres d'entreprises ({OPS_PER_COMPANY} op. chacune)")
+                    help=f"sensitivity: numbers of companies ({OPS_PER_COMPANY} ops each)")
     ap.add_argument("--noise", default="0,0.1,0.3",
-                    help="sensibilité : parts de réceptions hors fédération")
-    ap.add_argument("--sens-p", default="0,0.3", help="sensibilité : valeurs de p")
+                    help="sensitivity: shares of out-of-federation receptions")
+    ap.add_argument("--sens-p", default="0,0.3", help="sensitivity: values of p")
     ap.add_argument("--sens-csv", type=Path, default=None,
-                    help="défaut : sensitivity.csv à côté de --csv")
+                    help="default: sensitivity.csv next to --csv")
     ap.add_argument("--no-sensitivity", action="store_true")
     args = ap.parse_args()
     ps = [float(x) for x in args.p.split(",")]
@@ -531,11 +530,11 @@ def main() -> None:
         sens_csv = args.sens_csv or args.csv.with_name("sensitivity.csv")
         write_csv(sens_rows, sens_csv, SENS_FIELDS)
         sensitivity = render_sensitivity(sens_rows, sizes, noises, sens_ps)
-        print(f"sensibilité : {len(sens_rows)} lignes → {sens_csv}")
+        print(f"sensitivity: {len(sens_rows)} rows → {sens_csv}")
     args.md.parent.mkdir(parents=True, exist_ok=True)
     args.md.write_text(render(rows, args.seeds, ps, args.companies, args.ops, command,
                               sensitivity))
-    print(f"{len(rows)} lignes en {time.perf_counter() - t0:.1f} s → {args.csv}, {args.md}")
+    print(f"{len(rows)} rows in {time.perf_counter() - t0:.1f} s → {args.csv}, {args.md}")
 
 
 if __name__ == "__main__":

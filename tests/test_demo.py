@@ -1,9 +1,9 @@
-"""Démo de bout en bout — Handoff 6.
+"""End-to-end demo: Handoff 6.
 
-Rejoue exactement le script de docs/demo.md via l'API :
-reset → compromise → rejeu timeline → explain → remediate → release
-fédérée → audit verify. Plus le stepper /api/demo/step, la latence de
-/api/state (< 200 ms) et la fiabilité du reset.
+Replays exactly the docs/demo.md script through the API:
+reset → compromise → timeline replay → explain → remediate → federated
+release → audit verify. Plus the /api/demo/step stepper, /api/state
+latency (< 200 ms) and reset reliability.
 """
 
 import time
@@ -32,25 +32,25 @@ def test_demo_script_end_to_end():
     g = s["counters"]["global"]
     assert g["quarantined"] > 0 and g["gates_blocked"] >= 1
 
-    # 3. rejeu pas à pas : la timeline reconstruit l'état
+    # 3. step-by-step replay: the timeline rebuilds the state
     steps = client.get("/api/timeline").json()["steps"]
     assert steps and steps[-1]["counters"]["quarantined"] == g["quarantined"]
 
-    # 4. explain le paiement au RIB modifié
+    # 4. explain the payment to the modified RIB
     ex = client.get("/api/records/m-pay-X/explain").json()
     assert ex["record"]["status"] == "quarantined"
     assert ex["path"]
 
-    # 5. remediate → release fédérée : alertes de levée signées vers l'aval
+    # 5. remediate → federated release: signed release alerts downstream
     s = client.post("/api/records/m-gr-X/remediate",
                     json={"action": "human_approval"}).json()
     statuses = {r["id"]: r["status"] for r in s["records"]}
     assert statuses["m-gr-X"] == "released"
     assert statuses["m-lot-X"] == "ok"
     assert any(a["type"] == "release" for a in s["alerts"]), \
-        "aucune alerte de levée émise vers l'aval"
+        "no release alert sent downstream"
 
-    # 6. audit verify : journaux intègres
+    # 6. audit verify: logs intact
     v = client.get("/api/audit/verify").json()
     assert v["ok"] and sum(j["entries"] for j in v["journals"]) > 0
 
@@ -63,9 +63,9 @@ def test_demo_step_drives_the_script():
     r1 = client.post("/api/demo/step").json()          # compromise
     assert r1["step"] == 1
     assert r1["state"]["counters"]["global"]["quarantined"] > 0
-    assert r1["detail"]["steps"] > 0                    # timeline disponible
+    assert r1["detail"]["steps"] > 0                    # timeline available
 
-    r2 = client.post("/api/demo/step").json()          # avec vs sans
+    r2 = client.post("/api/demo/step").json()          # with vs without
     assert r2["step"] == 2
     assert r2["detail"]["without"]["policy"] == "B"
     assert r2["detail"]["with"]["policy"] == "C"
@@ -84,12 +84,12 @@ def test_demo_step_drives_the_script():
     assert r5["step"] == 5 and r5["detail"]["ok"] is True
     assert r5["done"] is True
 
-    r6 = client.post("/api/demo/step").json()          # reste en fin
+    r6 = client.post("/api/demo/step").json()          # stays at the end
     assert r6["step"] == 6 and r6["done"] is True
     assert r6["caption"]
 
     for r in (r0, r1, r2, r3, r4, r5, r6):
-        assert r["caption"]  # légende française toujours présente
+        assert r["caption"]  # caption always present
 
 
 def test_state_latency_under_200ms():
@@ -101,7 +101,7 @@ def test_state_latency_under_200ms():
         res = client.get("/api/state")
         worst = max(worst, time.perf_counter() - t0)
         assert res.status_code == 200
-    assert worst < 0.2, f"/api/state trop lent : {worst * 1000:.0f} ms"
+    assert worst < 0.2, f"/api/state too slow: {worst * 1000:.0f} ms"
 
 
 def test_reset_reliable_between_runs():

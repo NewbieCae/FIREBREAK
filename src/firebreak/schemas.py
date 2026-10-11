@@ -1,7 +1,7 @@
-"""Contrat de l'API Firebreak : modèles Pydantic des réponses.
+"""Firebreak API contract: Pydantic response models.
 
-Ces modèles alimentent l'OpenAPI (/docs) : toute évolution du contrat
-doit passer par ici et par docs/api.md.
+These models feed the OpenAPI schema (/docs): any change to the contract
+must go through here and through docs/api.md.
 """
 
 from __future__ import annotations
@@ -19,35 +19,35 @@ class CompanyOut(BaseModel):
     name: str
     role: str
     gs1_prefix: str = Field(
-        description="Préfixe entreprise GS1 : relie les lieux (SGLN/GLN) EPCIS à l'entreprise.")
+        description="GS1 company prefix: links EPCIS locations (SGLN/GLN) to the company.")
 
 
 class RecordOut(BaseModel):
-    id: str = Field(description="Identifiant unique, ex. « m-pay-X ».")
-    company: str = Field(description="Entreprise propriétaire du registre.")
-    origin: str = Field(description="Entreprise émettrice de la donnée.")
-    kind: str = Field(description="Type d'opération : asn, invoice, payment…")
-    ts: str = Field(description="Horodatage ISO 8601 (heure de Paris, sans fuseau).")
+    id: str = Field(description="Unique identifier, e.g. \"m-pay-X\".")
+    company: str = Field(description="Company that owns the ledger.")
+    origin: str = Field(description="Company that issued the data.")
+    kind: str = Field(description="Operation type: asn, invoice, payment…")
+    ts: str = Field(description="ISO 8601 timestamp (Paris time, no time zone).")
     label: str
-    inputs: list[str] = Field(description="Records du même registre dont celui-ci dépend.")
-    gate: bool = Field(description="Action irréversible (paiement, expédition, production).")
+    inputs: list[str] = Field(description="Records of the same ledger this one depends on.")
+    gate: bool = Field(description="Irreversible action (payment, shipment, production).")
     verified: bool = Field(
-        description="Confirmé par une source de confiance : jamais contaminé, stoppe la propagation."
+        description="Confirmed by a trusted source: never contaminated, stops propagation."
     )
     payload: dict
     token: str | None = Field(
-        description="Jeton opaque du record reçu d'un partenaire (null si interne)."
+        description="Opaque token of the record received from a partner (null if internal)."
     )
     status: RecordStatus
     taint_path: list[str] | None = Field(
-        description="Chemin de contamination du seed jusqu'à ce record (null si non contaminé)."
+        description="Contamination path from the seed to this record (null if not contaminated)."
     )
 
 
 class EdgeOut(BaseModel):
     source: str
     target: str
-    cross: bool = Field(description="True si l'arête relie deux entreprises.")
+    cross: bool = Field(description="True if the edge links two companies.")
 
 
 class CountersOut(BaseModel):
@@ -55,11 +55,11 @@ class CountersOut(BaseModel):
     quarantined: int
     ok: int
     released: int
-    gates_blocked: int = Field(description="Actions irréversibles en quarantaine.")
+    gates_blocked: int = Field(description="Irreversible actions in quarantine.")
     amount_blocked: float = Field(
-        default=0, description="Montant cumulé (€) des paiements en quarantaine.")
+        default=0, description="Cumulative amount (€) of quarantined payments.")
     amount_flowing: float = Field(
-        default=0, description="Montant cumulé (€) des paiements qui continuent.")
+        default=0, description="Cumulative amount (€) of payments that keep flowing.")
 
 
 class CountersBlock(BaseModel):
@@ -81,26 +81,26 @@ AuditEvent = Literal[
 
 class AlertOut(BaseModel):
     type: AlertType = Field(
-        description="« taint » = contamination signalée ; « release » = levée de quarantaine."
+        description="\"taint\" = reported contamination; \"release\" = quarantine lifted."
     )
     from_: str = Field(alias="from")
     to: str
     tokens_count: int
-    verified: bool | None = Field(description="Signature vérifiée par le destinataire.")
+    verified: bool | None = Field(description="Signature verified by the recipient.")
     issued_at: str
 
     model_config = {"populate_by_name": True, "serialize_by_alias": True}
 
 
 class DeclarationOut(BaseModel):
-    ledger: str = Field(description="Registre qui porte la déclaration.")
-    source: str = Field(description="Entreprise déclarée compromise.")
+    ledger: str = Field(description="Ledger that holds the declaration.")
+    source: str = Field(description="Company declared compromised.")
     since: str
 
 
 class CompromiseHint(BaseModel):
-    company: str = Field(description="Entreprise à déclarer compromise pour la démo.")
-    since: str = Field(description="Début de la fenêtre de compromission.")
+    company: str = Field(description="Company to declare compromised for the demo.")
+    since: str = Field(description="Start of the compromise window.")
 
 
 ScenarioId = Literal["mixed", "rib", "cert", "asn", "lot", "recall"]
@@ -121,7 +121,7 @@ class StateOut(BaseModel):
     counters: CountersBlock
     alerts: list[AlertOut]
     declarations: list[DeclarationOut]
-    scenario: ScenarioOut = Field(description="Scénario chargé par le dernier reset.")
+    scenario: ScenarioOut = Field(description="Scenario loaded by the last reset.")
 
 
 StepType = Literal[
@@ -134,41 +134,41 @@ StepType = Literal[
 
 
 class StepCountersOut(BaseModel):
-    quarantined: int = Field(description="Opérations en quarantaine à cette étape.")
-    gates_blocked: int = Field(description="Actions irréversibles bloquées à cette étape.")
-    amount_blocked: float = Field(description="Montant des paiements bloqués cumulé (€) à cette étape.")
-    amount_flowing: float = Field(description="Montant des paiements qui continuent (€) à cette étape.")
+    quarantined: int = Field(description="Operations in quarantine at this step.")
+    gates_blocked: int = Field(description="Irreversible actions blocked at this step.")
+    amount_blocked: float = Field(description="Cumulative amount (€) of blocked payments at this step.")
+    amount_flowing: float = Field(description="Amount (€) of payments that keep flowing at this step.")
 
 
 class StepOut(BaseModel):
-    n: int = Field(description="Numéro d'étape, à partir de 1.")
-    ts: str = Field(description="Horodatage simulé de l'étape (heure du scénario).")
+    n: int = Field(description="Step number, starting at 1.")
+    ts: str = Field(description="Simulated timestamp of the step (scenario time).")
     type: StepType
-    company: str = Field(description="Registre concerné par l'étape.")
-    record: str | None = Field(default=None, description="Record concerné, s'il y en a un.")
+    company: str = Field(description="Ledger concerned by the step.")
+    record: str | None = Field(default=None, description="Record concerned, if any.")
     parent: str | None = Field(
-        default=None, description="Record parent dont dépend la contamination.")
+        default=None, description="Parent record the contamination depends on.")
     gate: bool = False
     label: str | None = None
     rule: str | None = Field(
         default=None,
-        description="Règle déclencheuse : source_compromise, alerte_verifiee, dependance.")
+        description="Triggering rule: source_compromise, alerte_verifiee, dependance.")
     alert: dict | None = Field(
         default=None,
-        description="Alerte concernée : from, to, tokens_count, verified, "
-                    "links = paires [record émis, record reçu] pour animer les arêtes.")
-    counters: StepCountersOut = Field(description="Compteurs d'impact cumulés à cette étape.")
-    text: str = Field(description="Phrase française prête à afficher pour la démo.")
+        description="Alert concerned: from, to, tokens_count, verified, "
+                    "links = [sent record, received record] pairs to animate the edges.")
+    counters: StepCountersOut = Field(description="Cumulative impact counters at this step.")
+    text: str = Field(description="Ready-to-display sentence for the demo.")
 
 
 class TimelineOut(BaseModel):
     steps: list[StepOut] = Field(
-        description="Étapes ordonnées de la dernière action "
-                    "(compromise, withdraw, remédiation, ingestion).")
+        description="Ordered steps of the last action "
+                    "(compromise, withdraw, remediation, ingestion).")
 
 
 class CompareDeclOut(BaseModel):
-    company: str = Field(description="Entreprise déclarée compromise.")
+    company: str = Field(description="Company declared compromised.")
     since: str
 
 
@@ -179,51 +179,51 @@ class LeakedOut(BaseModel):
 
 
 class CompareMetricsOut(BaseModel):
-    blocked: int = Field(description="Records bloqués par cette politique.")
-    healthy_blocked: int = Field(description="Records bloqués hors vérité terrain (collatéraux).")
-    leaked: int = Field(description="Records contaminés non bloqués (fuites).")
+    blocked: int = Field(description="Records blocked by this policy.")
+    healthy_blocked: int = Field(description="Records blocked outside the ground truth (collateral).")
+    leaked: int = Field(description="Contaminated records not blocked (leaks).")
     leaked_ids: list[LeakedOut]
-    gates_blocked: int = Field(description="Actions irréversibles bloquées.")
-    payments_blocked_eur: float = Field(description="Montant des paiements bloqués (€).")
-    payments_flowing_eur: float = Field(description="Montant des paiements qui continuent (€).")
+    gates_blocked: int = Field(description="Irreversible actions blocked.")
+    payments_blocked_eur: float = Field(description="Amount of blocked payments (€).")
+    payments_flowing_eur: float = Field(description="Amount of payments that keep flowing (€).")
     activity_preserved_pct: float | None = Field(
-        description="Part des opérations saines non bloquées (%).")
-    precision: float | None = Field(description="Précision du blocage (null si rien de bloqué).")
-    recall: float | None = Field(description="Rappel (null si rien de contaminé).")
-    companies_hit: list[str] = Field(description="Entreprises avec ≥ 1 record bloqué.")
+        description="Share of healthy operations not blocked (%).")
+    precision: float | None = Field(description="Blocking precision (null if nothing blocked).")
+    recall: float | None = Field(description="Recall (null if nothing contaminated).")
+    companies_hit: list[str] = Field(description="Companies with ≥ 1 blocked record.")
     blocked_ids: list[str]
 
 
 class CompareSideOut(CompareMetricsOut):
     title: str
-    policy: str = Field(description="« B » : coupe fournisseur + clients directs. « C » : Firebreak.")
+    policy: str = Field(description="\"B\": cut off supplier + direct customers. \"C\": Firebreak.")
     subtitle: str | None = None
-    scope: dict | None = Field(default=None, description="Périmètre coupé par déclaration (politique B).")
+    scope: dict | None = Field(default=None, description="Scope cut off per declaration (policy B).")
 
 
 class CompareOut(BaseModel):
     declarations: list[CompareDeclOut]
-    truth: dict = Field(description="Taille du vrai périmètre contaminé (`contaminated`), ses identifiants (`ids`) et sa définition.")
-    without: CompareSideOut = Field(description="Politique B : blocage large du partenaire.")
+    truth: dict = Field(description="Size of the true contaminated scope (`contaminated`), its identifiers (`ids`) and its definition.")
+    without: CompareSideOut = Field(description="Policy B: broad blocking of the partner.")
     with_: CompareSideOut = Field(
-        alias="with", description="Politique C : quarantaine ciblée Firebreak.")
+        alias="with", description="Policy C: Firebreak targeted quarantine.")
     healthy_blocked_ratio: float | None = Field(
-        description="without.healthy_blocked / with.healthy_blocked (null si 0).")
-    bench: dict | None = Field(description="Agrégat de bench/results.csv, null si absent.")
-    real_world: list[dict] = Field(description="Exemples réels de coupure totale.")
+        description="without.healthy_blocked / with.healthy_blocked (null if 0).")
+    bench: dict | None = Field(description="Aggregate of bench/results.csv, null if absent.")
+    real_world: list[dict] = Field(description="Real-world examples of a total cut-off.")
 
     model_config = {"populate_by_name": True}
 
 
 class EpcisIgnoredOut(BaseModel):
-    index: int = Field(description="Position de l'événement dans eventList.")
+    index: int = Field(description="Position of the event in eventList.")
     type: str | None
     reason: str
 
 
 class EpcisImportOut(BaseModel):
-    events: int = Field(description="Nombre d'événements dans le document.")
-    imported: list[RecordOut] = Field(description="Records ajoutés, après recalcul.")
+    events: int = Field(description="Number of events in the document.")
+    imported: list[RecordOut] = Field(description="Records added, after recomputation.")
     ignored: list[EpcisIgnoredOut]
     state: StateOut
 
@@ -239,12 +239,12 @@ AISource = Literal["mock", "bedrock"]
 
 class ExplainOut(BaseModel):
     record: RecordOut
-    path: list[RecordOut] = Field(description="Records du taint_path, dans l'ordre.")
+    path: list[RecordOut] = Field(description="Records of the taint_path, in order.")
     explanation: str
     remediation_plan: list[RemediationOption]
     source: AISource = Field(
-        description="IA qui a produit l'explication : « bedrock », ou « mock » (gabarit "
-                    "déterministe, aussi utilisé en repli si Bedrock échoue)."
+        description="AI that produced the explanation: \"bedrock\", or \"mock\" (deterministic "
+                    "template, also used as a fallback if Bedrock fails)."
     )
 
 
@@ -252,62 +252,62 @@ DocumentKind = Literal["purchase_order", "asn", "invoice", "bank_details_change"
 
 
 class ProposedRecordOut(BaseModel):
-    id: str = Field(description="Identifiant que portera le record une fois confirmé.")
-    company: str = Field(description="Registre destinataire (paramètre « company »).")
-    origin: str | None = Field(description="Émetteur détecté ; null si non reconnu.")
-    kind: DocumentKind | None = Field(description="Type de document ; null si non reconnu.")
-    ts: str = Field(description="Heure de réception (heure de Paris, sans fuseau).")
+    id: str = Field(description="Identifier the record will carry once confirmed.")
+    company: str = Field(description="Recipient ledger (\"company\" parameter).")
+    origin: str | None = Field(description="Detected issuer; null if not recognized.")
+    kind: DocumentKind | None = Field(description="Document type; null if not recognized.")
+    ts: str = Field(description="Time of receipt (Paris time, no time zone).")
     label: str
     inputs: list[str]
     gate: bool
     payload: dict = Field(
         description="amount, rib, previous_rib, bank_details_change, references, dates "
-                    "(seuls les champs trouvés sont présents, sauf references et dates)."
+                    "(only the fields found are present, except references and dates)."
     )
 
 
 class ProposalOut(BaseModel):
-    id: str = Field(description="Identifiant de la proposition, ex. « doc-01 ».")
+    id: str = Field(description="Proposal identifier, e.g. \"doc-01\".")
     status: Literal["pending", "confirmed"]
-    source: AISource = Field(description="Extraction par « bedrock » ou « mock » (regex).")
-    confidence: float = Field(ge=0, le=1, description="Confiance de l'extraction (0 à 1).")
-    missing: list[str] = Field(description="Champs attendus pour ce type mais non trouvés.")
+    source: AISource = Field(description="Extraction by \"bedrock\" or \"mock\" (regex).")
+    confidence: float = Field(ge=0, le=1, description="Extraction confidence (0 to 1).")
+    missing: list[str] = Field(description="Fields expected for this type but not found.")
     record: ProposedRecordOut
 
 
 class AuditEntryOut(BaseModel):
     index: int
-    ts: str = Field(description="Heure du scénario (ISO 8601, heure de Paris).")
+    ts: str = Field(description="Scenario time (ISO 8601, Paris time).")
     company: str
     event: AuditEvent
     actor: Literal["humain", "règle"]
     details: dict
-    prev_hash: str = Field(description="Hash de l'entrée précédente (64 zéros pour la première).")
-    hash: str = Field(description="sha256(prev_hash + JSON canonique de l'entrée sans hash).")
+    prev_hash: str = Field(description="Hash of the previous entry (64 zeros for the first one).")
+    hash: str = Field(description="sha256(prev_hash + canonical JSON of the entry without hash).")
 
 
 class AuditOut(BaseModel):
     company: str
-    head: str = Field(description="Hash de la dernière entrée.")
+    head: str = Field(description="Hash of the last entry.")
     entries: list[AuditEntryOut]
 
 
 class OnchainCheck(BaseModel):
     anchored_head: str | None = Field(
-        default=None, description="Tête du journal telle qu'ancrée sur la chaîne.")
+        default=None, description="Journal head as anchored on-chain.")
     anchored_entries: int | None = None
     block: int | None = None
     tx_hash: str | None = None
     explorer_link: str | None = None
     matches: bool | None = Field(
         default=None,
-        description="Le journal local tronqué à `anchored_entries` a pour dernier hash "
-                    "`anchored_head`. null si `unreadable`."
+        description="The local journal truncated to `anchored_entries` has "
+                    "`anchored_head` as its last hash. null if `unreadable`."
     )
     unreadable: bool = Field(
         default=False,
-        description="Un ancrage confirmé existe mais la lecture on-chain a échoué "
-                    "après plusieurs tentatives : à réessayer, ce n'est pas une falsification."
+        description="A confirmed anchor exists but the on-chain read failed "
+                    "after several attempts: retry, this is not tampering."
     )
 
 
@@ -316,12 +316,12 @@ class AuditJournalCheck(BaseModel):
     ok: bool
     entries: int
     first_broken_index: int | None = Field(
-        description="Index de la première entrée cassée, null si la chaîne est intacte."
+        description="Index of the first broken entry, null if the chain is intact."
     )
     head: str
     onchain: OnchainCheck | None = Field(
-        default=None, description="Ancrage Avalanche ; null si la chaîne est désactivée "
-                                  "ou si rien n'est encore ancré.")
+        default=None, description="Avalanche anchor; null if the chain is disabled "
+                                  "or nothing is anchored yet.")
 
 
 class BrokenRef(BaseModel):
@@ -334,8 +334,8 @@ class AuditVerifyOut(BaseModel):
     first_broken: BrokenRef | None
     journals: list[AuditJournalCheck]
     onchain_ok: bool | None = Field(
-        default=None, description="Tous les journaux ancrés correspondent ; null si "
-                                  "la chaîne est désactivée ou rien d'ancré.")
+        default=None, description="All anchored journals match; null if "
+                                  "the chain is disabled or nothing is anchored.")
 
 
 class ChainQueueOut(BaseModel):
@@ -346,22 +346,22 @@ class ChainQueueOut(BaseModel):
 
 
 class ChainStatusOut(BaseModel):
-    mode: str = Field(description="off, tester ou l1.")
+    mode: str = Field(description="off, tester or l1.")
     connected: bool
     chain_id: int | None
     contract: str | None
     explorer_url: str | None
-    run_id: str | None = Field(description="Identifiant du run courant (hex 32 octets).")
+    run_id: str | None = Field(description="Identifier of the current run (32-byte hex).")
     last_block: int | None
     queue: ChainQueueOut
 
 
 class AnchorOut(BaseModel):
     id: int
-    kind: str = Field(description="audit, alert, incident ou ack.")
+    kind: str = Field(description="audit, alert, incident or ack.")
     company: str
     hash: str
-    status: str = Field(description="pending, sent, confirmed, failed ou disabled.")
+    status: str = Field(description="pending, sent, confirmed, failed or disabled.")
     tx_hash: str | None
     block: int | None
     error: str | None

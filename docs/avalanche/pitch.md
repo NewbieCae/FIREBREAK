@@ -1,90 +1,90 @@
-# Pitch — pourquoi Avalanche
+# Pitch — why Avalanche
 
-## Les 3 preuves (30 secondes)
+## The 3 proofs (30 seconds)
 
-1. **Qui a prévenu qui, et quand.** Chaque alerte inter-entreprises est
-   ancrée sur notre L1 : horodatage que personne ne peut réécrire après coup.
-2. **Le journal n'a pas été touché.** La tête du journal d'audit de chaque
-   entreprise est ancrée. Si quelqu'un réécrit son journal et recalcule les
-   hash, la vérification locale ne voit rien, Avalanche si (bouton de démo).
-3. **Seuls les membres écrivent.** Le contrat n'accepte que les adresses des
-   entreprises de la fédération : on ne peut pas déclarer un faux incident
-   pour paralyser un concurrent.
+1. **Who warned whom, and when.** Every inter-company alert is
+   anchored on our L1: a timestamp nobody can rewrite after the fact.
+2. **The log hasn't been touched.** The head of each company's audit log
+   is anchored. If someone rewrites their log and recomputes the
+   hashes, the local check sees nothing, Avalanche does (demo button).
+3. **Only members write.** The contract only accepts the addresses of the
+   federation's companies: nobody can declare a fake incident
+   to paralyze a competitor.
 
-## Ce qui n'est PAS on-chain
+## What is NOT on-chain
 
-Aucune donnée commerciale : ni montants, ni RIB, ni lots, ni noms de
-fournisseurs. Uniquement des empreintes (hash), des identifiants opaques et
-des horodatages. Les données restent chez chaque entreprise.
+No commercial data: no amounts, no bank details, no lots, no supplier
+names. Only fingerprints (hashes), opaque identifiers and
+timestamps. The data stays at each company.
 
-## Pourquoi une L1 dédiée
+## Why a dedicated L1
 
-- Une chaîne de consortium : membres connus, pas de frais imprévisibles, pas
-  de données exposées sur un réseau public.
-- Contrôle d'accès décidé par les membres : le contrat n'accepte que les
-  entreprises de la fédération.
-- **À dire honnêtement** : en démo, notre L1 n'a **qu'un seul validateur**
-  (nœud hébergé par le Builder Hub d'Avalanche) et l'administrateur du contrat
-  est l'équipe. En production, les validateurs sont les membres du
-  consortium : c'est ce qui rend la preuve indépendante de chacun.
-- Ne pas promettre une finalité « en moins d'une seconde » : sur notre L1,
-  une preuve est confirmée en 2 à 4 s, attente du reçu comprise (mesures
-  ci-dessous).
+- A consortium chain: known members, no unpredictable fees, no
+  data exposed on a public network.
+- Access control decided by the members: the contract only accepts the
+  federation's companies.
+- **Say it honestly**: in the demo, our L1 has **only one validator**
+  (node hosted by Avalanche's Builder Hub) and the contract admin
+  is the team. In production, the validators are the consortium
+  members: that's what makes the proof independent of any single party.
+- Don't promise "sub-second" finality: on our L1,
+  a proof is confirmed in 2 to 4 s, including waiting for the receipt (measurements
+  below).
 
-## La leçon TradeLens
+## The TradeLens lesson
 
-TradeLens (Maersk / IBM) a annoncé son arrêt fin 2022 et fermé début 2023 : les concurrents refusaient de
-confier leur flux à une plateforme contrôlée par un seul acteur. FIREBREAK
-évite ce piège : on n'y met que des preuves, pas les données, et la chaîne a
-vocation à être validée par les membres du consortium (en démo : un seul
-validateur, voir plus haut).
+TradeLens (Maersk / IBM) announced its shutdown at the end of 2022 and closed in early 2023: competitors refused to
+hand their flows to a platform controlled by a single player. FIREBREAK
+avoids this trap: only proofs go on it, not the data, and the chain is
+meant to be validated by the consortium members (in the demo: a single
+validator, see above).
 
-## Chiffres mesurés sur la vraie L1
+## Figures measured on the real L1
 
-L1 Avalanche de l'équipe (chainId 569712, contrat
-`0xeA4BeAe1262B7BD19e3A18B1245ef100A454F0FC` depuis 04 h — type « signalement
-qualité » ajouté ; les mesures ci-dessous ont été faites sur le déploiement
-précédent `0x28cE7fcb…`, avec le même code d'ancrage —, explorer
-https://2hxmvtcr.firn.gg), mesurés par pc1 le 11/10 entre 01 h 50 et 03 h 40 :
+The team's Avalanche L1 (chainId 569712, contract
+`0xeA4BeAe1262B7BD19e3A18B1245ef100A454F0FC` since 04:00 — "quality report"
+type added; the measurements below were taken on the
+previous deployment `0x28cE7fcb…`, with the same anchoring code —, explorer
+https://2hxmvtcr.firn.gg), measured by pc1 on 11/10 between 01:50 and 03:40:
 
-- **Les étapes de la démo répondent en 16 ms** (médiane, max 31 ms) : l'ancrage
-  part dans une file en arrière-plan, hors du chemin de la requête.
-- **Scénario « mixed » + compromission : 12 preuves** (3 alertes signées,
-  3 accusés de réception, déclaration, 4 journaux), confirmées en ~24 s,
-  soit ~2 s par transaction. Deux passages d'affilée : 24/24 confirmées.
-- **Démo complète (6 étapes de `/api/demo/step`) : 19 preuves**, file vidée
-  ~70 s après la dernière étape (~3,7 s par transaction, envoi séquentiel).
-  Deux passages : 17/19 puis 19/19. Les 2 échecs du premier passage étaient
-  des erreurs réseau ponctuelles (nœud géré qui limite le débit), non
-  reproduites ; correctif de relance en cours.
-- **« Vérifier sur Avalanche »** (lecture des 4 journaux ancrés) : ~3,4 s,
-  tout conforme. **Réécriture du journal du fabricant** : vérification locale
-  « intègre », vérification Avalanche « non conforme ».
-- **Scénario `recall` (rappel qualité, contrat `0xeA4B…`, 04 h 05)** : le
-  client signale une casse, le distributeur confirme et remonte, le fabricant
-  analyse et déclare la bobine COIL-103 suspecte, le fournisseur confirme.
-  20 opérations isolées, fournisseur jamais déclaré compromis. **25 preuves
-  ancrées, 25 confirmées, 0 échec** (journaux, alertes, signalements qualité,
-  accusés de réception, déclaration) ; vérification locale et Avalanche
-  conformes. L'API répond en 0,1 s pour les 5 gestes ; la file a mis ~127 s
-  à se vider (envoi séquentiel, ~5 s par preuve) — envoi parallèle par
-  entreprise en cours pour réduire ce délai.
-- **Après optimisation (04 h 25, moins de requêtes par transaction : nonce
-  local, gaz fixe, prix en cache)** : démo complète **19/19 en ~38 s** (au lieu
-  de ~70 s), scénario `recall` **25/25 en ~86 s** (au lieu de ~130 s), 0 échec,
-  vérification conforme, réécriture détectée. La limite restante est le débit
-  du nœud hébergé (un bloc toutes les ~2 s, refus si trop de requêtes).
-- Pour le pitch : dire « une preuve est sur la chaîne en quelques secondes,
-  et la démo n'attend jamais la chaîne ». Lancer la démo **une minute avant**
-  de montrer le panneau Avalanche, pour que la file soit vidée.
+- **Demo steps respond in 16 ms** (median, max 31 ms): anchoring
+  goes into a background queue, off the request path.
+- **"mixed" scenario + compromise: 12 proofs** (3 signed alerts,
+  3 acknowledgments, declaration, 4 logs), confirmed in ~24 s,
+  i.e. ~2 s per transaction. Two runs in a row: 24/24 confirmed.
+- **Full demo (6 steps of `/api/demo/step`): 19 proofs**, queue emptied
+  ~70 s after the last step (~3.7 s per transaction, sequential sending).
+  Two runs: 17/19 then 19/19. The 2 failures in the first run were
+  one-off network errors (managed node rate limiting), not
+  reproduced; retry fix in progress.
+- **"Verify on Avalanche"** (reading the 4 anchored logs): ~3.4 s,
+  all matching. **Rewrite of the manufacturer's log**: local check
+  "intact", Avalanche check "does not match".
+- **`recall` scenario (quality recall, contract `0xeA4B…`, 04:05)**: the
+  customer reports a breakage, the distributor confirms and escalates, the manufacturer
+  analyzes and declares coil COIL-103 suspect, the supplier confirms.
+  20 operations isolated, supplier never declared compromised. **25 proofs
+  anchored, 25 confirmed, 0 failures** (logs, alerts, quality reports,
+  acknowledgments, declaration); local and Avalanche checks
+  matching. The API responds in 0.1 s for the 5 actions; the queue took ~127 s
+  to empty (sequential sending, ~5 s per proof) — parallel sending per
+  company in progress to reduce this delay.
+- **After optimization (04:25, fewer requests per transaction: local
+  nonce, fixed gas, cached price)**: full demo **19/19 in ~38 s** (instead
+  of ~70 s), `recall` scenario **25/25 in ~86 s** (instead of ~130 s), 0 failures,
+  check matching, rewrite detected. The remaining limit is the throughput
+  of the hosted node (one block every ~2 s, rejections if too many requests).
+- For the pitch: say "a proof is on the chain within a few seconds,
+  and the demo never waits for the chain". Start the demo **one minute before**
+  showing the Avalanche panel, so the queue is empty.
 
-Mesures sur l'EVM en mémoire (mode `tester`, pc2) pour comparaison : 19
-preuves en ~1,5 s, ~80 ms par transaction. Ne jamais les présenter comme
-celles de la L1.
+Measurements on the in-memory EVM (`tester` mode, pc2) for comparison: 19
+proofs in ~1.5 s, ~80 ms per transaction. Never present them as
+the L1's.
 
-## Si on nous demande
+## If we're asked
 
-- *« Et si la chaîne tombe ? »* Le produit fonctionne sans, l'ancrage est
-  optionnel et non bloquant ; il rattrape ensuite.
-- *« Pourquoi pas une base de données ? »* Qui contrôle la base peut la
-  réécrire : la preuve vaut seulement si elle est hors de portée de chacun.
+- *"What if the chain goes down?"* The product works without it, anchoring is
+  optional and non-blocking; it catches up afterwards.
+- *"Why not a database?"* Whoever controls the database can
+  rewrite it: the proof is only worth something if it's out of everyone's reach.

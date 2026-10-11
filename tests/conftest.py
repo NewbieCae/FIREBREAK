@@ -1,10 +1,10 @@
-"""Garde-fou commun à toute la suite.
+"""Safety net shared by the whole suite.
 
-`api.py` charge `.env.local` au démarrage. Sur une machine où ce fichier
-active la vraie L1 (`FIREBREAK_CHAIN=l1`), les tests enverraient de vraies
-transactions. Une variable d'environnement l'emporte toujours sur
-`.env.local` : on force donc la chaîne désactivée avant tout import. Les tests
-de la chaîne construisent explicitement leur configuration (`tester`).
+`api.py` loads `.env.local` at startup. On a machine where that file
+enables the real L1 (`FIREBREAK_CHAIN=l1`), the tests would send real
+transactions. An environment variable always wins over `.env.local`, so
+the chain is forced off before any import. The chain tests build their
+configuration explicitly (`tester`).
 """
 
 import os

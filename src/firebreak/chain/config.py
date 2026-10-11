@@ -1,7 +1,7 @@
-"""Configuration de la chaîne, lue dans l'environnement et `.env.local`.
+"""Chain configuration, read from the environment and `.env.local`.
 
-N'importe jamais `web3` : ce module est chargé même quand la chaîne est
-désactivée. Le mnémonique n'apparaît ni dans `repr`, ni dans les erreurs.
+Never imports `web3`: this module is loaded even when the chain is
+disabled. The mnemonic appears neither in `repr` nor in errors.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_DOTENV = REPO_ROOT / ".env.local"
 DEFAULT_DEPLOYMENT = REPO_ROOT / "contracts" / "deployments" / "l1.json"
 
-# Mêmes identifiants et même ordre que scenario.py.
+# Same identifiers and same order as scenario.py.
 COMPANIES = ("fournisseur", "fabricant", "distributeur", "client")
 MODES = ("off", "tester", "l1")
 
@@ -44,8 +44,8 @@ class ChainConfig:
 
 
 def parse_dotenv(path: Path) -> dict[str, str]:
-    """`CLE=valeur` par ligne ; `#` en début de ligne = commentaire ;
-    guillemets simples ou doubles autour de la valeur retirés."""
+    """`KEY=value` per line; `#` at the start of a line = comment;
+    single or double quotes around the value are stripped."""
     values: dict[str, str] = {}
     try:
         text = path.read_text(encoding="utf-8")
@@ -68,7 +68,7 @@ def parse_dotenv(path: Path) -> dict[str, str]:
 
 
 def apply_dotenv(env: MutableMapping[str, str], dotenv_path: Path) -> None:
-    """Complète `env` avec `.env.local` sans écraser une variable déjà définie."""
+    """Fills `env` from `.env.local` without overwriting an already defined variable."""
     for key, value in parse_dotenv(dotenv_path).items():
         env.setdefault(key, value)
 
@@ -83,9 +83,9 @@ def _blank_to_none(value: str | None) -> str | None:
 def load_chain_config(
     env: Mapping[str, str] | None = None, dotenv_path: Path | None = None
 ) -> ChainConfig:
-    """Sans `env`, lit `os.environ` après y avoir chargé `.env.local` (ce qui
-    rend aussi `FIREBREAK_KEY_SEED` visible pour federation.py). Avec un `env`
-    explicite (tests), `.env.local` n'est lu que si `dotenv_path` est donné."""
+    """Without `env`, reads `os.environ` after loading `.env.local` into it (which
+    also makes `FIREBREAK_KEY_SEED` visible to federation.py). With an explicit
+    `env` (tests), `.env.local` is only read if `dotenv_path` is given."""
     if env is None:
         apply_dotenv(os.environ, dotenv_path or DEFAULT_DOTENV)
         source: Mapping[str, str] = os.environ
@@ -98,7 +98,7 @@ def load_chain_config(
     mode = (_blank_to_none(source.get("FIREBREAK_CHAIN")) or "off").lower()
     if mode not in MODES:
         warnings.warn(
-            f"FIREBREAK_CHAIN={mode!r} inconnu (attendu : {', '.join(MODES)}) : chaîne désactivée.",
+            f"FIREBREAK_CHAIN={mode!r} unknown (expected: {', '.join(MODES)}): chain disabled.",
             stacklevel=2,
         )
         mode = "off"
@@ -107,7 +107,7 @@ def load_chain_config(
     try:
         chain_id = int(chain_id_raw, 0) if chain_id_raw else None
     except ValueError:
-        warnings.warn("FIREBREAK_CHAIN_ID n'est pas un entier : ignoré.", stacklevel=2)
+        warnings.warn("FIREBREAK_CHAIN_ID is not an integer: ignored.", stacklevel=2)
         chain_id = None
 
     deployment_raw = _blank_to_none(source.get("FIREBREAK_CHAIN_DEPLOYMENT"))

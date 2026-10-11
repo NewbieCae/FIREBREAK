@@ -33,7 +33,7 @@ def test_compromise():
 
 def test_compromise_unknown_company():
     res = client.post("/api/compromise", json={
-        "company": "inconnu", "since": "2026-10-10T14:00:00"})
+        "company": "unknown", "since": "2026-10-10T14:00:00"})
     assert res.status_code == 404
 
 
@@ -45,7 +45,7 @@ def test_explain():
     data = res.json()
     assert data["record"]["id"] == "m-pay-X"
     assert [r["id"] for r in data["path"]] == data["record"]["taint_path"]
-    assert "quarantaine" in data["explanation"]
+    assert "quarantined" in data["explanation"]
     assert {p["action"] for p in data["remediation_plan"]} == {
         "revalidate", "human_approval", "trusted_source"}
 
@@ -68,7 +68,7 @@ def test_remediate():
 def test_remediate_errors():
     res = client.post("/api/records/f-int-01/remediate",
                       json={"action": "revalidate"})
-    assert res.status_code == 400  # pas en quarantaine
+    assert res.status_code == 400  # not quarantined
     client.post("/api/compromise", json={
         "company": "fournisseur", "since": "2026-10-10T14:00:00"})
     res = client.post("/api/records/m-pay-X/remediate", json={"action": "hack"})
@@ -84,7 +84,7 @@ def test_reset():
 
 
 def test_compromise_accepts_timezone_aware_since():
-    # 12:00Z == 14:00 à Paris (heure d'été) : même résultat que la date naïve
+    # 12:00Z == 14:00 in Paris (summer time): same result as the naive date
     res = client.post("/api/compromise", json={
         "company": "fournisseur", "since": "2026-10-10T12:00:00Z"})
     assert res.status_code == 200
@@ -162,7 +162,7 @@ def test_withdraw():
     assert client.post("/api/compromise/withdraw",
                        json={"company": "fournisseur"}).status_code == 400
     assert client.post("/api/compromise/withdraw",
-                       json={"company": "inconnu"}).status_code == 404
+                       json={"company": "unknown"}).status_code == 404
     assert client.post("/api/compromise/withdraw", json={}).status_code == 422
 
 

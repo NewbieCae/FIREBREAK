@@ -1,73 +1,73 @@
-# Tâche 00 — Mise en place (Mika, à la main)
+# Task 00 — Setup (Mika, by hand)
 
-Cette fiche n'est **pas** pour un agent : elle touche aux secrets et à l'installation d'outils sur la machine de Mika.
+This sheet is **not** for an agent: it involves secrets and installing tools on Mika's machine.
 
-## 1. Outils sur la machine (Windows)
+## 1. Tools on the machine (Windows)
 
-Constat du 11/10 : `uv`, `forge` et Python ≥ 3.12 sont absents ; seul Python 3.6 est installé.
+Finding on 11/10: `uv`, `forge` and Python ≥ 3.12 are missing; only Python 3.6 is installed.
 
-- [ ] Installer `uv` (il installe aussi Python 3.12 pour le projet) :
+- [ ] Install `uv` (it also installs Python 3.12 for the project):
   ```powershell
   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
   ```
-  Puis rouvrir le terminal, et dans `finswag/` : `uv sync` puis `uv run pytest -q` → tout doit être vert **avant** de lancer les agents.
-- Foundry n'est **pas** nécessaire : on compile et on teste le contrat depuis Python (`py-solc-x`, `eth-tester`), pour rester dans la stack de l'équipe.
+  Then reopen the terminal, and in `finswag/`: `uv sync` then `uv run pytest -q` → everything must be green **before** starting the agents.
+- Foundry is **not** needed: we compile and test the contract from Python (`py-solc-x`, `eth-tester`), to stay within the team's stack.
 
-## 2. Infos de la L1 (non secrètes) — à compléter ici
+## 2. L1 info (not secret) — fill in here
 
-| Info | Valeur |
+| Info | Value |
 |---|---|
-| EVM chainId | `569712` (vérifié le 11/10 : `eth_chainId` → `0x8b170`) |
-| URL RPC | `https://nodes-prod.43.207.73.245.sslip.io/ext/bc/2HxMVTcRc1ZmgN18oemXZPSMnarWoWMA8H1g48orwbEuqxSBks/rpc` (nœud géré par le Builder Hub) |
+| EVM chainId | `569712` (checked on 11/10: `eth_chainId` → `0x8b170`) |
+| RPC URL | `https://nodes-prod.43.207.73.245.sslip.io/ext/bc/2HxMVTcRc1ZmgN18oemXZPSMnarWoWMA8H1g48orwbEuqxSBks/rpc` (node managed by the Builder Hub) |
 | Explorer | `https://2hxmvtcr.firn.gg` |
 | Blockchain ID | `2HxMVTcRc1ZmgN18oemXZPSMnarWoWMA8H1g48orwbEuqxSBks` |
 | Subnet ID (P-Chain) | `mbgwkeduUWKyJ7taabLPyiWKFHvPiDDfyhqA9fXKyZgthzTMT` |
-| Validator Manager (sur le C-Chain) | `0xf8fbe4674a555fd34ea7ba0c3ec1ffed6cc482fb` |
-| Nœud validateur | `NodeID-DfVkATxNoiQcbqCwJoy4nApEqJWnRhN7D` (un seul : si ce nœud tombe, la L1 s'arrête) |
-| Créée avec | console Builder Hub |
-| Symbole du jeton natif | à confirmer |
-| `TxAllowList` activé ? | **Non** (vérifié le 11/10 : `readAllowList` sur `0x02…02` → `0x`). N'importe quel compte qui a du gaz peut envoyer des transactions ; le contrôle d'accès se fait dans le contrat (`onlyMember`). |
-| `ContractDeployerAllowList` activé ? admin = ? | à confirmer (idem) |
-| Adresse publique du compte 0 (admin, celui qui a les jetons) | à confirmer : 0x… |
+| Validator Manager (on the C-Chain) | `0xf8fbe4674a555fd34ea7ba0c3ec1ffed6cc482fb` |
+| Validator node | `NodeID-DfVkATxNoiQcbqCwJoy4nApEqJWnRhN7D` (only one: if this node goes down, the L1 stops) |
+| Created with | Builder Hub console |
+| Native token symbol | to be confirmed |
+| `TxAllowList` enabled? | **No** (checked on 11/10: `readAllowList` on `0x02…02` → `0x`). Any account with gas can send transactions; access control is done in the contract (`onlyMember`). |
+| `ContractDeployerAllowList` enabled? admin = ? | to be confirmed (same) |
+| Public address of account 0 (admin, the one holding the tokens) | to be confirmed: 0x… |
 
-## 3. Fichier `.env.local` à la racine de `finswag/` (ignoré par Git)
+## 3. `.env.local` file at the root of `finswag/` (ignored by Git)
 
-Créer `.env.local` à la main avec ce contenu. Le mnémonique est celui du wallet **dédié au hackathon** ; il ne doit contrôler aucun fonds réel.
+Create `.env.local` by hand with this content. The mnemonic is that of the wallet **dedicated to the hackathon**; it must not control any real funds.
 
 ```
-# Fédération : fixer ces deux valeurs (n'importe quelle longue chaîne aléatoire)
-# pour que les clés Ed25519 restent stables entre deux lancements du serveur.
-# Indispensable : les clés publiques sont enregistrées on-chain au déploiement.
+# Federation: set these two values (any long random string)
+# so the Ed25519 keys stay stable between two server launches.
+# Required: the public keys are registered on-chain at deployment.
 FIREBREAK_KEY_SEED=...
 FIREBREAK_PAIR_SECRET=...
 
-# Avalanche L1 — off (défaut) | tester (EVM en mémoire) | l1 (vraie L1)
+# Avalanche L1 — off (default) | tester (in-memory EVM) | l1 (real L1)
 FIREBREAK_CHAIN=l1
 FIREBREAK_CHAIN_RPC_URL=...
 FIREBREAK_CHAIN_ID=...
 FIREBREAK_CHAIN_EXPLORER_URL=...
-# Compte 0 = admin (a les jetons), 1..4 = fournisseur, fabricant, distributeur, client
+# Account 0 = admin (holds the tokens), 1..4 = fournisseur, fabricant, distributeur, client
 FIREBREAK_CHAIN_MNEMONIC=...
 FIREBREAK_CHAIN_DEPLOYMENT=contracts/deployments/l1.json
 ```
 
-Pour générer les deux secrets de fédération : `python -c "import secrets; print(secrets.token_hex(32))"` (deux fois).
+To generate the two federation secrets: `python -c "import secrets; print(secrets.token_hex(32))"` (twice).
 
-Vérifier : `git check-ignore -v .env.local` doit répondre (fichier ignoré).
+Check: `git check-ignore -v .env.local` must respond (file ignored).
 
-## 4. MCP Avalanche (optionnel, utile aux agents)
+## 4. Avalanche MCP (optional, useful for agents)
 
-Donne aux agents la doc Avalanche à jour (precompiles, version d'EVM, outils) :
+Gives agents up-to-date Avalanche docs (precompiles, EVM version, tools):
 ```bash
 claude mcp add --transport http avalanche-docs https://build.avax.network/api/mcp
 ```
 
-## 5. Prévenir l'équipe
+## 5. Let the team know
 
-`AGENTS.md` dit « pas de branches ». Prévenir Yann que la partie Avalanche vit sur `mika/avalanche-l1`, désactivée par défaut, et qu'elle ne sera fusionnée que verte. Message à envoyer par `scripts/messages.py send yann "…"` (ça pousse sur `main`, c'est voulu).
+`AGENTS.md` says "no branches". Tell Yann that the Avalanche part lives on `mika/avalanche-l1`, disabled by default, and will only be merged when green. Message to send with `scripts/messages.py send yann "…"` (it pushes to `main`, that's intended).
 
-## Fini quand
+## Done when
 
-- `uv run pytest -q` vert sur la branche.
-- Le tableau du §2 est rempli.
-- `.env.local` existe et est ignoré.
+- `uv run pytest -q` green on the branch.
+- The table in §2 is filled in.
+- `.env.local` exists and is ignored.

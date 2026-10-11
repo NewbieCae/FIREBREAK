@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-/// @title FirebreakRegistry — témoin horodaté des preuves Firebreak
-/// @notice Ne contient aucune donnée commerciale : uniquement des empreintes
-///         (sha256) de journaux d'audit, d'alertes signées et de déclarations
-///         d'incident, plus l'annuaire des membres et de leurs clés Ed25519.
-///         Le contrat ne décide rien : il atteste qui a écrit quoi, et quand.
+/// @title FirebreakRegistry — timestamped witness of Firebreak proofs
+/// @notice Holds no business data: only fingerprints (sha256) of audit logs,
+///         signed alerts and incident declarations, plus the directory of
+///         members and their Ed25519 keys.
+///         The contract decides nothing: it attests who wrote what, and when.
 contract FirebreakRegistry {
     struct Member {
         bytes32 companyId;
@@ -16,7 +16,7 @@ contract FirebreakRegistry {
     struct AlertRecord {
         bytes32 fromCompany;
         bytes32 toCompany;
-        uint8 alertType; // 0 = taint, 1 = release, 2 = report (signalement qualité vers l'amont)
+        uint8 alertType; // 0 = taint, 1 = release, 2 = report (upstream quality report)
         uint64 anchoredAt;
         uint64 ackAt;
     }
@@ -101,7 +101,7 @@ contract FirebreakRegistry {
         admin = newAdmin;
     }
 
-    /// @notice Crée ou met à jour un membre. Un companyId ne peut être lié qu'à un seul compte.
+    /// @notice Creates or updates a member. A companyId can be bound to only one account.
     function registerMember(address account, bytes32 companyId, bytes32 pubKey) external onlyAdmin {
         if (account == address(0) || companyId == bytes32(0)) revert ZeroValue();
         address current = accountOf[companyId];
@@ -139,7 +139,7 @@ contract FirebreakRegistry {
         );
     }
 
-    /// @notice L'émetteur d'une alerte signée (ou d'un signalement qualité) en ancre l'empreinte.
+    /// @notice The issuer of a signed alert (or of a quality report) anchors its fingerprint.
     function anchorAlert(bytes32 runId, bytes32 alertHash, bytes32 toCompany, uint8 alertType) external onlyMember {
         if (alertType > 2) revert InvalidAlertType(alertType);
         if (alertHash == bytes32(0) || toCompany == bytes32(0)) revert ZeroValue();
@@ -149,7 +149,7 @@ contract FirebreakRegistry {
         emit AlertAnchored(runId, alertHash, fromCompany, toCompany, alertType, uint64(block.timestamp));
     }
 
-    /// @notice Le destinataire accuse réception : preuve qu'il a été prévenu, et quand.
+    /// @notice The recipient acknowledges receipt: proof that it was notified, and when.
     function acknowledgeAlert(bytes32 alertHash) external onlyMember {
         AlertRecord storage a = alerts[alertHash];
         if (a.anchoredAt == 0) revert UnknownAlert(alertHash);
@@ -159,7 +159,7 @@ contract FirebreakRegistry {
         emit AlertAcknowledged(alertHash, a.toCompany, uint64(block.timestamp));
     }
 
-    /// @notice Ancre la tête du journal d'audit de l'appelant. Un journal ne raccourcit jamais.
+    /// @notice Anchors the head of the caller's audit log. A log never gets shorter.
     function anchorAudit(bytes32 runId, bytes32 head, uint32 entries) external onlyMember {
         bytes32 companyId = members[msg.sender].companyId;
         AuditAnchor storage last = latestAudit[runId][companyId];

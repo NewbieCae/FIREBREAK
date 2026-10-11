@@ -1,4 +1,4 @@
-// Noyau partagé : accès à l'API, état de l'interface, utilitaires DOM, toasts.
+// Shared core: API access, UI state, DOM helpers, toasts.
 import { icon } from './icons.js';
 import { esc } from './format.js';
 
@@ -8,7 +8,7 @@ export const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// L'interface est servie par l'API (/app/) : même origine. ?api=… pour une autre.
+// The UI is served by the API (/app/): same origin. Use ?api=… for another one.
 const qs = new URLSearchParams(location.search);
 export const API = qs.get('api') ?? (location.protocol === 'file:' ? 'http://localhost:8000' : '');
 
@@ -28,20 +28,20 @@ export async function api(method, path, body, opts = {}) {
     res = await fetch(API + path, init);
   } catch (e) {
     if (e.name === 'AbortError') throw e;
-    throw Object.assign(new Error("Serveur injoignable : l'API FIREBREAK ne répond pas."), { status: 0 });
+    throw Object.assign(new Error('Server unreachable: the FIREBREAK API is not responding.'), { status: 0 });
   }
   const text = await res.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch { /* corps non JSON */ }
+  try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON body */ }
   if (!res.ok) {
-    const detail = data && typeof data.detail === 'string' ? data.detail : `Erreur ${res.status}`;
+    const detail = data && typeof data.detail === 'string' ? data.detail : `Error ${res.status}`;
     throw Object.assign(new Error(detail), { status: res.status });
   }
   return data;
 }
 
-// État de l'interface. `status` est le statut AFFICHÉ (il suit l'animation),
-// `state` la dernière réponse complète de l'API.
+// UI state. `status` is the DISPLAYED status (it follows the animation),
+// `state` is the last full API response.
 export const S = {
   state: null,
   recs: new Map(),
@@ -67,7 +67,7 @@ export function el(tag, cls, html) {
   return e;
 }
 
-// Remplace les marqueurs ICON:nom du HTML statique par les icônes SVG.
+// Replaces the ICON:name markers in the static HTML with SVG icons.
 export function hydrateIcons(root = document.body) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const hits = [];
@@ -85,12 +85,12 @@ export function toast(message, { retry, tone = 'err', ttl = 7000 } = {}) {
   box.setAttribute('role', tone === 'err' ? 'alert' : 'status');
   box.innerHTML = `${icon(tone === 'err' ? 'leak' : 'spark', 's20')}<span>${esc(message)}</span>`;
   if (retry) {
-    const b = el('button', 'btn', `${icon('reset', 's16')}<span>Réessayer</span>`);
+    const b = el('button', 'btn', `${icon('reset', 's16')}<span>Retry</span>`);
     b.onclick = () => { box.remove(); retry(); };
     box.append(b);
   }
   const close = el('button', 'btn ghost icon', icon('close', 's16'));
-  close.setAttribute('aria-label', 'Fermer');
+  close.setAttribute('aria-label', 'Close');
   close.onclick = () => box.remove();
   box.append(close);
   $('#toasts').append(box);
@@ -100,10 +100,10 @@ export function toast(message, { retry, tone = 'err', ttl = 7000 } = {}) {
 export function fail(e, retry) {
   if (e && e.name === 'AbortError') return;
   console.error(e);
-  toast(e?.message || 'Erreur inattendue.', { retry });
+  toast(e?.message || 'Unexpected error.', { retry });
 }
 
-// ---------- Infobulle ----------
+// ---------- Tooltip ----------
 const tipEl = () => $('#tip');
 export function showTip(html, x, y) {
   const t = tipEl();
@@ -118,7 +118,7 @@ export function showTip(html, x, y) {
 }
 export function hideTip() { tipEl().classList.remove('on'); }
 
-// Petit bus d'événements entre modules (évite les imports circulaires).
+// Small event bus between modules (avoids circular imports).
 const bus = new EventTarget();
 export const on = (type, fn) => bus.addEventListener(type, (e) => fn(e.detail));
 export const emit = (type, detail) => bus.dispatchEvent(new CustomEvent(type, { detail }));

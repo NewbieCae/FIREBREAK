@@ -1,6 +1,6 @@
-"""Démo : réécrire un journal d'audit en recalculant tous les hash.
+"""Demo: rewrite an audit journal and recompute every hash.
 
-La vérification locale reste intègre ; seul l'ancrage on-chain révèle la fraude.
+The local verification still passes; only the on-chain anchor reveals the fraud.
 """
 
 from __future__ import annotations
@@ -11,13 +11,13 @@ from ..audit import AuditLog
 
 
 def rewrite_journal(sim, company: str, drop_event: str) -> int:
-    """Supprime la première entrée `drop_event` du journal de `company` et
-    reconstruit une chaîne cohérente. Renvoie l'index supprimé."""
+    """Removes the first `drop_event` entry from `company`'s journal and
+    rebuilds a consistent chain. Returns the removed index."""
     ledger = sim.ledgers[company]
     entries = ledger.audit.entries()
     drop = next((i for i, e in enumerate(entries) if e["event"] == drop_event), None)
     if drop is None:
-        raise ValueError(f"aucune entrée « {drop_event} » dans le journal de {company}")
+        raise ValueError(f"no \"{drop_event}\" entry in {company}'s journal")
     rebuilt = AuditLog(company)
     for i, e in enumerate(entries):
         if i != drop:

@@ -1,4 +1,4 @@
-"""Ce qu'on ancre après chaque action. Lecture seule sur la simulation."""
+"""What gets anchored after each action. Read-only on the simulation."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from .client import AnchorRecord, ChainClient, ChainOp
 from .ids import (ALERT_TYPE, alert_hash, canonical_json, company_id, declaration_hash,
                   hex32, new_run_id)
 
-REPORT_TYPE = 2  # signalement qualité vers l'amont (alertType du contrat)
+REPORT_TYPE = 2  # upstream quality report (the contract's alertType)
 
 
 def _epoch(iso: str) -> int:
@@ -26,7 +26,7 @@ class Anchorer:
         self._anchored_lens: dict[str, int] = {}
 
     def on_new_simulation(self, sim) -> None:
-        """Nouveau run : on ne ré-ancre pas l'historique déjà présent."""
+        """New run: the existing history is not re-anchored."""
         self.run_id = new_run_id()
         self._alerts_seen = len(sim.federation.alerts)
         self._acked = set(range(self._alerts_seen))
@@ -41,15 +41,15 @@ class Anchorer:
             out += self._quality(sim)
             out += self._audits(sim, force=False)
         except Exception:
-            pass  # l'ancrage ne doit jamais casser une action métier
+            pass  # anchoring must never break a business action
         return out
 
     def anchor_all(self, sim) -> list[AnchorRecord]:
-        """Ancre les têtes de tous les journaux (POST /api/chain/anchor)."""
+        """Anchors the heads of all journals (POST /api/chain/anchor)."""
         return self._audits(sim, force=True)
 
     def _alert_id(self, alert) -> bytes:
-        # Le contrat refuse un hash déjà ancré : sans le run_id, rejouer la démo échouerait.
+        # The contract rejects an already anchored hash: without the run_id, replaying the demo would fail.
         return hashlib.sha256(self.run_id + alert_hash(alert)).digest()
 
     def _alerts(self, sim) -> list[AnchorRecord]:
@@ -101,9 +101,9 @@ class Anchorer:
         return hashlib.sha256(self.run_id + h).digest()
 
     def _quality(self, sim) -> list[AnchorRecord]:
-        """Lots suspects (incidents ciblés) et signalements qualité."""
+        """Suspect lots (targeted incidents) and quality reports."""
         out = []
-        received = []  # accusés après tous les ancrages : le destinataire est souvent listé avant
+        received = []  # acknowledgements after all anchors: the recipient is often listed first
         for cid, led in sim.ledgers.items():
             entries = led.audit.entries()
             for e in entries[self._entries_seen.get(cid, 0):]:
@@ -119,8 +119,8 @@ class Anchorer:
                         method = "withdrawIncident"
                     out.append(self.client.submit(ChainOp("incident", cid, method, args, hex32(h))))
                 elif ev in ("inbound_hold", "inbound_rejected", "inbound_accepted"):
-                    # Contrôle d'entrée en stock : mise en attente ou refus = incident
-                    # ciblé sur la réception ; acceptation = levée de l'incident.
+                    # Inbound inspection: hold or rejection = targeted incident on
+                    # the receipt; acceptance = incident withdrawn.
                     h = hashlib.sha256(f"inbound:{cid}|{d['receipt']}".encode()).digest()
                     if ev == "inbound_accepted":
                         args = (self.run_id, company_id(cid), h)
@@ -159,7 +159,7 @@ class Anchorer:
         return out
 
     def verify_onchain(self, sim) -> dict[str, dict | None]:
-        """Pour chaque journal : ancrage lu on-chain comparé au journal local."""
+        """For each journal: the anchor read on-chain compared with the local journal."""
         result: dict[str, dict | None] = {}
         for cid, led in sim.ledgers.items():
             anchor = self.client.read_audit_anchor(self.run_id, cid)

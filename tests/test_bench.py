@@ -1,4 +1,4 @@
-"""Banc d'essai : générateur à graine, vérité terrain et 4 politiques."""
+"""Benchmark: seeded generator, ground truth and 4 policies."""
 
 import dataclasses
 import socket
@@ -33,7 +33,7 @@ def test_world_shape():
     w = generate(3, n_companies=5, n_ops=300)
     assert len(w.records) == 300
     assert len(w.companies) == 5
-    assert w.truth, "la compromission doit contaminer quelque chose"
+    assert w.truth, "the compromise must contaminate something"
     ts = [r.ts for r in w.records]
     assert ts == sorted(ts)
 
@@ -84,8 +84,8 @@ def test_partner_block_scope():
 
 
 def test_firebreak_beats_partner_block_on_collateral():
-    """Sur la moyenne de 20 mondes, Firebreak bloque moins d'activité saine
-    que le blocage des partenaires, sans fuir davantage à p = 0."""
+    """Averaged over 20 worlds, Firebreak blocks less healthy activity than
+    partner blocking, without leaking more at p = 0."""
     fb = [run_policies(generate(s)) for s in SEEDS]
     coll_b = sum(r["B"]["collateral"] for r in fb)
     coll_c = sum(r["C"]["collateral"] for r in fb)
@@ -102,7 +102,7 @@ def test_simulation_is_fresh_each_time():
 
 def test_no_network(monkeypatch):
     def refuse(*args, **kwargs):
-        raise AssertionError("appel réseau interdit dans le banc d'essai")
+        raise AssertionError("network calls are forbidden in the benchmark")
 
     monkeypatch.setattr(socket.socket, "connect", refuse)
     monkeypatch.setattr(socket, "create_connection", refuse)
@@ -111,8 +111,8 @@ def test_no_network(monkeypatch):
 
 
 def test_no_llm_module_loaded():
-    """Le banc n'importe ni le module IA ni boto3 (process isolé, car
-    d'autres tests chargent firebreak.ai)."""
+    """The benchmark imports neither the AI module nor boto3 (isolated
+    process, since other tests load firebreak.ai)."""
     code = (
         "import sys\n"
         "from firebreak.synth import generate, run_policies\n"
@@ -137,13 +137,13 @@ def test_bench_script_writes_outputs(tmp_path):
     assert "Firebreak" in md and "±" in md
 
 
-# -- v2 : tirage, actions irréversibles, politique D, rapport ---------------
+# -- v2: draw, irreversible actions, policy D, report ---------------------
 
 
 def test_every_company_can_be_compromised_including_the_last():
     drawn = Counter(generate(s).compromised for s in range(200))
     assert set(drawn) == {f"e{i}" for i in range(5)}
-    assert drawn["e4"] > 0, "le client final (sans client) doit aussi être tiré"
+    assert drawn["e4"] > 0, "the final customer (who has no customers) must also be drawn"
 
 
 def test_external_receptions_are_legit_and_untokened():
@@ -176,20 +176,20 @@ def test_cautious_blocks_superset_of_firebreak(p):
 
 
 class _EngineViewOnly:
-    """Ce que voit C, et rien d'autre : toute lecture de la vérité terrain,
-    des dépendances cachées ou des vrais records fait échouer le test."""
+    """What C sees, and nothing else: any read of the ground truth, the
+    hidden dependencies or the true records fails the test."""
 
     def __init__(self, world):
         self._world = world
         self.compromised = world.compromised
         self.since = world.since
-        self.partners = world.partners  # liens contractuels connus (pas lus par D)
+        self.partners = world.partners  # known contractual links (not read by D)
 
     def simulation(self):
         return self._world.simulation()
 
     def __getattr__(self, name):
-        raise AssertionError(f"D a lu world.{name} (interdit : vérité terrain)")
+        raise AssertionError(f"D read world.{name} (forbidden: ground truth)")
 
 
 @pytest.mark.parametrize("p", [0.0, 0.3])
@@ -200,9 +200,9 @@ def test_cautious_never_reads_ground_truth(p):
 
 
 def test_cautious_depends_only_on_recorded_view():
-    """Deux mondes au même état moteur mais aux vérités différentes : D donne
-    le même résultat. On « enregistre » le monde caché comme vrai : entrées
-    cachées supprimées, envois cachés devenus des réceptions d'hors fédération."""
+    """Two worlds with the same engine state but different truths: D gives
+    the same result. The hidden world is "recorded" as true: hidden inputs
+    removed, hidden sends turned into out-of-federation receptions."""
     w = generate(4, p_hidden=0.3)
     assert w.hidden
     flat = []
@@ -224,7 +224,7 @@ def test_cautious_depends_only_on_recorded_view():
 
 
 def test_cautious_recovers_hidden_sends():
-    """À p > 0, D rattrape des fuites de C (en moyenne sur 20 mondes)."""
+    """At p > 0, D catches leaks missed by C (averaged over 20 worlds)."""
     leaks_c = leaks_d = 0
     for seed in SEEDS:
         r = run_policies(generate(seed, p_hidden=0.3))
@@ -254,13 +254,13 @@ def test_bench_deterministic_and_reports_limits(tmp_path):
     header = csv_text.splitlines()[0].split(",")
     assert {"leaks", "leaked_gates", "contaminated_gates", "fp_origin_rule"} <= set(header)
     assert {line.split(",")[2] for line in csv_text.splitlines()[1:]} == {"A", "B", "C", "D"}
-    for needle in ("## Limites", "Règle d'origine", "Dépendances manquantes",
-                   "provenance manquante", "borne haute", "5e centile",
-                   "Ventilation par entreprise compromise", "au moins une fuite"):
+    for needle in ("## Limitations", "origin rule", "Missing dependencies",
+                   "missing provenance", "upper bound", "5th percentile",
+                   "Breakdown by compromised company", "at least one leak"):
         assert needle in md, needle
 
 
-# -- sensibilité : taille de la chaîne et bruit hors fédération --------------
+# -- sensitivity: chain size and out-of-federation noise --------------------
 
 
 def test_default_noise_keeps_main_worlds_unchanged():
@@ -301,17 +301,17 @@ def test_sensitivity_deterministic_separate_and_reported(tmp_path):
     a, b = _bench(tmp_path, "a"), _bench(tmp_path, "b")
     assert a == b
     main_csv, md, sens_csv = a
-    assert "sweep" not in main_csv.splitlines()[0], "results.csv reste lu par /api/compare"
+    assert "sweep" not in main_csv.splitlines()[0], "results.csv is still read by /api/compare"
     header = sens_csv.splitlines()[0].split(",")
     assert header[:5] == ["sweep", "n_companies", "n_ops", "p_external", "mean_clients"]
     sweeps = {(line.split(",")[0], line.split(",")[1], line.split(",")[2])
               for line in sens_csv.splitlines()[1:]}
-    assert ("taille", "12", "720") in sweeps and ("bruit", "5", "300") in sweeps
-    for needle in ("## Sensibilité", "### Taille de la chaîne",
-                   "### Bruit des réceptions hors fédération",
-                   "### Limites et conclusions de la sensibilité",
-                   "se densifient avec la taille", "Prix du signal",
-                   "borne haute", "mises à l'épreuve"):
+    assert ("size", "12", "720") in sweeps and ("noise", "5", "300") in sweeps
+    for needle in ("## Sensitivity", "### Chain size",
+                   "### Out-of-federation reception noise",
+                   "### Sensitivity: limitations and conclusions",
+                   "get denser with size", "Cost of the",
+                   "upper bound", "put to the test"):
         assert needle in md, needle
 
 
@@ -319,4 +319,4 @@ def test_sensitivity_does_not_change_main_results(tmp_path):
     with_sens = _bench(tmp_path, "w")
     without = _bench(tmp_path, "n", "--no-sensitivity")
     assert with_sens[0] == without[0]
-    assert without[2] is None and "## Sensibilité" not in without[1]
+    assert without[2] is None and "## Sensitivity" not in without[1]

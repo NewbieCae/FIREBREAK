@@ -1,64 +1,65 @@
-# Contexte du projet finswag
+# finswag project context
 
-## Protocole d'équipe — À LIRE PAR TOUT AGENT QUI OUVRE CE DÉPÔT
+## Team protocol — EVERY AGENT THAT OPENS THIS REPO MUST READ THIS
 
-Quatre personnes travaillent en même temps sur ce dépôt, chacune avec son agent (Claude Code, Devin, Codex…) : **Yann, Céline, Maria, Mika**. Tout le monde travaille directement sur `main`. La communication passe par trois fichiers versionnés :
+Four people work on this repo at the same time, each with their own agent (Claude Code, Devin, Codex…): **Yann, Céline, Maria, Mika**. Everyone works directly on `main`. Communication goes through versioned files:
 
-| Fichier | Rôle | Qui l'écrit |
+| File | Role | Who writes it |
 |---|---|---|
-| `goal.md` | Objectif commun, avancement du plan, prochaines actions, décisions, blocages | Tout le monde |
-| `sessions/<membre>.md` | Ce que chaque membre a fait, fait maintenant, fera ensuite, et ce dont il a besoin | Uniquement l'agent de ce membre |
-| `docs/plan.md` | Plan de build en 6 étapes et handoffs | Mis à jour quand le plan change |
-| `messages.md` | Messagerie de l'équipe : on se parle à travers le dépôt | Tout le monde, via `scripts/messages.py send` |
+| `goal.md` | Shared goal, plan progress, next actions, decisions, blockers | Everyone |
+| `sessions/<member>.md` | What each member has done, is doing now, will do next, and what they need | Only that member's agent |
+| `docs/plan.md` | 6-step build plan and handoffs | Updated when the plan changes |
+| `messages.md` | Team messaging: we talk to each other through the repo | Everyone, via `scripts/messages.py send` |
 
-### Qui suis-je ?
+### Who am I?
 
-Le membre est identifié par `scripts/team-sync.sh whoami`. Il regarde, dans cet ordre : la variable `FINSWAG_MEMBER`, puis `git config finswag.member`, puis l'e-mail et le nom Git. S'il ne trouve personne, **demande à l'utilisateur son prénom**, puis lance `git config finswag.member <yann|celine|maria|mika>`.
+The member is identified by `scripts/team-sync.sh whoami`. It checks, in this order: the `FINSWAG_MEMBER` variable, then `git config finswag.member`, then the Git e-mail and name. If it finds no one, **ask the user for their first name**, then run `git config finswag.member <yann|celine|maria|mika>`.
 
-### À chaque itération (obligatoire)
+### Every iteration (mandatory)
 
-1. **Au début** : se synchroniser (`git fetch && git rebase --autostash @{u}`), lire `goal.md` et sa propre session. Regarder les sessions des autres avant de toucher une zone partagée.
-2. **Pendant** : avant de prendre une tâche de `goal.md`, mettre son prénom dessus (`- [ ] … (Maria)`) et pousser tout de suite, pour qu'il n'y ait pas deux personnes sur la même tâche.
-3. **À la fin de chaque vraie itération, avant de rendre la main** (règle de Yann du 11/10 : **pull au début, push à la fin, à chaque fois, pour tout le monde**) :
-   - mettre à jour `sessions/<membre>.md` : « Où j'en suis », « En cours », « Prochaine étape », « Besoin des autres », plus une ligne datée en haut du « Journal » ;
-   - mettre à jour `goal.md` : cocher ce qui est fini, ajuster le tableau d'avancement, ajouter les décisions et les blocages ;
-   - commit puis push sur `main` (`scripts/team-sync.sh sync` le fait, avec un garde-fou contre les secrets).
-4. **Ne jamais modifier la session d'un autre membre.** Dans `goal.md`, ne changer que les lignes concernées. En cas de conflit Git, garder les deux contributions.
+1. **At the start**: sync (`git fetch && git rebase --autostash @{u}`), read `goal.md` and your own session. Look at the other sessions before touching a shared area.
+2. **During**: before taking a task from `goal.md`, put your first name on it (`- [ ] … (Maria)`) and push right away, so that two people never work on the same task.
+3. **At the end of every real iteration, before handing back** (Yann's rule from 11/10: **pull at the start, push at the end, every time, for everyone**):
+   - update `sessions/<member>.md`: "Where I am", "In progress", "Next step", "Needs from others", plus a dated line at the top of the "Log";
+   - update `goal.md`: tick what is done, adjust the progress table, add decisions and blockers;
+   - commit then push to `main` (`scripts/team-sync.sh sync` does it, with a guard against secrets).
+4. **Never edit another member's session.** In `goal.md`, only change the lines concerned. On a Git conflict, keep both contributions.
 
-### Le hook automatique
+### The automatic hook
 
-`.claude/settings.json` branche `scripts/team-sync.sh` sur Claude Code et sur Devin CLI. Devin lit aussi les hooks de `.claude/`.
+`.claude/settings.json` wires `scripts/team-sync.sh` into Claude Code and Devin CLI. Devin also reads the hooks in `.claude/`.
 
-- **Début de session et chaque message** : pull, et rappel du membre et du protocole.
-- **Fin de tour** : si du code a changé sans que `sessions/<membre>.md` et `goal.md` aient été mis à jour, le hook demande à l'agent de les mettre à jour (une seule fois). Ensuite il commite, se rebase sur `origin/main` et pousse. S'il trouve un secret, il ne commite pas. En cas de conflit avec un coéquipier, il ne pousse pas et l'indique.
-- **Codex et les autres agents sans hooks** appliquent ce protocole à la main et terminent chaque itération par `bash scripts/team-sync.sh sync`.
+- **Session start and every message**: pull, plus a reminder of the member and the protocol.
+- **End of turn**: if code changed without `sessions/<member>.md` and `goal.md` being updated, the hook asks the agent to update them (only once). Then it commits, rebases onto `origin/main` and pushes. If it finds a secret, it does not commit. On a conflict with a teammate, it does not push and says so.
+- **Codex and other agents without hooks** apply this protocol by hand and end each iteration with `bash scripts/team-sync.sh sync`.
 
-### Règles communes
+### Common rules
 
-- Lire `goal.md`, `docs/firebreak.md` et `docs/plan.md` avant de coder. Le contrat de l'API est dans `docs/api.md` : on ne casse pas un endpoint existant.
-- `uv run pytest -q` doit rester vert avant chaque push.
-- Aucun secret dans le dépôt : les clés vont dans `.env.local`, qui est ignoré.
+- Read `goal.md`, `docs/firebreak.md` and `docs/plan.md` before coding. The API contract is in `docs/api.md`: do not break an existing endpoint.
+- `uv run pytest -q` must stay green before every push.
+- No secrets in the repo: keys go in `.env.local`, which is ignored.
+- User-visible texts and docs are in English (Mika's decision on 11/10: the whole repo was translated).
 
-### Messagerie — `messages.md`, on se parle à travers le dépôt
+### Messaging — `messages.md`, we talk through the repo
 
-- **Lire** : à chaque tour, le hook `team-sync.sh start` livre à l'agent les messages non lus adressés au membre (`tous` ou son prénom). L'agent les **résume en tête de réponse**, avant tout le reste : « De Mika (03:57) : » puis 1 à 3 phrases en français courant sur ce qui change et ce qu'on attend de l'utilisateur. Pas de citation brute ni d'inventaire technique. Un terme technique, un nom de fichier ou de route est permis s'il sert le sens et tient dans une phrase construite. Sans hook (Codex, humain) : `python3 scripts/messages.py deliver` en début d'itération.
-- **Écrire** : quand l'utilisateur dit « envoie un message à Maria », « dis à tous que… », « demande à Yann… », l'agent lance `python3 scripts/messages.py send <tous|yann|celine|maria|mika> "texte"`. Le script commite et pousse tout seul. Plusieurs destinataires : `yann,mika`. **Le message est court et lisible par un humain** : des phrases simples, l'essentiel seulement (ce qui est fait, ce qu'on attend de l'autre). Les termes techniques sont permis s'ils restent synthétiques et pris dans une phrase construite. Ce qui est interdit, c'est l'inventaire : listes de chemins, de routes ou d'identifiants. Les détails vont dans `docs/`, au besoin le message dit juste où regarder.
-- **Jamais d'édition d'un message existant.** Le fichier est en `merge=union` (`.gitattributes`) : deux personnes qui ajoutent en même temps ne créent pas de conflit.
-- **Chez Yann** un cron (`python3 scripts/messages.py poll`) vérifie toutes les minutes et notifie sur le bureau. Chacun peut installer le même : `crontab -e` puis `* * * * * cd <dépôt> && python3 scripts/messages.py poll`.
+- **Read**: on every turn, the `team-sync.sh start` hook hands the agent the unread messages addressed to the member (`tous` or their first name). The agent **summarises them at the top of its reply**, before anything else: "From Mika (03:57):" then 1 to 3 sentences in plain English about what changes and what is expected of the user. No raw quotes and no technical inventory. A technical term, file name or route is allowed if it serves the meaning and fits in a proper sentence. Without a hook (Codex, human): `python3 scripts/messages.py deliver` at the start of the iteration.
+- **Write**: when the user says "send a message to Maria", "tell everyone that…", "ask Yann…", the agent runs `python3 scripts/messages.py send <tous|yann|celine|maria|mika> "text"`. The script commits and pushes on its own. Several recipients: `yann,mika`. **The message is short and readable by a human**: simple sentences, only the essentials (what is done, what is expected of the other person). Technical terms are allowed if they stay concise and are part of a proper sentence. What is forbidden is an inventory: lists of paths, routes or identifiers. Details go in `docs/`; if needed, the message just says where to look.
+- **Never edit an existing message.** The file is `merge=union` (`.gitattributes`): two people appending at the same time do not create a conflict.
+- **On Yann's machine** a cron job (`python3 scripts/messages.py poll`) checks every minute and sends a desktop notification. Anyone can install the same: `crontab -e` then `* * * * * cd <repo> && python3 scripts/messages.py poll`.
 
-### Conflits Git — pas de branches, l'agent arbitre
+### Git conflicts — no branches, the agent arbitrates
 
-Décision du 11/10 : tout le monde pousse sur `main`, pas de branches ni de pull requests. Les conflits sont résolus par l'agent de celui qui pousse en second.
+Decision of 11/10: everyone pushes to `main`, no branches or pull requests. Conflicts are resolved by the agent of whoever pushes second.
 
-- **Éviter le conflit plutôt que le résoudre.** Chacun travaille dans sa zone (moteur dans `src/firebreak/`, interface dans son dossier). Deux personnes sur le même fichier en même temps, c'est là que ça casse. Pousser souvent, par petits commits : un conflit de 3 lignes se règle seul, un conflit de 200 lignes après 2 h sans pousser, non.
-- **Fichiers partagés (`goal.md`, `docs/`)** : on ajoute des lignes, on ne réécrit pas. En cas de conflit, on garde les deux contributions.
-- **Quand le hook dit « conflit, pas poussé »** : demander à son agent de faire `git fetch && git rebase @{u}`, résoudre, lancer `uv run pytest -q`, puis pousser. Tests verts = fusion bonne. Tests rouges = fusion ratée, pas forcément le code.
-- **L'agent ne tranche pas seul** quand ce n'est pas un conflit de texte mais un choix produit : deux versions d'une même fonction, ou un changement d'endpoint dans `docs/api.md` que l'interface utilise. Il pose la question, on décide à deux.
-- **Jamais de `git push --force`** sur `main`. C'est la seule manière de perdre le travail d'un autre.
-- Le root reste propre : chaque fichier va dans le bon dossier (`docs/`, `assets/`, `scripts/`, `src/`, `tests/`, `web/`).
+- **Avoid conflicts rather than resolve them.** Everyone works in their own area (engine in `src/firebreak/`, interface in its own folder). Two people on the same file at the same time is where things break. Push often, in small commits: a 3-line conflict resolves itself, a 200-line conflict after 2 hours without pushing does not.
+- **Shared files (`goal.md`, `docs/`)**: add lines, do not rewrite. On a conflict, keep both contributions.
+- **When the hook says "conflict, not pushed"**: ask your agent to run `git fetch && git rebase @{u}`, resolve, run `uv run pytest -q`, then push. Green tests = good merge. Red tests = failed merge, not necessarily the code.
+- **The agent does not decide alone** when it is not a text conflict but a product choice: two versions of the same function, or an endpoint change in `docs/api.md` that the interface uses. It asks the question, and the two people decide together.
+- **Never `git push --force`** on `main`. It is the one way to lose someone else's work.
+- The root stays clean: every file goes in the right folder (`docs/`, `assets/`, `scripts/`, `src/`, `tests/`, `web/`).
 
-## Notion — état actuel
+## Notion — current state
 
-Une page Notion « finswag » sert au cadrage et à la coordination (privée). Les invitations des coéquipiers et les coordonnées de contact ne sont **pas** conservées dans ce dépôt : elles restent dans Notion ou dans la boîte de l'équipe. Réutiliser la page existante ; ne pas en créer une nouvelle.
+A "finswag" Notion page is used for scoping and coordination (private). Teammate invitations and contact details are **not** kept in this repo: they stay in Notion or in the team mailbox. Reuse the existing page; do not create a new one.
 
-Le brief des organisateurs est résumé dans `docs/brief.md`. Les pistes A/B/C/D du brief initial sont des propositions, pas des décisions ; le produit retenu est FIREBREAK (voir `goal.md`). Le dépôt GitHub est privé.
+The organisers' brief is summarised in `docs/brief.md`. Tracks A/B/C/D from the initial brief are proposals, not decisions; the chosen product is FIREBREAK (see `goal.md`). The GitHub repo is private.

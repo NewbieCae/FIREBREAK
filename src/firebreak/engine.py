@@ -1,17 +1,17 @@
-"""Moteur de contamination (taint) d'un registre Firebreak.
+"""Taint engine for a Firebreak ledger.
 
-Règles :
-- seeds = records dont l'origine est une entreprise déclarée compromise
-  (et ts >= since), ou dont le `token` figure dans une alerte vérifiée
-  (et pas encore levée par une alerte « release » vérifiée), ou déclarés
-  suspects un par un (lot défectueux : on isole ce lot, pas le fournisseur) ;
-- une seule déclaration par source : on garde l'heure la plus ancienne ;
-- propagation BFS le long des dépendances (input -> record dérivé) ;
-- un record `verified` ou `released` n'est jamais contaminé et stoppe
-  la propagation à travers lui, sauf s'il est lui-même déclaré suspect
-  (un défaut découvert après coup prime sur un contrôle passé) ;
-- chaque record contaminé garde `taint_path` (chemin seed -> lui-même),
-  qui sert de preuve explicable.
+Rules:
+- seeds = records whose origin is a company declared compromised
+  (and ts >= since), or whose `token` appears in a verified alert
+  (and not yet lifted by a verified "release" alert), or records declared
+  suspect one by one (defective lot: isolate that lot, not the supplier);
+- one declaration per source: the earliest time wins;
+- BFS propagation along dependencies (input -> derived record);
+- a `verified` or `released` record is never tainted and stops
+  propagation through it, unless it is itself declared suspect
+  (a defect found afterwards overrides a past check);
+- each tainted record keeps `taint_path` (path seed -> itself),
+  which serves as explainable evidence.
 """
 
 from __future__ import annotations
@@ -38,10 +38,10 @@ class Declaration:
 
 
 class Ledger:
-    """Registre d'une entreprise : ses records + le graphe de dépendances.
+    """A company's ledger: its records + the dependency graph.
 
-    Un Ledger ne lit jamais les records d'un autre Ledger : l'information
-    inter-entreprises n'arrive que par `register_alert_tokens`.
+    A Ledger never reads another Ledger's records: cross-company
+    information only arrives through `register_alert_tokens`.
     """
 
     def __init__(self, company_id: str) -> None:
@@ -51,16 +51,16 @@ class Ledger:
         self.declarations: list[Declaration] = []
         self.alert_tokens: set[str] = set()
         self.seed_rules: dict[str, str] = {}
-        self.suspects: dict[str, str] = {}  # record_id -> motif (lot déclaré suspect)
+        self.suspects: dict[str, str] = {}  # record_id -> reason (lot declared suspect)
         self.audit = AuditLog(company_id)
 
     def add(self, record: Record) -> Record:
         if record.company != self.company_id:
             raise ValueError(
-                f"record {record.id} appartient à {record.company}, pas à {self.company_id}"
+                f"record {record.id} belongs to {record.company}, not to {self.company_id}"
             )
         if record.id in self.records:
-            raise ValueError(f"record déjà présent: {record.id}")
+            raise ValueError(f"record already present: {record.id}")
         self.records[record.id] = record
         self.graph.add_node(record.id)
         for parent in record.inputs:
@@ -71,8 +71,8 @@ class Ledger:
         return next((d for d in self.declarations if d.source == source), None)
 
     def declare_compromised(self, source: str, since: datetime) -> Declaration:
-        """Une déclaration par source ; à heure différente, la plus ancienne
-        l'emporte. Renvoie la déclaration en vigueur."""
+        """One declaration per source; if times differ, the earliest wins.
+        Returns the declaration in force."""
         decl = self.declaration(source)
         if decl is None:
             decl = Declaration(source=source, since=since)
@@ -94,22 +94,22 @@ class Ledger:
         self.alert_tokens.difference_update(tokens)
 
     def mark_suspect(self, record_ids: list[str], reason: str) -> None:
-        """Déclare suspects des records précis (un lot), sans toucher au reste
-        de ce que leur émetteur a envoyé."""
+        """Declares specific records (a lot) suspect, without touching the rest
+        of what their sender sent."""
         for rid in record_ids:
             if rid not in self.records:
                 raise KeyError(rid)
         for rid in record_ids:
             self.suspects[rid] = reason
             if self.records[rid].status == "released":
-                self.records[rid].status = "ok"  # un défaut découvert après coup rouvre le dossier
+                self.records[rid].status = "ok"  # a defect found afterwards reopens the case
 
     def clear_suspect(self, record_ids: list[str]) -> None:
         for rid in record_ids:
             self.suspects.pop(rid, None)
 
     def _seeds(self) -> dict[str, str]:
-        """Seeds -> règle qui les a déclenchés."""
+        """Seeds -> rule that triggered them."""
         seeds: dict[str, str] = {}
         for r in self.records.values():
             if r.id in self.suspects:
@@ -125,10 +125,10 @@ class Ledger:
         return seeds
 
     def recompute(self) -> tuple[list[str], list[str]]:
-        """Recalcule la contamination depuis zéro. Déterministe et idempotent.
+        """Recomputes taint from scratch. Deterministic and idempotent.
 
-        Renvoie (nouvellement en quarantaine, sortis de quarantaine sans
-        remédiation), dans l'ordre d'insertion des records."""
+        Returns (newly quarantined, cleared from quarantine without
+        remediation), in record insertion order."""
         before = {rid: r.status for rid, r in self.records.items()}
         for r in self.records.values():
             r.taint_path = None
@@ -140,7 +140,7 @@ class Ledger:
         parent: dict[str, str | None] = {}
         queue: deque[str] = deque()
 
-        for rid in self.records:  # ordre d'insertion : déterministe
+        for rid in self.records:  # insertion order: deterministic
             if rid in seeds:
                 parent.setdefault(rid, None)
                 queue.append(rid)
@@ -151,9 +151,9 @@ class Ledger:
             if rid in tainted:
                 continue
             record = self.records[rid]
-            explicit = rid in self.suspects  # déclaration humaine : prime sur un contrôle passé
+            explicit = rid in self.suspects  # human declaration: overrides a past check
             if not explicit and (record.verified or record.status == "released"):
-                continue  # jamais contaminé, stoppe la propagation
+                continue  # never tainted, stops propagation
             tainted.add(rid)
             p = parent.get(rid)
             if p is None:
@@ -175,7 +175,7 @@ class Ledger:
         return entered, cleared
 
     def quarantine_rule(self, record_id: str) -> str:
-        """Règle déterministe qui a mis ce record en quarantaine."""
+        """Deterministic rule that quarantined this record."""
         return self.seed_rules.get(record_id, RULE_DEPENDENCY)
 
     def counters(self) -> dict:

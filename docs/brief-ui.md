@@ -1,189 +1,189 @@
-# FIREBREAK — Brief de l'interface finale
+# FIREBREAK — Final interface brief
 
-> Pour qui construit l'interface. Le moteur et l'API sont livrés (`docs/api.md`). Ce brief dit **ce que l'on veut voir, ressentir et manier**. Il ne dit pas quel framework utiliser : choisissez ce qui vous rend rapide. Rendu dimanche 12 h, gel à 10 h.
+> For whoever builds the interface. The engine and the API are delivered (`docs/api.md`). This brief says **what we want to see, feel and handle**. It does not say which framework to use: pick whatever makes you fast. Due Sunday 12:00, freeze at 10:00.
 >
-> Lire avant : `docs/firebreak.md` (l'idée), `docs/api.md` (le contrat), `web/index.html` (le dashboard de debug, à ne pas imiter, mais il montre chaque appel qui fonctionne).
+> Read first: `docs/firebreak.md` (the idea), `docs/api.md` (the contract), `web/index.html` (the debug dashboard: not to be imitated, but it shows every call that works).
 
-## 1. L'intention en une phrase
+## 1. The intent in one sentence
 
-Une **salle de contrôle d'incident** pour une chaîne d'approvisionnement : belle comme un produit de 2026, lisible comme un cockpit, et si simple qu'un juré prend la souris et comprend seul. On concentre une vraie complexité (4 entreprises, 193 opérations, un graphe, des signatures) dans une interface qui respire.
+An **incident control room** for a supply chain: beautiful like a 2026 product, readable like a cockpit, and so simple that a judge can grab the mouse and understand it alone. We pack real complexity (4 companies, 193 operations, a graph, signatures) into an interface that breathes.
 
-Trois adjectifs à vérifier sur chaque écran : **tech, calme, prouvable.**
+Three adjectives to check on every screen: **tech, calm, provable.**
 
-## 2. Ce que le jury doit ressentir, dans l'ordre
+## 2. What the jury should feel, in order
 
-1. **Ça vit.** L'activité coule entre les entreprises. Rien n'est statique.
-2. **Ça frappe.** Un clic, et la contamination se propage sous les yeux. Rouge précis, pas rouge partout.
-3. **Ça tient.** Le reste continue de couler. Les gros chiffres verts ne bougent presque pas.
-4. **Ça prouve.** Un clic sur une opération bloquée montre le chemin exact et l'explication.
-5. **Ça guérit.** Une remédiation, et la chaîne repasse au vert en cascade, jusqu'aux partenaires.
+1. **It's alive.** Activity flows between the companies. Nothing is static.
+2. **It strikes.** One click, and the contamination spreads before your eyes. Precise red, not red everywhere.
+3. **It holds.** Everything else keeps flowing. The big green numbers barely move.
+4. **It proves.** A click on a blocked operation shows the exact path and the explanation.
+5. **It heals.** One remediation, and the chain turns green again in a cascade, all the way to the partners.
 
-Si un écran ne sert pas une de ces cinq émotions, on le coupe.
+If a screen does not serve one of these five emotions, cut it.
 
-## 3. Direction artistique
+## 3. Art direction
 
-### Ambiance
+### Mood
 
-Centre de supervision la nuit. Fond sombre profond, pas noir pur : un bleu nuit très désaturé avec, en arrière-plan, un **dégradé fluide et lent** (bleu, cyan, un soupçon de violet) qui bouge à peine, comme une aurore. C'est la seule couleur « libre » de l'interface : tout le reste est discipliné.
+A monitoring center at night. Deep dark background, not pure black: a very desaturated midnight blue with, in the background, a **slow, fluid gradient** (blue, cyan, a hint of violet) that barely moves, like an aurora. It is the only "free" color in the interface: everything else is disciplined.
 
-Par-dessus, des **panneaux en verre** : fond translucide, flou d'arrière-plan fort, bordure fine à 1 px blanche à 10 ou 15 % d'opacité, un reflet très léger en haut du panneau. Le verre n'est pas de la déco : il hiérarchise. Un panneau de verre = une surface que l'on peut manier. Le fond = le monde qui vit.
+On top, **glass panels**: translucent background, strong backdrop blur, thin 1 px white border at 10 to 15% opacity, a very faint highlight at the top of the panel. The glass is not decoration: it sets the hierarchy. A glass panel = a surface you can interact with. The background = the living world.
 
-Règle : **le verre ne porte jamais de texte long**. Le texte long va sur une surface plus opaque à l'intérieur du panneau, sinon ce n'est pas lisible. La lisibilité gagne toujours contre l'effet.
+Rule: **glass never carries long text**. Long text goes on a more opaque surface inside the panel, otherwise it is unreadable. Readability always beats the effect.
 
-### Couleurs
+### Colors
 
-| Rôle | Usage | Note |
+| Role | Usage | Note |
 |---|---|---|
-| Fond | bleu nuit désaturé, dégradé animé derrière | jamais de noir pur |
-| Verre | blanc à 6–10 % + flou 20–40 px + bordure blanc 12 % | une seule recette, partout |
-| Texte principal | blanc cassé 92 % | |
-| Texte secondaire | blanc 55 % | |
-| **Sain / continue** | vert menthe, lumineux mais pas fluo | la couleur qui rassure |
-| **Contaminé / bloqué** | rouge corail chaud | il doit se voir de loin, mais ne jamais occuper plus de 15 % de l'écran |
-| **En reprise / libéré** | ambre | transitoire |
-| Accent | cyan électrique | liens, focus, signatures vérifiées, boutons primaires |
+| Background | desaturated midnight blue, animated gradient behind | never pure black |
+| Glass | white at 6–10% + 20–40 px blur + 12% white border | one recipe, everywhere |
+| Primary text | 92% off-white | |
+| Secondary text | 55% white | |
+| **Healthy / flowing** | mint green, bright but not neon | the reassuring color |
+| **Tainted / blocked** | warm coral red | must be visible from afar, but never take more than 15% of the screen |
+| **Recovering / released** | amber | transient |
+| Accent | electric cyan | links, focus, verified signatures, primary buttons |
 
-Quatre couleurs sémantiques, pas une de plus. Jamais de couleur pour « faire joli » : chaque couleur signifie quelque chose, et toujours la même chose. Contraste texte/fond ≥ 4,5:1 partout, y compris sur le verre : testez avec un vérificateur de contraste.
+Four semantic colors, not one more. Never a color "to look nice": each color means something, and always the same thing. Text/background contrast ≥ 4.5:1 everywhere, including on glass: test with a contrast checker.
 
-### Typographie
+### Typography
 
-- **Titres et chiffres** : une grotesque géométrique nette (Space Grotesk, Geist, Inter Display ou équivalent). Les gros chiffres en **tabular-nums** pour qu'ils ne sautent pas quand ils s'incrémentent.
-- **Texte courant** : Inter ou Geist, 15–16 px, interligne 1,5.
-- **Identifiants, jetons, hash, horodatages** : une monospace fine (JetBrains Mono, Geist Mono). Un jeton tronqué `7d4b…5efba` en mono, c'est un signal « crypto, vérifié ».
-- Peu de graisses : regular, medium, semibold. Pas de light sur fond sombre.
-- Tout ce qui est visible est **en français**, sans anglicisme inutile. Les identifiants techniques restent tels quels.
+- **Headings and numbers**: a crisp geometric grotesque (Space Grotesk, Geist, Inter Display or equivalent). Big numbers in **tabular-nums** so they don't jump when they increment.
+- **Body text**: Inter or Geist, 15–16 px, line height 1.5.
+- **Identifiers, tokens, hashes, timestamps**: a thin monospace (JetBrains Mono, Geist Mono). A truncated token `7d4b…5efba` in mono signals "crypto, verified".
+- Few weights: regular, medium, semibold. No light on a dark background.
+- Everything visible is **in English** (Mika's decision on 11/10, whole repo translated). Technical identifiers stay as they are.
 
-Reporter les choix finaux dans `design.md` (c'est la source de vérité du design, elle est vide aujourd'hui).
+Record the final choices in `design.md` (it is the design source of truth; it is empty today).
 
-### Logo et nom
+### Logo and name
 
-- FIREBREAK, « pare-feu » au sens forestier : la bande que l'on coupe pour que l'incendie s'arrête. Le logo doit raconter ça : un trait net qui **interrompt** une propagation. Pistes : une ligne de points liés dont une est coupée par une barre verticale ; ou un feu stylisé stoppé par une ligne. Monochrome d'abord (blanc), déclinaison cyan et rouge.
-- Le logo a droit à **une** animation : à l'ouverture, la propagation s'anime puis la barre tombe et l'arrête. Deux secondes, une fois, jamais en boucle.
-- Nom en capitales espacées à côté du logo dans l'en-tête. Sous-titre discret : « Pare-feu des supply chains ».
+- FIREBREAK, in the forestry sense: the strip you clear so the fire stops. The logo must tell that story: a clean stroke that **interrupts** a propagation. Ideas: a line of linked dots with one link cut by a vertical bar; or a stylized fire stopped by a line. Monochrome first (white), then cyan and red variants.
+- The logo gets **one** animation: on load, the propagation animates, then the bar drops and stops it. Two seconds, once, never looping.
+- Name in spaced capitals next to the logo in the header. Discreet subtitle: "Supply chain firewall".
 
-### Icônes
+### Icons
 
-Un **jeu d'icônes custom, cohérent**, 24 px, trait 1,5 px, bouts arrondis, mono-trait. Pas de pack mélangé. Les icônes nécessaires :
+A **custom, consistent icon set**, 24 px, 1.5 px stroke, rounded caps, single stroke. No mixed packs. Icons needed:
 
-| Icône | Sens |
+| Icon | Meaning |
 |---|---|
-| commande, avis d'expédition, certificat, facture, paiement, lot, expédition, réception | les 8 `kind` d'un record |
-| fournisseur, fabricant, distributeur, client | les 4 entreprises (usine, entrepôt, camion, boutique) |
-| gate | action irréversible : un cadenas ou une porte |
-| vérifié | un sceau ou une coche dans un bouclier |
-| alerte signée | une enveloppe avec un sceau ; variante barrée pour « signature rejetée » |
-| contamination | une goutte ou une onde |
-| quarantaine | un cercle en pointillés |
-| levée / reprise | une flèche de retour |
-| fausse alerte | une cloche barrée |
-| journal d'audit | une chaîne (les événements sont chaînés par hash) |
-| avec / sans | deux rectangles côte à côte |
+| order, shipping notice, certificate, invoice, payment, lot, shipment, receipt | the 8 `kind`s of a record |
+| supplier, manufacturer, distributor, customer | the 4 companies (factory, warehouse, truck, shop) |
+| gate | irreversible action: a padlock or a door |
+| verified | a seal or a check mark in a shield |
+| signed alert | an envelope with a seal; crossed-out variant for "signature rejected" |
+| contamination | a drop or a wave |
+| quarantine | a dotted circle |
+| release / recovery | a return arrow |
+| false alarm | a crossed-out bell |
+| audit log | a chain (events are hash-chained) |
+| with / without | two rectangles side by side |
 
-Même trait, même rayon, même grille : une icône seule doit sembler sortir de la même main que les autres.
+Same stroke, same radius, same grid: any single icon should look like it came from the same hand as the others.
 
-### Mouvement
+### Motion
 
-Le mouvement explique, il ne décore pas. Trois registres :
+Motion explains, it does not decorate. Three registers:
 
-1. **Ambiance** : le dégradé de fond et les particules de flux. Lents, continus, jamais au premier plan.
-2. **Causalité** : la propagation, les alertes, les cascades de levée. Rythmés par le flux SSE (`/api/events?speed=…`), 0,3 à 0,8 s par étape. On doit pouvoir **suivre du regard** d'où vient le rouge.
-3. **Micro-interactions** : hover, focus, apparition des panneaux. 150–250 ms, easing en sortie (ease-out). Jamais de rebond.
+1. **Ambience**: the background gradient and the flow particles. Slow, continuous, never in the foreground.
+2. **Causality**: propagation, alerts, release cascades. Paced by the SSE stream (`/api/events?speed=…`), 0.3 to 0.8 s per step. You must be able to **follow with your eyes** where the red comes from.
+3. **Micro-interactions**: hover, focus, panels appearing. 150–250 ms, ease-out. Never bounce.
 
-Courbe par défaut : `cubic-bezier(0.2, 0.8, 0.2, 1)`. Respecter `prefers-reduced-motion` : les particules s'arrêtent, la propagation devient un fondu.
+Default curve: `cubic-bezier(0.2, 0.8, 0.2, 1)`. Respect `prefers-reduced-motion`: particles stop, propagation becomes a fade.
 
-**Chargements et connexions** : chaque appel réseau a un état visible. Avant la réponse : un **skeleton** en verre avec un léger balayage lumineux, jamais un spinner seul. Pendant une propagation : une **ligne de progression** fine sous l'en-tête, en cyan, qui suit les étapes SSE. Quand une alerte signée est vérifiée : un bref **pulse** cyan sur l'enveloppe. En cas d'erreur : un toast en verre, texte en français, bouton « Réessayer ».
+**Loading and connections**: every network call has a visible state. Before the response: a glass **skeleton** with a soft light sweep, never a lone spinner. During a propagation: a thin cyan **progress line** under the header that follows the SSE steps. When a signed alert is verified: a brief cyan **pulse** on the envelope. On error: a glass toast, text in English, "Retry" button.
 
-## 4. Les écrans
+## 4. The screens
 
-Une seule page, sans navigation. Les écrans sont des **états** de la même scène. Rien ne se charge ailleurs.
+A single page, no navigation. The screens are **states** of the same scene. Nothing loads elsewhere.
 
-### 4.1 En-tête
+### 4.1 Header
 
-Logo, nom, puis à droite : le sélecteur de scénario (`GET /api/scenarios`, 4 choix : mixed, rib, cert, asn), le bouton « Réinitialiser », et un indicateur d'IA (« Bedrock » ou « simulée », depuis `source` de `/explain`). L'en-tête est un panneau de verre fin, fixe.
+Logo, name, then on the right: the scenario selector (`GET /api/scenarios`, 4 choices: mixed, rib, cert, asn), the "Reset" button, and an AI indicator ("Bedrock" or "simulated", from `source` in `/explain`). The header is a thin, fixed glass panel.
 
-### 4.2 Le tableau de bord vivant (état de repos)
+### 4.2 The live dashboard (idle state)
 
-- **Trois chiffres**, énormes, en haut à gauche sur un panneau de verre : opérations bloquées, paiement frauduleux bloqué (€), paiements qui continuent (€). Source : `counters.global` de `/api/state` (`quarantined`, `amount_blocked`, `amount_flowing`). Ils **s'incrémentent** avec un compteur animé pendant une propagation ; les tabular-nums évitent les sauts.
-- **La carte de la chaîne**, au centre, 70 % de l'écran : quatre colonnes, fournisseur → fabricant → distributeur → client. Chaque entreprise est un panneau de verre avec son icône et ses compteurs (`counters.per_company`). Entre elles, des **particules** qui coulent le long des arêtes `cross: true` de `edges`. À l'intérieur de chaque entreprise, les records sont des points regroupés par `kind` ; on n’affiche pas 193 étiquettes, on affiche 193 points qui respirent.
-- **Le bouton d'action**, unique, en bas au centre, en verre avec bordure rouge corail : « Déclarer le fournisseur compromis depuis 14 h ». Le libellé vient de `scenarios[].compromise`. C'est le seul bouton rouge de l'interface au repos.
+- **Three numbers**, huge, top left on a glass panel: blocked operations, fraudulent payment blocked (€), payments still flowing (€). Source: `counters.global` from `/api/state` (`quarantined`, `amount_blocked`, `amount_flowing`). They **count up** with an animated counter during a propagation; tabular-nums prevent jumps.
+- **The chain map**, in the center, 70% of the screen: four columns, supplier → manufacturer → distributor → customer. Each company is a glass panel with its icon and its counters (`counters.per_company`). Between them, **particles** flowing along the `cross: true` edges of `edges`. Inside each company, records are dots grouped by `kind`; we don't show 193 labels, we show 193 breathing dots.
+- **The action button**, the only one, bottom center, glass with a coral red border: "Declare the supplier compromised since 14:00". The label comes from `scenarios[].compromise`. It is the only red button in the idle interface.
 
-### 4.3 La propagation (état d'incident)
+### 4.3 Propagation (incident state)
 
-Au clic : `POST /api/compromise`, puis on ouvre `GET /api/events?speed=0.6` et on **joue** la séquence :
+On click: `POST /api/compromise`, then open `GET /api/events?speed=0.6` and **play** the sequence:
 
-| Étape SSE (`type`) | Ce que l'on voit |
+| SSE step (`type`) | What you see |
 |---|---|
-| `declaration` | onde rouge qui part de l'entreprise déclarée ; son panneau prend une bordure rouge |
-| `seed` | le point du record passe au rouge avec un pulse ; `rule` affiché en infobulle (« source compromise » ou « alerte vérifiée ») |
-| `quarantine` | un trait rouge court du `parent` vers le record, puis le record passe au rouge |
-| `gate_blocked` | idem, plus l'icône cadenas qui se ferme ; le compteur « bloquées » s'incrémente ; le `text` apparaît dans le fil d'événements |
-| `alert_sent` / `alert_received` | une enveloppe scellée file le long de l'arête inter-entreprises (`alert.links`), pulse cyan à la réception si `verified`, croix rouge sinon |
-| `release`, `remediation`, `withdrawal` | même mécanique, en vert ou ambre, dans l'autre sens |
+| `declaration` | a red wave leaves the declared company; its panel gets a red border |
+| `seed` | the record's dot turns red with a pulse; `rule` shown in a tooltip ("compromised source" or "verified alert") |
+| `quarantine` | a red line runs from the `parent` to the record, then the record turns red |
+| `gate_blocked` | same, plus the padlock icon closing; the "blocked" counter increments; the `text` appears in the event feed |
+| `alert_sent` / `alert_received` | a sealed envelope travels along the cross-company edge (`alert.links`), cyan pulse on receipt if `verified`, red cross otherwise |
+| `release`, `remediation`, `withdrawal` | same mechanics, in green or amber, in the other direction |
 
-Un **fil d'événements** à droite, en verre, affiche le `text` de chaque étape en français, horodaté, avec l'icône du type. On peut remonter le fil. Un bouton « Rejouer » relance le flux.
+An **event feed** on the right, in glass, shows the `text` of each step in English, timestamped, with the type's icon. You can scroll back through the feed. A "Replay" button restarts the stream.
 
-Les points sains **continuent de couler** pendant tout l'incident. C'est le message : on n'a pas arrêté l'usine.
+Healthy dots **keep flowing** throughout the incident. That is the message: we didn't shut down the factory.
 
-### 4.4 Avec ou sans Firebreak (l'arme de la démo)
+### 4.4 With or without Firebreak (the demo's weapon)
 
-Bouton « Avec vs sans » après une propagation. Deux panneaux côte à côte, même scène, depuis `GET /api/compare` :
+"With vs without" button after a propagation. Two panels side by side, same scene, from `GET /api/compare`:
 
-- Gauche, **sans Firebreak** : « On coupe le fournisseur et ses clients directs ». Rouge large : `blocked` (54) dont `healthy_blocked` (42, collatéraux) hachurés, et surtout **`leaked`** (5) : des points contaminés restés verts, marqués d'un signal d'alarme. L'activité préservée : 76 %.
-- Droite, **avec Firebreak** : 17 bloqués, 0 collatéral, 0 fuite, 100 % d'activité préservée.
-- En dessous, une seule ligne de comparaison : `precision` et `recall` sous forme de deux jauges, et les euros.
+- Left, **without Firebreak**: "We cut off the supplier and its direct customers". Wide red: `blocked` (54) including `healthy_blocked` (42, collateral) hatched, and above all **`leaked`** (5): tainted dots that stayed green, marked with an alarm signal. Activity preserved: 76%.
+- Right, **with Firebreak**: 17 blocked, 0 collateral, 0 leaks, 100% activity preserved.
+- Below, a single comparison line: `precision` and `recall` as two gauges, and the euros.
 
-Le message tient en une image : **moins de casse et moins de fuite**. Transition d'ouverture : les deux panneaux glissent depuis les bords, 250 ms.
+The message fits in one image: **less breakage and less leakage**. Opening transition: the two panels slide in from the edges, 250 ms.
 
-### 4.5 La preuve (panneau de détail)
+### 4.5 The proof (detail panel)
 
-Clic sur un point ou une ligne du fil : un panneau latéral en verre glisse depuis la droite avec `GET /api/records/{id}/explain` :
+Click on a dot or a feed line: a glass side panel slides in from the right with `GET /api/records/{id}/explain`:
 
-1. Le libellé, l'entreprise, l'horodatage, le `kind` avec son icône, le statut en badge coloré. Le montant si `payload.amount`. Le jeton en mono si `token`.
-2. **Le chemin de contamination** (`path`) : une mini-timeline verticale, un nœud par record, le seed en haut marqué « origine », une flèche entre chaque. C'est la preuve que l'on montre à un auditeur.
-3. **L'explication** (`explanation`) sur une surface opaque, en français, avec un petit badge « IA : Bedrock » ou « IA : simulée ». Un sous-titre discret rappelle : « La décision vient du graphe. L'IA explique. »
-4. **Le plan de reprise** (`remediation_plan`) : trois cartes-boutons, libellé + `rationale` en secondaire. Le clic appelle `POST /api/records/{id}/remediate` avec l'`action`, ferme le panneau et relance le flux SSE pour montrer la **cascade de levée** (vert ambre qui remonte jusqu'au client, alertes `release` qui filent).
+1. The label, the company, the timestamp, the `kind` with its icon, the status as a colored badge. The amount if `payload.amount`. The token in mono if `token`.
+2. **The contamination path** (`path`): a small vertical timeline, one node per record, the seed at the top marked "origin", an arrow between each. This is the proof you show an auditor.
+3. **The explanation** (`explanation`) on an opaque surface, in English, with a small "AI: Bedrock" or "AI: simulated" badge. A discreet subtitle reminds: "The decision comes from the graph. The AI explains."
+4. **The recovery plan** (`remediation_plan`): three button-cards, label + `rationale` as secondary text. The click calls `POST /api/records/{id}/remediate` with the `action`, closes the panel and restarts the SSE stream to show the **release cascade** (green-amber climbing all the way to the customer, `release` alerts traveling).
 
-Le panneau est fermable par Échap, clic hors panneau, ou bouton. Pendant le chargement : skeleton. L'IA peut prendre 2 à 4 s en mode Bedrock : afficher le chemin tout de suite (il vient de `record.taint_path` déjà connu) et l'explication quand elle arrive.
+The panel can be closed with Escape, a click outside, or a button. While loading: skeleton. The AI can take 2 to 4 s in Bedrock mode: show the path immediately (it comes from the already-known `record.taint_path`) and the explanation when it arrives.
 
-### 4.6 Fausse alerte
+### 4.6 False alarm
 
-Petit bouton secondaire « Fausse alerte » visible pendant un incident : `POST /api/compromise/withdraw`. Tout repasse au vert en cascade. À montrer au jury si quelqu'un demande « et si vous vous trompez ? ».
+Small secondary "False alarm" button visible during an incident: `POST /api/compromise/withdraw`. Everything turns green again in a cascade. Show it to the jury if someone asks "what if you're wrong?".
 
-### 4.7 Ingestion (bonus, si le temps)
+### 4.7 Ingestion (bonus, if time allows)
 
-Zone de dépôt en verre : on glisse `assets/samples/facture-rib-modifie.pdf` ou l'`.eml`. `POST /api/ingest/document?company=…` renvoie une proposition de record lue par l'IA ; on l'affiche dans un panneau, bouton « Confirmer » → `POST …/confirm`. Le record apparaît sur la carte. Idem pour `epcis-sample.json` via `/api/ingest/epcis`. Ça montre « le composant léger qui enregistre la provenance » dont parle le pitch.
+Glass drop zone: drag in `assets/samples/facture-rib-modifie.pdf` or the `.eml`. `POST /api/ingest/document?company=…` returns a record proposal read by the AI; show it in a panel, "Confirm" button → `POST …/confirm`. The record appears on the map. Same for `epcis-sample.json` via `/api/ingest/epcis`. It shows "the lightweight component that records provenance" mentioned in the pitch.
 
-### 4.8 Vue partenaire (bonus)
+### 4.8 Partner view (bonus)
 
-Un commutateur « Voir comme : fabricant / distributeur / client ». La carte ne montre que les records de cette entreprise ; les données des autres sont **floutées** (du verre dépoli, littéralement), on ne voit que les alertes reçues, leur signature vérifiée, et les jetons. Preuve visuelle que rien ne fuit entre entreprises.
+A "View as: manufacturer / distributor / customer" switch. The map shows only that company's records; other companies' data is **blurred** (frosted glass, literally); you only see the alerts received, their verified signature, and the tokens. Visual proof that nothing leaks between companies.
 
-## 5. Intégration : ce que l'API garantit
+## 5. Integration: what the API guarantees
 
-- `GET /api/state` renvoie tout : `companies`, `records`, `edges`, `alerts`, `declarations`, `counters`. Un seul appel au chargement, puis après chaque action (`compromise`, `remediate`, `withdraw`, `reset`, `confirm`) la réponse **est** le nouvel état complet : pas besoin de refaire `/state`.
-- La séquence animée vient de `/api/events` (SSE) ou de `/api/timeline` (même contenu, d'un coup). Rejouer les étapes dans l'ordre reproduit exactement l'état final : on peut animer **puis** afficher l'état sans incohérence.
-- « Opérations qui continuent » = `ok + released`. Les euros ne comptent que les paiements (`kind == "payment"`), c'est voulu.
-- `taint_path` est déjà dans chaque record : le chemin s'affiche sans appel supplémentaire. `/explain` ajoute l'explication et le plan.
-- Les dates sont en heure de Paris sans fuseau. Pour `since`, `new Date().toISOString()` est accepté.
-- CORS est ouvert : l'interface peut tourner sur un autre port que l'API.
-- En cas de 4xx/5xx : `{"detail": "…"}` en français, à afficher dans le toast.
+- `GET /api/state` returns everything: `companies`, `records`, `edges`, `alerts`, `declarations`, `counters`. One call on load, then after each action (`compromise`, `remediate`, `withdraw`, `reset`, `confirm`) the response **is** the new complete state: no need to call `/state` again.
+- The animated sequence comes from `/api/events` (SSE) or `/api/timeline` (same content, all at once). Replaying the steps in order reproduces the final state exactly: you can animate **then** show the state without inconsistency.
+- "Operations still flowing" = `ok + released`. Euros only count payments (`kind == "payment"`), on purpose.
+- `taint_path` is already in every record: the path displays without an extra call. `/explain` adds the explanation and the plan.
+- Dates are in Paris time without a time zone. For `since`, `new Date().toISOString()` is accepted.
+- CORS is open: the interface can run on a different port from the API.
+- On 4xx/5xx: `{"detail": "…"}` in English, to show in the toast.
 
-Si quelque chose manque dans l'API, **le dire dans `messages.md`** (`python3 scripts/messages.py send yann "…"`), on l'ajoute. On ne contourne pas le contrat côté interface.
+If something is missing from the API, **say so in `messages.md`** (`python3 scripts/messages.py send yann "…"`), and we'll add it. Don't work around the contract on the interface side.
 
-## 6. Démo de 3 minutes : les cinq gestes
+## 6. 3-minute demo: the five moves
 
-1. **Repos** (20 s) : la chaîne vit. « Quatre entreprises, 193 opérations, tout tourne. »
-2. **Déclarer** (40 s) : clic, propagation animée, les trois chiffres montent. « 17 bloquées sur 193. Pas 193. »
-3. **Avec vs sans** (40 s) : split screen. « Sans nous : 54 bloquées, 42 pour rien, et 5 fuites. Avec : 17, 0, 0. »
-4. **Prouver** (40 s) : clic sur le paiement de 5 210 €. Chemin, explication, RIB modifié. « Le graphe décide, l'IA explique. »
-5. **Guérir** (30 s) : remédier la réception de lot, cascade verte jusqu'au client, alertes de levée signées. « Et les partenaires sont prévenus, sans voir nos données. »
+1. **Idle** (20 s): the chain is alive. "Four companies, 193 operations, everything running."
+2. **Declare** (40 s): click, animated propagation, the three numbers go up. "17 blocked out of 193. Not 193."
+3. **With vs without** (40 s): split screen. "Without us: 54 blocked, 42 for nothing, and 5 leaks. With us: 17, 0, 0."
+4. **Prove** (40 s): click on the €5,210 payment. Path, explanation, modified bank details. "The graph decides, the AI explains."
+5. **Heal** (30 s): remediate the lot receipt, green cascade all the way to the customer, signed release alerts. "And the partners are notified, without seeing our data."
 
-Tout doit marcher **sans réseau externe** (IA simulée par défaut). Bedrock est un plus si la connexion tient.
+Everything must work **without an external network** (simulated AI by default). Bedrock is a bonus if the connection holds.
 
-## 7. Garde-fous
+## 7. Guardrails
 
-- Aucune donnée inventée côté interface : tout chiffre vient de l'API.
-- Une seule police de verre, une seule courbe d'animation, quatre couleurs sémantiques. La cohérence fait le « léché ».
-- Testé en 1920×1080 (projecteur) et en 1440×900 (portable). Pas de scroll horizontal. Les gros chiffres restent lisibles à 5 m.
-- Clavier : Tab parcourt les panneaux, Échap ferme, Entrée déclenche. Focus visible en cyan.
-- Pas de dépendance lourde juste pour une icône ou une animation. Si une lib de graphe est utilisée, elle sert le graphe ; les particules et les panneaux sont en CSS/SVG/Canvas maison.
-- Mettre à jour `design.md` avec les valeurs finales (couleurs, polices, rayons, recette du verre) pour que les slides du pitch reprennent le même langage.
+- No data invented on the interface side: every number comes from the API.
+- One glass recipe, one animation curve, four semantic colors. Consistency is what makes it polished.
+- Tested at 1920×1080 (projector) and 1440×900 (laptop). No horizontal scroll. Big numbers stay readable at 5 m.
+- Keyboard: Tab moves through panels, Escape closes, Enter triggers. Visible cyan focus.
+- No heavy dependency just for an icon or an animation. If a graph library is used, it serves the graph; particles and panels are custom CSS/SVG/Canvas.
+- Update `design.md` with the final values (colors, fonts, radii, glass recipe) so the pitch slides use the same language.

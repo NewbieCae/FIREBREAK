@@ -1,7 +1,7 @@
-"""Client chaîne : file d'attente + thread d'envoi. Jamais bloquant.
+"""Chain client: queue + sender thread. Never blocking.
 
-`NullChain` (mode off) n'importe pas web3. `Web3Chain` (modes tester et l1)
-signe chaque transaction avec le compte de l'entreprise émettrice.
+`NullChain` (off mode) does not import web3. `Web3Chain` (tester and l1 modes)
+signs each transaction with the issuing company's account.
 """
 
 from __future__ import annotations
@@ -22,27 +22,27 @@ ATTEMPTS = 4
 RETRY_BACKOFF = 1.0
 READ_RETRIES = 3
 READ_RETRY_DELAY = 1.0
-MAX_PARALLEL = 2  # envois simultanés max (nœud géré : 429)
-RECEIPT_POLL = 2.0  # = temps de bloc de la L1
+MAX_PARALLEL = 2  # max concurrent sends (managed node: 429)
+RECEIPT_POLL = 2.0  # = the L1 block time
 GAS_PRICE_TTL = 30.0
 ACK_RETRY_DELAY = 2.0
 NONCE_ERRORS = ("nonce too low", "already known", "replacement transaction")
-# Gaz fixe par fonction : évite un eth_estimateGas (et ses 429) à chaque envoi.
+# Fixed gas per function: avoids an eth_estimateGas (and its 429s) on every send.
 GAS_LIMITS = {"anchorAudit": 120_000, "declareIncident": 120_000,
               "withdrawIncident": 120_000, "anchorAlert": 150_000,
               "acknowledgeAlert": 80_000}
 DEFAULT_GAS = 200_000
-ACK_WAIT = 60.0  # attente max de l'ancrage de l'alerte avant un accusé
+ACK_WAIT = 60.0  # max wait for the alert anchor before an acknowledgement
 ACK_POLL = 1.0
 
 
 @dataclass
 class ChainOp:
     kind: str  # audit | alert | incident | ack
-    company: str  # entreprise qui signe la transaction
-    fn: str  # nom de la fonction du contrat
+    company: str  # company that signs the transaction
+    fn: str  # contract function name
     args: tuple = ()
-    hash: str = ""  # hex de ce qu'on ancre
+    hash: str = ""  # hex of what is anchored
 
 
 @dataclass
@@ -81,7 +81,7 @@ def _queue_counts(records: list[AnchorRecord]) -> dict:
 
 
 class NullChain:
-    """Mode off : aucune écriture, aucun import réseau."""
+    """Off mode: no writes, no network import."""
 
     def __init__(self, config: ChainConfig | None = None) -> None:
         self._ids = itertools.count(1)
@@ -106,7 +106,7 @@ class NullChain:
 
 
 class Web3Chain:
-    """Modes tester (EVM en mémoire) et l1 (vraie L1)."""
+    """Tester (in-memory EVM) and l1 (real L1) modes."""
 
     def __init__(self, config: ChainConfig, w3: Any = None, contract: Any = None,
                  accounts: dict | None = None, error: str | None = None,
@@ -121,7 +121,7 @@ class Web3Chain:
         self._records: list[AnchorRecord] = []
         self._lock = threading.Lock()
         self._ids = itertools.count(1)
-        # Une file et un thread par compte : nonces ordonnés par compte.
+        # One queue and one thread per account: nonces ordered per account.
         self._queues: dict[str, queue.Queue] = {}
         self._slots = threading.Semaphore(max(1, max_parallel))
         self._nonces: dict[str, int] = {}
@@ -132,7 +132,7 @@ class Web3Chain:
         with self._lock:
             self._records.append(rec)
         if not self.connected:
-            self._fail(rec, self.error or "chaîne injoignable")
+            self._fail(rec, self.error or "chain unreachable")
             return rec
         self._queue_for(op.company).put((op, rec))
         return rec
@@ -174,7 +174,7 @@ class Web3Chain:
                         and r.status == "confirmed"):
                     rec = r
                     break
-        # Un nœud en retard peut renvoyer 0 entrée juste après la confirmation.
+        # A lagging node may return 0 entries right after confirmation.
         attempts = 1 + (READ_RETRIES if rec else 0)
         head, entries = b"", 0
         for i in range(attempts):
@@ -217,16 +217,16 @@ class Web3Chain:
             op, rec = q.get()
             try:
                 if op.fn == "acknowledgeAlert" and not self._wait_alert(op.args[0]):
-                    self._fail(rec, "alerte non ancrée : accusé impossible")
+                    self._fail(rec, "alert not anchored: acknowledgement impossible")
                 else:
                     self._send_with_ack_retry(op, rec)
-            except Exception as exc:  # le worker ne doit jamais mourir
+            except Exception as exc:  # the worker must never die
                 self._fail(rec, f"{type(exc).__name__}: {exc}")
             finally:
                 q.task_done()
 
     def _send_with_ack_retry(self, op: ChainOp, rec: AnchorRecord) -> None:
-        # Un accusé peut être miné sur un nœud qui ne voit pas encore l'alerte : on retente.
+        # An acknowledgement may be mined on a node that does not see the alert yet: retry.
         deadline = time.monotonic() + ACK_WAIT
         while True:
             with self._slots:
@@ -239,7 +239,7 @@ class Web3Chain:
                 rec.status, rec.error, rec.tx_hash = "pending", None, None
 
     def _wait_alert(self, alert_hash: bytes) -> bool:
-        """Attend (sans occuper d'envoi) que l'alerte soit ancrée par l'émetteur."""
+        """Waits (without holding a send slot) for the alert to be anchored by the issuer."""
         deadline = time.monotonic() + ACK_WAIT
         while True:
             if self._alert_anchored(alert_hash):
@@ -268,11 +268,11 @@ class Web3Chain:
         return nonce
 
     def _send(self, op: ChainOp, rec: AnchorRecord) -> bool:
-        """Envoie et attend le reçu. Renvoie True si le contrat a rejeté la transaction minée."""
+        """Sends and waits for the receipt. Returns True if the contract rejected the mined transaction."""
         acct = self.accounts.get(op.company)
         if acct is None:
-            raise ValueError(f"compte inconnu : {op.company}")
-        last_error = "erreur inconnue"
+            raise ValueError(f"unknown account: {op.company}")
+        last_error = "unknown error"
         tx_hash = None
         hex_hash = None
         for attempt in range(ATTEMPTS):
@@ -305,7 +305,7 @@ class Web3Chain:
                     with self._lock:
                         rec.status = "sent"
                         rec.tx_hash = hex_hash
-                # Une transaction déjà envoyée n'est jamais renvoyée : on réinterroge son reçu.
+                # A transaction already sent is never resent: poll its receipt again.
                 receipt = self.w3.eth.wait_for_transaction_receipt(
                     tx_hash, timeout=RECEIPT_TIMEOUT,
                     poll_latency=RECEIPT_POLL)
@@ -315,7 +315,7 @@ class Web3Chain:
                         rec.block = int(receipt["blockNumber"])
                         rec.explorer_link = explorer_tx_link(self.config, hex_hash)
                         return False
-                self._fail(rec, "transaction rejetée par le contrat")
+                self._fail(rec, "transaction rejected by the contract")
                 return True
             except Exception as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
@@ -326,7 +326,7 @@ class Web3Chain:
         try:
             return int(self.contract.functions.alerts(alert_hash).call()[3]) != 0
         except Exception:
-            return True  # lecture impossible : on laisse le contrat trancher
+            return True  # read failed: let the contract decide
 
 
 def get_chain_client(config: ChainConfig) -> ChainClient:
@@ -355,7 +355,7 @@ def _build_web3_chain(config: ChainConfig) -> Web3Chain:
 
         w3 = Web3(EthereumTesterProvider())
         contract = ensure_tester_registry(w3, accounts, pubkeys)
-        # L'EVM en mémoire n'est pas prévu pour des écritures concurrentes.
+        # The in-memory EVM is not designed for concurrent writes.
         return Web3Chain(config, w3, contract, accounts, max_parallel=1)
 
     import json
@@ -365,10 +365,10 @@ def _build_web3_chain(config: ChainConfig) -> Web3Chain:
 
     w3 = connect(config.rpc_url, timeout=5)
     if not w3.is_connected():
-        raise ConnectionError("RPC injoignable")
+        raise ConnectionError("RPC unreachable")
     if w3.eth.chain_id != config.chain_id:
         raise ConnectionError(
-            f"chainId {w3.eth.chain_id} différent de {config.chain_id}")
+            f"chainId {w3.eth.chain_id} differs from {config.chain_id}")
     dep = json.loads(Path(config.deployment_path).read_text(encoding="utf-8"))
     contract = registry_contract(w3, dep["address"])
     return Web3Chain(config, w3, contract, accounts)

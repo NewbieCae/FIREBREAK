@@ -1,4 +1,4 @@
-"""Chargement du contrat compilé (contracts/build/FirebreakRegistry.json)."""
+"""Loading the compiled contract (contracts/build/FirebreakRegistry.json)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ SOURCE_PATH = REPO_ROOT / "contracts" / "FirebreakRegistry.sol"
 
 
 def source_sha256(path: Path = SOURCE_PATH) -> str:
-    """Empreinte de la source Solidity, fins de ligne normalisées (Windows/Linux)."""
+    """Fingerprint of the Solidity source, with normalized line endings (Windows/Linux)."""
     return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
@@ -24,10 +24,10 @@ class ArtifactMissing(FileNotFoundError):
 
 @lru_cache(maxsize=4)
 def load_artifact(path: Path = ARTIFACT_PATH) -> dict:
-    """Renvoie {contractName, abi, bytecode, solcVersion, evmVersion, sourceSha256, ...}."""
+    """Returns {contractName, abi, bytecode, solcVersion, evmVersion, sourceSha256, ...}."""
     try:
         return json.loads(Path(path).read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
         raise ArtifactMissing(
-            f"{path} absent : lancer `uv run python scripts/chain_compile.py`"
+            f"{path} missing: run `uv run python scripts/chain_compile.py`"
         ) from exc

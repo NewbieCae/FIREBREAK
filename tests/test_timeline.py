@@ -1,7 +1,7 @@
-"""Timeline / SSE rejeu tests — Handoff 4.
+"""Timeline / SSE replay tests: Handoff 4.
 
-La timeline est lue depuis les journaux d'audit chaînés ; ces tests
-prouvent que le rejeu des étapes reproduit l'état final de /api/state.
+The timeline is read from the chained audit logs; these tests prove
+that replaying the steps reproduces the final state of /api/state.
 """
 
 import json
@@ -29,7 +29,7 @@ def _compromise():
 
 
 def _rebuild_statuses(steps):
-    """Rejoue les étapes -> {record_id: status} pour les records touchés."""
+    """Replays the steps -> {record_id: status} for the affected records."""
     status = {}
     for st in steps:
         if st["record"] is None:
@@ -64,7 +64,7 @@ def test_timeline_rebuilds_to_state():
         r["id"] for r in state["records"] if r["status"] == "quarantined"}
     assert extra == set()
 
-    # les compteurs cumulés de la dernière étape == compteurs de l'état
+    # cumulative counters of the last step == state counters
     last = steps[-1]["counters"]
     g = state["counters"]["global"]
     assert last["quarantined"] == g["quarantined"]
@@ -81,7 +81,7 @@ def test_causal_ordering():
         if st["type"] in QUARANTINE_TYPES:
             if st["parent"]:
                 assert st["parent"] in seen, \
-                    f"{st['record']} contaminé avant son parent {st['parent']}"
+                    f"{st['record']} tainted before its parent {st['parent']}"
                 assert seen[st["parent"]] < st["n"]
             seen[st["record"]] = st["n"]
     sent, received = {}, {}
@@ -92,7 +92,7 @@ def test_causal_ordering():
             received[(st["alert"]["from"], st["alert"]["to"])] = st["n"]
     for key, n in received.items():
         assert key in sent and sent[key] < n, \
-            f"alerte {key} reçue avant d'être émise"
+            f"alert {key} received before being sent"
 
 
 def test_alert_links_resolve_to_cross_edges():
@@ -116,13 +116,13 @@ def test_running_counters_end_at_state():
     assert last["gates_blocked"] == g["gates_blocked"]
     assert last["amount_blocked"] == g["amount_blocked"]
     assert last["amount_flowing"] == g["amount_flowing"]
-    # mixed : seul le paiement au RIB frauduleux est bloqué (5 210 €).
-    # Les autres paiements continuent : m-pay-01..07 = Σ(4000+317·i)
-    # = 36 876 €, c-pay-01..07 = Σ(amount+950) = 43 526 €, et les 4
-    # paiements d'après-midi 2250+2700+3150+3600 = 11 700 €.
+    # mixed: only the payment to the fraudulent RIB is blocked (€5,210).
+    # The other payments continue: m-pay-01..07 = Σ(4000+317·i)
+    # = €36,876, c-pay-01..07 = Σ(amount+950) = €43,526, and the 4
+    # afternoon payments 2250+2700+3150+3600 = €11,700.
     assert g["amount_blocked"] == 5210
     assert g["amount_flowing"] == 36876 + 43526 + 11700 == 92102
-    # compteurs d'étape monotones pendant la contamination
+    # step counters are monotonic during the taint
     for a, b in zip(steps, steps[1:]):
         assert b["counters"]["quarantined"] >= a["counters"]["quarantined"]
 
@@ -144,8 +144,8 @@ def test_timeline_all_scenarios():
         g = state["counters"]["global"]
         assert last["quarantined"] == g["quarantined"], scenario
         assert last["amount_blocked"] == g["amount_blocked"], scenario
-        # amount_blocked peut être 0 si la chaîne contaminée ne porte
-        # pas de montant (ex. scénario asn) ; le total doit être positif
+        # amount_blocked can be 0 if the tainted chain carries no amount
+        # (e.g. asn scenario); the total must be positive
         assert g["amount_blocked"] + g["amount_flowing"] > 0, scenario
 
 

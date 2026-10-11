@@ -1,8 +1,8 @@
-"""Point d'entrée Vercel : expose l'application FastAPI (API + interface /app/).
+"""Vercel entry point: exposes the FastAPI application (API + /app/ interface).
 
-Vercel réécrit toutes les routes vers cette fonction et lui donne « /api/index »
-comme chemin ; le chemin d'origine arrive dans le paramètre `__path`
-(voir vercel.json). On le remet dans le scope ASGI avant d'appeler FastAPI.
+Vercel rewrites every route to this function and gives it "/api/index" as
+its path; the original path arrives in the `__path` parameter (see
+vercel.json). It is put back into the ASGI scope before calling FastAPI.
 """
 import os
 import sys
@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlencode
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-os.environ.setdefault("FIREBREAK_DEMO", "1")   # IA simulée, pas de réseau externe
+os.environ.setdefault("FIREBREAK_DEMO", "1")   # simulated AI, no external network
 
 from firebreak.api import app as _fastapi  # noqa: E402
 
@@ -22,11 +22,11 @@ async def app(scope, receive, send):
         if orig is not None:
             scope = dict(scope)
             path = orig or "/"
-            if path.rstrip("/") == "/app":          # racine de l'interface → index.html
+            if path.rstrip("/") == "/app":          # interface root → index.html
                 path = "/app/index.html"
             scope["path"] = path
             scope["raw_path"] = path.encode()
-            # Vercel ajoute aussi `path=<segments>` (nom du groupe) : on l'enlève.
+            # Vercel also adds `path=<segments>` (group name): remove it.
             scope["query_string"] = urlencode(
                 [(k, v) for k, v in qs if k not in ("__path", "path")]).encode()
     await _fastapi(scope, receive, send)

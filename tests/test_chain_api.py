@@ -1,4 +1,4 @@
-"""API chaîne : mode off sans effet, mode tester (EVM en mémoire) de bout en bout."""
+"""Chain API: off mode has no effect, tester mode (in-memory EVM) end to end."""
 
 import importlib.util
 from datetime import datetime
@@ -32,10 +32,10 @@ def off_client(monkeypatch):
 @pytest.fixture
 def tester_client(monkeypatch):
     if not HAS_TESTER:
-        pytest.skip("deployer/artifact de pc1 absents")
+        pytest.skip("pc1 deployer/artifact missing")
     chain = get_chain_client(ChainConfig(mode="tester", mnemonic=TEST_MNEMONIC))
     if not chain.status()["connected"]:
-        pytest.skip(f"mode tester indisponible : {chain.error}")
+        pytest.skip(f"tester mode unavailable: {chain.error}")
     monkeypatch.setattr(api, "chain", chain)
     monkeypatch.setattr(api, "anchorer", Anchorer(chain))
     monkeypatch.setattr(api, "sim", build_simulation())
@@ -49,26 +49,26 @@ def test_off_status(off_client):
     assert r["queue"] == {"pending": 0, "sent": 0, "confirmed": 0, "failed": 0}
 
 
-def test_off_verify_inchange(off_client):
+def test_off_verify_unchanged(off_client):
     off_client.post("/api/compromise", json=SINCE)
     v = off_client.get("/api/audit/verify").json()
     assert v["ok"] is True and v["onchain_ok"] is None
     assert all(j["onchain"] is None for j in v["journals"])
 
 
-def test_off_anchor_409_et_liste_vide(off_client):
+def test_off_anchor_409_and_empty_list(off_client):
     assert off_client.post("/api/chain/anchor").status_code == 409
     assert off_client.get("/api/chain/anchors").json() == []
 
 
-def test_rewrite_404_sans_demo(off_client, monkeypatch):
+def test_rewrite_404_without_demo(off_client, monkeypatch):
     monkeypatch.setattr(api, "DEMO_MODE", False)
     r = off_client.post("/api/demo/rewrite",
                         json={"company": "fabricant", "drop_event": "alert_received"})
     assert r.status_code == 404
 
 
-def test_tester_ancrage_et_verification(tester_client):
+def test_tester_anchoring_and_verification(tester_client):
     assert tester_client.post("/api/compromise", json=SINCE).status_code == 200
     api.chain.flush(10)
     anchors = tester_client.get("/api/chain/anchors").json()
@@ -80,7 +80,7 @@ def test_tester_ancrage_et_verification(tester_client):
     assert all(j["onchain"]["matches"] for j in v["journals"] if j["onchain"])
 
 
-def test_tester_reecriture_detectee(tester_client, monkeypatch):
+def test_tester_rewrite_detected(tester_client, monkeypatch):
     monkeypatch.setattr(api, "DEMO_MODE", True)
     tester_client.post("/api/compromise", json=SINCE)
     api.chain.flush(10)
@@ -105,17 +105,17 @@ def test_tester_quality_anchoring(tester_client, monkeypatch):
     api.anchorer.on_new_simulation(api.sim)
     c = tester_client
     (rep,) = c.post("/api/reports", json={
-        "company": "client", "ref": "c-gr-03", "reason": "casse"}).json()
+        "company": "client", "ref": "c-gr-03", "reason": "broken"}).json()
     c.post(f"/api/reports/{rep['id']}/decision",
            json={"company": "distributeur", "decision": "confirm"})
     c.post("/api/lots/suspect", json={
-        "company": "fabricant", "lot": "COIL-103", "reason": "défaut matière"})
+        "company": "fabricant", "lot": "COIL-103", "reason": "material defect"})
     c.post("/api/lots/suspect/withdraw", json={"company": "fabricant", "lot": "COIL-103"})
     api.chain.flush(10)
     anchors = c.get("/api/chain/anchors").json()
     assert all(a["status"] == "confirmed" for a in anchors), anchors
-    assert [a["kind"] for a in anchors].count("incident") == 2  # déclaration + levée
-    # signalement : 1 ancrage de type 2 + 1 accusé du destinataire
+    assert [a["kind"] for a in anchors].count("incident") == 2  # declaration + withdrawal
+    # report: 1 type-2 anchor + 1 acknowledgement from the recipient
     assert any(a["kind"] == "alert" and a["company"] == "client" for a in anchors)
     assert any(a["kind"] == "ack" and a["company"] == "distributeur"
                for a in anchors)

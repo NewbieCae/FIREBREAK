@@ -1,5 +1,5 @@
-"""Chiffres réels de la démo — les nombres cités dans docs/demo.md et le
-pitch viennent d'ici, pas d'une copie à la main :
+"""Real demo figures: the numbers quoted in docs/demo.md and the pitch
+come from here, not from a manual copy:
 
     uv run python -m firebreak.demo_figures
 """
@@ -23,44 +23,44 @@ def main() -> None:
     gates = [r["id"] for r in blocked if r["gate"]]
     companies = sorted({r["company"] for r in blocked})
     hops = [(a["from"], a["to"]) for a in state["alerts"]]
-    print("== Scénario mixed, fournisseur compromise depuis 14 h ==")
+    print("== Mixed scenario, supplier compromised since 2 pm ==")
     print(f"records_total            = {g['total']}")
-    print(f"operations_bloquees      = {g['quarantined']}")
-    print(f"operations_qui_continuent = {g['ok'] + g['released']}")
-    print(f"part_bloquee             = {g['quarantined'] / g['total']:.1%}")
-    print(f"gates_bloques            = {g['gates_blocked']}  {gates}")
-    print(f"paiements_bloques_eur    = {g['amount_blocked']:.0f}")
-    print(f"paiements_qui_passent    = {g['amount_flowing']:.0f}")
-    print(f"entreprises_touchees     = {len(companies)}  {companies}")
-    print(f"alertes_signees          = {len(state['alerts'])}  {hops}")
-    print(f"etapes_timeline          = {len(sim.timeline)}")
+    print(f"blocked_operations       = {g['quarantined']}")
+    print(f"flowing_operations       = {g['ok'] + g['released']}")
+    print(f"blocked_share            = {g['quarantined'] / g['total']:.1%}")
+    print(f"gates_blocked            = {g['gates_blocked']}  {gates}")
+    print(f"blocked_payments_eur     = {g['amount_blocked']:.0f}")
+    print(f"flowing_payments_eur     = {g['amount_flowing']:.0f}")
+    print(f"companies_hit            = {len(companies)}  {companies}")
+    print(f"signed_alerts            = {len(state['alerts'])}  {hops}")
+    print(f"timeline_steps           = {len(sim.timeline)}")
     v = sim.audit_verify()
-    print(f"audit_integre            = {v['ok']}  "
-          f"({sum(j['entries'] for j in v['journals'])} entrées)")
+    print(f"audit_intact             = {v['ok']}  "
+          f"({sum(j['entries'] for j in v['journals'])} entries)")
     pay = next(r for r in blocked if r["id"] == "m-pay-X")
-    print(f"paiement_frauduleux      = {pay['payload']['amount']:.0f} € "
+    print(f"fraudulent_payment       = {pay['payload']['amount']:.0f} € "
           f"(RIB {pay['payload']['rib']})")
     print()
-    print("== Avec vs sans Firebreak (politique C vs B) ==")
+    print("== With vs without Firebreak (policy C vs B) ==")
     cmp = compare(sim)
     for side in ("without", "with"):
         m = cmp[side]
-        print(f"{m['policy']:4s} {m['title']:16s} bloqués {m['blocked']:3d}  "
-              f"saines bloquées {m['healthy_blocked']:3d}  fuites {m['leaked']}  "
+        print(f"{m['policy']:4s} {m['title']:17s} blocked {m['blocked']:3d}  "
+              f"healthy blocked {m['healthy_blocked']:3d}  leaks {m['leaked']}  "
               f"gates {m['gates_blocked']}  "
-              f"activité préservée {m['activity_preserved_pct']:.1f} %")
+              f"activity preserved {m['activity_preserved_pct']:.1f} %")
     ratio = cmp["healthy_blocked_ratio"]
     print(f"ratio                    = "
-          f"{f'{ratio:.1f}x' if ratio is not None else 'infini (0 sain bloqué avec Firebreak)'}")
+          f"{f'{ratio:.1f}x' if ratio is not None else 'infinite (0 healthy blocked with Firebreak)'}")
     print()
-    print("== Les 4 scénarios ==")
+    print("== The 6 scenarios ==")
     for sid in SCENARIOS:
         s = build_simulation(sid)
         s.declare_compromise(hint["company"], since)
         c = s.state()["counters"]["global"]
-        print(f"{sid:6s} bloqués {c['quarantined']:3d}/{c['total']:3d}  "
+        print(f"{sid:6s} blocked {c['quarantined']:3d}/{c['total']:3d}  "
               f"gates {c['gates_blocked']}  "
-              f"paiements bloqués {c['amount_blocked']:.0f} €")
+              f"payments blocked {c['amount_blocked']:.0f} €")
 
 
 if __name__ == "__main__":

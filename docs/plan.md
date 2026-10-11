@@ -1,230 +1,230 @@
-# FIREBREAK — Plan de build en 6 étapes
+# FIREBREAK — 6-step build plan
 
-> Calendrier : gel du code dimanche 11 octobre à 10 h, premier tour de pitch à 12 h, finale plus tard dans la journée (voir `goal.md`). L'interface finale est faite par une collègue ; ce dépôt livre **le produit** (moteur, API, IA) et un dashboard de debug.
+> Schedule: code freeze Sunday October 11 at 10:00, first pitch round at 12:00, final later in the day (see `goal.md`). The final interface is built by a colleague; this repo delivers **the product** (engine, API, AI) and a debug dashboard.
 
-## Point de départ (10 octobre, 18 h 40)
+## Starting point (October 10, 18:40)
 
-Un premier socle existe déjà dans le dépôt, il n'a pas encore été relu :
+A first foundation already exists in the repo; it has not been reviewed yet:
 
-- `src/firebreak/` : `model.py`, `engine.py` (graphe et propagation), `federation.py` (alertes signées Ed25519), `scenario.py` (4 entreprises), `simulation.py`, `ai.py` (IA simulée), `api.py` (FastAPI).
-- `web/index.html` : dashboard de debug (Cytoscape.js).
-- `tests/` : 26 tests, tous verts (`uv run pytest -q`).
-- Scénario : 193 records ; après « fournisseur compromis depuis 14 h », 17 en quarantaine, 176 continuent, 4 gates bloqués, propagation jusqu'au client.
-- Lancement : `uv run uvicorn firebreak.api:app --reload --port 8000`, puis http://localhost:8000.
+- `src/firebreak/`: `model.py`, `engine.py` (graph and propagation), `federation.py` (Ed25519-signed alerts), `scenario.py` (4 companies), `simulation.py`, `ai.py` (simulated AI), `api.py` (FastAPI).
+- `web/index.html`: debug dashboard (Cytoscape.js).
+- `tests/`: 26 tests, all green (`uv run pytest -q`).
+- Scenario: 193 records; after "supplier compromised since 14:00", 17 quarantined, 176 keep flowing, 4 gates blocked, propagation all the way to the customer.
+- Launch: `uv run uvicorn firebreak.api:app --reload --port 8000`, then http://localhost:8000.
 
-**Trou connu :** quand on remédie une opération, la libération ne se propage pas aux partenaires. Les alertes déjà émises restent actives et chacun doit remédier de son côté.
+**Known gap:** when an operation is remediated, the release does not propagate to partners. Alerts already sent stay active and each company has to remediate on its own side.
 
-## Vue d'ensemble
+## Overview
 
-| # | Étape | Livrable | Dépend de | En parallèle ? |
+| # | Step | Deliverable | Depends on | In parallel? |
 |---|---|---|---|---|
-| 1 | Consolider le socle et figer le contrat API | Code relu, `docs/api.md`, CORS, README | — | Non, à faire d'abord |
-| 2 | Fédération complète et journal d'audit | Levée de quarantaine signée, journal des décisions | 1 | Non (touche le moteur) |
-| 3 | Scénarios réalistes et import EPCIS | 3 attaques au choix, import JSON EPCIS | 2 | Non (touche le moteur) |
-| 4 | Timeline et événements live | Rejeu pas à pas, flux SSE pour animer l'UI | 3 | Non |
-| 5 | IA : Bedrock et lecture de documents | `BedrockExplainer`, extraction PDF/mail → record | 1 | **Oui**, en parallèle de 2 à 4 (fichiers `ai.py` et `ingest/` uniquement) |
-| 6 | Prêt pour la démo | Script de démo, robustesse, déploiement, gel | 1 à 5 | Non, en dernier |
+| 1 | Consolidate the foundation and freeze the API contract | Reviewed code, `docs/api.md`, CORS, README | — | No, do it first |
+| 2 | Full federation and audit log | Signed quarantine release, decision log | 1 | No (touches the engine) |
+| 3 | Realistic scenarios and EPCIS import | 3 selectable attacks, EPCIS JSON import | 2 | No (touches the engine) |
+| 4 | Timeline and live events | Step-by-step replay, SSE stream to animate the UI | 3 | No |
+| 5 | AI: Bedrock and document reading | `BedrockExplainer`, PDF/email → record extraction | 1 | **Yes**, in parallel with 2 to 4 (only `ai.py` and `ingest/` files) |
+| 6 | Demo-ready | Demo script, robustness, deployment, freeze | 1 to 5 | No, last |
 
-**Règles communes à tous les handoffs :**
+**Rules shared by all handoffs:**
 
-- Lire d'abord `docs/firebreak.md` (l'idée), `docs/benchmark-firebreak.md` (le positionnement) et ce plan.
-- Stack : Python 3.12, uv, FastAPI, networkx, `cryptography`, pytest. Pas de nouvelle dépendance sans raison ; versions stables, publiées depuis au moins 7 jours.
-- Textes visibles par l'utilisateur en français ; code et identifiants en anglais.
-- Principe non négociable : **le blocage est décidé par des règles sur le graphe, jamais par l'IA.** L'IA explique et propose.
-- Les entreprises ne lisent jamais les données des autres. Seuls des tokens opaques et des alertes signées circulent.
-- `uv run pytest -q` doit rester vert. Chaque étape ajoute ses propres tests.
-- Ne pas modifier `CLAUDE.md`, `AGENTS.md` ni `sessionyann.md`. Commit + push à la fin de l'étape.
+- First read `docs/firebreak.md` (the idea), `docs/benchmark-firebreak.md` (the positioning) and this plan.
+- Stack: Python 3.12, uv, FastAPI, networkx, `cryptography`, pytest. No new dependency without a reason; stable versions, released at least 7 days ago.
+- User-facing text and docs in English (Mika's decision on 11/10, whole repo translated); code and identifiers in English.
+- Non-negotiable principle: **blocking is decided by rules on the graph, never by the AI.** The AI explains and proposes.
+- Companies never read each other's data. Only opaque tokens and signed alerts are exchanged.
+- `uv run pytest -q` must stay green. Each step adds its own tests.
+- Do not modify `CLAUDE.md`, `AGENTS.md` or `sessionyann.md`. Commit + push at the end of the step.
 
 ---
 
-## Handoff 1 — Consolider le socle et figer le contrat API
+## Handoff 1 — Consolidate the foundation and freeze the API contract
 
 ```text
-Projet : FIREBREAK, dépôt finswag (hackathon, gel du dépôt dimanche 12 h).
-Lis docs/firebreak.md, docs/benchmark-firebreak.md et docs/plan.md avant de commencer.
+Project: FIREBREAK, finswag repo (hackathon, repo freeze Sunday 12:00).
+Read docs/firebreak.md, docs/benchmark-firebreak.md and docs/plan.md before starting.
 
-Contexte : un premier socle existe (src/firebreak/, web/index.html, tests/, 26 tests verts),
-écrit d'une traite et jamais relu. Une collègue va construire l'interface finale sur l'API :
-le contrat doit être propre et stable dès maintenant.
+Context: a first foundation exists (src/firebreak/, web/index.html, tests/, 26 green tests),
+written in one go and never reviewed. A colleague will build the final interface on top of the API:
+the contract must be clean and stable from now on.
 
-À faire :
-1. Relire tout src/firebreak/ et tests/ en cherchant les défauts. Points à vérifier en priorité :
-   - la propagation suit exactement les règles : seeds = records dont origin == source et ts >= since,
-     plus ceux dont le token figure dans une alerte vérifiée ; un record est contaminé si l'une de
-     ses entrées l'est, sauf s'il est verified ou released (dans ce cas il bloque la propagation) ;
-   - taint_path est correct et le recalcul est déterministe et idempotent ;
-   - aucun ledger ne lit directement les records d'un autre ledger ;
-   - les alertes ne contiennent que des tokens (ni payload, ni label, ni montant).
-   Corriger ce qui est faux et ajouter un test par bug trouvé.
-2. Figer le contrat API :
-   - modèles Pydantic de réponse pour /api/state, /explain, /remediate (response_model), afin que
-     l'OpenAPI (/docs) soit exploitable par la collègue ;
-   - CORS ouvert pour le développement (localhost:5173 et localhost:3000) ;
-   - préfixe /api conservé, erreurs JSON homogènes {"detail": ...}.
-3. Écrire docs/api.md : chaque endpoint avec un exemple de requête et de réponse réelles
-   (tronquées), la signification des statuts (ok, quarantined, released), des champs gate et
-   verified, et des compteurs.
-4. README : section « Lancer le projet » (uv sync, uvicorn, tests, URL du dashboard et de /docs).
-5. Supprimer le warning de dépréciation httpx des tests si c'est trivial, sinon le laisser.
+To do:
+1. Review all of src/firebreak/ and tests/ looking for defects. Check these first:
+   - propagation follows the rules exactly: seeds = records whose origin == source and ts >= since,
+     plus those whose token appears in a verified alert; a record is tainted if one of its
+     inputs is, unless it is verified or released (in which case it stops propagation);
+   - taint_path is correct and recomputation is deterministic and idempotent;
+   - no ledger reads another ledger's records directly;
+   - alerts contain only tokens (no payload, no label, no amount).
+   Fix what is wrong and add one test per bug found.
+2. Freeze the API contract:
+   - Pydantic response models for /api/state, /explain, /remediate (response_model), so that
+     the OpenAPI (/docs) is usable by the colleague;
+   - CORS open for development (localhost:5173 and localhost:3000);
+   - keep the /api prefix, consistent JSON errors {"detail": ...}.
+3. Write docs/api.md: each endpoint with a real request and response example
+   (truncated), the meaning of the statuses (ok, quarantined, released), of the gate and
+   verified fields, and of the counters.
+4. README: "Running the project" section (uv sync, uvicorn, tests, dashboard and /docs URLs).
+5. Remove the httpx deprecation warning from the tests if trivial, otherwise leave it.
 
-Ne pas changer le comportement du scénario : le test tests/test_scenario.py::test_exact_quarantined_set
-doit rester vert avec le même ensemble attendu, sauf bug avéré (à justifier dans le rapport).
+Do not change the scenario's behavior: the test tests/test_scenario.py::test_exact_quarantined_set
+must stay green with the same expected set, unless there is a proven bug (justify it in the report).
 
-Fini quand : pytest vert ; serveur lancé sur le port 8000 ; curl de /api/state et de
-POST /api/compromise OK ; docs/api.md écrit. Commit + push.
-Rapport : bugs trouvés et corrigés, sortie de pytest, compteurs après compromission.
+Done when: pytest green; server running on port 8000; curl of /api/state and of
+POST /api/compromise OK; docs/api.md written. Commit + push.
+Report: bugs found and fixed, pytest output, counters after compromise.
 ```
 
-## Handoff 2 — Fédération complète et journal d'audit
+## Handoff 2 — Full federation and audit log
 
 ```text
-Projet : FIREBREAK, dépôt finswag. Lis docs/firebreak.md, docs/plan.md et docs/api.md.
-Le socle (étape 1) est relu et le contrat API est figé : ne casse pas les endpoints existants,
-ajoute des champs ou des endpoints si besoin et mets docs/api.md à jour.
+Project: FIREBREAK, finswag repo. Read docs/firebreak.md, docs/plan.md and docs/api.md.
+The foundation (step 1) is reviewed and the API contract is frozen: do not break existing endpoints,
+add fields or endpoints if needed and update docs/api.md.
 
-Objectif : rendre la réponse complète entre entreprises et prouvable devant un auditeur
-(angle KPMG / conformité).
+Goal: make the response complete across companies and provable to an auditor
+(KPMG / compliance angle).
 
-1. Levée de quarantaine fédérée. Aujourd'hui, si le fabricant remédie m-gr-X, les records reçus
-   en aval (d-ship-X, c-ship-X) restent en quarantaine car les alertes déjà émises restent actives.
-   À implémenter :
-   - un nouveau type d'alerte signée « release » (même format canonique et signature Ed25519 que
-     les alertes de contamination, avec un champ type: "taint" | "release"), émise quand un record
-     sortant n'est plus contaminé après recalcul ;
-   - le destinataire vérifie la signature, retire ces tokens de ses seeds, recalcule et propage
-     à son tour vers l'aval, jusqu'à stabilisation ;
-   - une release dont la signature est invalide est rejetée et journalisée.
-2. Journal d'audit en ajout seul (append-only) par entreprise : déclaration de compromission,
-   alerte émise ou reçue (vérifiée ou non), mise en quarantaine (avec la règle et le taint_path),
-   remédiation (action, horodatage, acteur : "humain" ou "règle"), levée. Chaque entrée est chaînée
-   par hash à la précédente (sha256 de l'entrée précédente + entrée courante), pour qu'on puisse
-   prouver que le journal n'a pas été modifié.
-   Endpoints : GET /api/audit?company=..., GET /api/audit/verify (recalcule la chaîne et renvoie
-   ok ou l'index de la première entrée cassée).
-3. Plusieurs déclarations : pouvoir déclarer plusieurs sources compromises, ou la même avec une
-   autre heure (on garde la plus ancienne). Endpoint pour retirer une déclaration (fausse alerte),
-   ce qui déclenche des releases en cascade.
+1. Federated quarantine release. Today, if the manufacturer remediates m-gr-X, the records received
+   downstream (d-ship-X, c-ship-X) stay quarantined because the alerts already sent stay active.
+   To implement:
+   - a new signed "release" alert type (same canonical format and Ed25519 signature as
+     taint alerts, with a field type: "taint" | "release"), sent when an outgoing
+     record is no longer tainted after recomputation;
+   - the recipient verifies the signature, removes these tokens from its seeds, recomputes and propagates
+     downstream in turn, until things stabilize;
+   - a release with an invalid signature is rejected and logged.
+2. Append-only audit log per company: compromise declaration,
+   alert sent or received (verified or not), quarantine (with the rule and the taint_path),
+   remediation (action, timestamp, actor: "humain" or "règle"), release. Each entry is hash-chained
+   to the previous one (sha256 of the previous entry + current entry), so we can
+   prove the log has not been modified.
+   Endpoints: GET /api/audit?company=..., GET /api/audit/verify (recomputes the chain and returns
+   ok or the index of the first broken entry).
+3. Multiple declarations: allow declaring several compromised sources, or the same one with a
+   different time (keep the earliest). Endpoint to withdraw a declaration (false alarm),
+   which triggers cascading releases.
 
-Tests obligatoires : release valide → aval libéré jusqu'au client ; release falsifiée → rejetée,
-aval toujours en quarantaine ; chaîne d'audit valide puis altérée → verify détecte l'index ;
-retrait d'une déclaration → retour à l'état initial (zéro quarantaine).
-Fini quand : pytest vert, docs/api.md à jour, dashboard de debug toujours fonctionnel. Commit + push.
+Required tests: valid release → downstream released all the way to the customer; forged release → rejected,
+downstream still quarantined; valid then tampered audit chain → verify detects the index;
+withdrawal of a declaration → back to the initial state (zero quarantine).
+Done when: pytest green, docs/api.md up to date, debug dashboard still working. Commit + push.
 ```
 
-## Handoff 3 — Scénarios réalistes et import EPCIS
+## Handoff 3 — Realistic scenarios and EPCIS import
 
 ```text
-Projet : FIREBREAK, dépôt finswag. Lis docs/firebreak.md, docs/plan.md, docs/api.md.
+Project: FIREBREAK, finswag repo. Read docs/firebreak.md, docs/plan.md, docs/api.md.
 
-Objectif : montrer que FIREBREAK marche sur des supply chains physiques et s'appuie sur un
-standard que l'industrie connaît (GS1 EPCIS 2.0), au lieu d'un format maison.
+Goal: show that FIREBREAK works on physical supply chains and builds on a
+standard the industry knows (GS1 EPCIS 2.0), instead of a home-made format.
 
-1. Trois scénarios d'attaque, sélectionnables via POST /api/reset {"scenario": "..."} :
-   - "rib" : facture avec RIB modifié → paiement bloqué (le cas finance) ;
-   - "cert" : faux certificat qualité → lot de production non conforme mis en quarantaine,
-     ainsi que les expéditions de ce lot jusqu'au client ;
-   - "asn" : faux avis d'expédition → réception fantôme et production lancée sur un stock inexistant.
-   Le scénario actuel (les trois attaques mélangées) devient "mixed" et reste celui par défaut.
-   Chaque scénario : déterministe, entre 100 et 150 records, moins de 15 % en quarantaine, au moins
-   un gate bloqué, au moins un record verified qui arrête la propagation. Ensemble attendu de
-   quarantaine codé en dur dans les tests, raisonné et non copié depuis la sortie.
-2. Généalogie des lots : modéliser la transformation (lots consommés → lot produit) comme
-   dans un TransformationEvent EPCIS, pour qu'un lot contaminé contamine les lots fabriqués avec lui.
-3. Import EPCIS : module src/firebreak/ingest/epcis.py qui lit un document EPCIS 2.0 JSON-LD
-   (ObjectEvent, AggregationEvent, TransformationEvent ; champs eventTime, bizStep,
-   inputEPCList/outputEPCList, sourceList/destinationList) et le convertit en records d'un ledger.
-   Fournir un exemple dans assets/samples/epcis-sample.json et un endpoint
-   POST /api/ingest/epcis?company=.... Ne gérer que le sous-ensemble utile, documenté dans docs/api.md.
+1. Three attack scenarios, selectable via POST /api/reset {"scenario": "..."}:
+   - "rib": invoice with modified bank details (RIB) → payment blocked (the finance case);
+   - "cert": fake quality certificate → non-compliant production lot quarantined,
+     along with that lot's shipments all the way to the customer;
+   - "asn": fake advance shipping notice → phantom receipt and production started on non-existent stock.
+   The current scenario (the three attacks mixed) becomes "mixed" and remains the default.
+   Each scenario: deterministic, between 100 and 150 records, less than 15% quarantined, at least
+   one gate blocked, at least one verified record that stops propagation. Expected quarantine
+   set hard-coded in the tests, reasoned out and not copied from the output.
+2. Lot genealogy: model transformation (consumed lots → produced lot) as
+   in an EPCIS TransformationEvent, so a tainted lot taints the lots made with it.
+3. EPCIS import: module src/firebreak/ingest/epcis.py that reads an EPCIS 2.0 JSON-LD document
+   (ObjectEvent, AggregationEvent, TransformationEvent; fields eventTime, bizStep,
+   inputEPCList/outputEPCList, sourceList/destinationList) and converts it into a ledger's records.
+   Provide a sample in assets/samples/epcis-sample.json and an endpoint
+   POST /api/ingest/epcis?company=.... Only handle the useful subset, documented in docs/api.md.
 
-Tests : un test par scénario (ensemble exact), un test de généalogie de lots, un test d'import
-EPCIS sur l'exemple. Fini quand : pytest vert, les trois scénarios visibles dans le dashboard
-(ajouter un sélecteur), docs/api.md à jour. Commit + push.
+Tests: one test per scenario (exact set), one lot genealogy test, one EPCIS import
+test on the sample. Done when: pytest green, the three scenarios visible in the dashboard
+(add a selector), docs/api.md up to date. Commit + push.
 ```
 
-## Handoff 4 — Timeline et événements live
+## Handoff 4 — Timeline and live events
 
 ```text
-Projet : FIREBREAK, dépôt finswag. Lis docs/plan.md et docs/api.md.
+Project: FIREBREAK, finswag repo. Read docs/plan.md and docs/api.md.
 
-Objectif : la démo doit montrer la contamination se propager pas à pas, d'une entreprise à
-l'autre, et non un graphe qui devient rouge d'un coup. La collègue qui fait l'UI a besoin d'un
-flux d'événements.
+Goal: the demo must show contamination spreading step by step, from one company to
+the next, not a graph that turns red all at once. The colleague building the UI needs an
+event stream.
 
-1. Rejeu pas à pas : la propagation et la fédération produisent une liste ordonnée d'étapes
-   (déclaration, seed, contamination d'un record avec son parent, alerte émise, alerte vérifiée,
-   quarantaine d'un gate, release…). Chaque étape a un numéro, un type, une entreprise, des ids
-   de records, un horodatage simulé. Ne pas dupliquer la logique : instrumenter le moteur
-   existant (callback ou journal d'événements), sans changer ses résultats.
-2. Endpoints :
-   - GET /api/timeline → la liste complète des étapes de la dernière action ;
-   - GET /api/events (Server-Sent Events) → diffuse les étapes en direct, avec un paramètre
-     ?speed= pour ralentir le rejeu en démo.
-3. Dashboard de debug : bouton « Rejouer » qui anime les étapes (nœuds qui passent au rouge un
-   par un, alerte qui « voyage » sur l'arête inter-entreprises).
-4. Documenter le format des événements dans docs/api.md, avec un exemple de consommation SSE
-   en JavaScript (EventSource) pour la collègue.
+1. Step-by-step replay: propagation and federation produce an ordered list of steps
+   (declaration, seed, contamination of a record with its parent, alert sent, alert verified,
+   gate quarantined, release…). Each step has a number, a type, a company, record
+   ids, a simulated timestamp. Do not duplicate logic: instrument the existing
+   engine (callback or event log), without changing its results.
+2. Endpoints:
+   - GET /api/timeline → the full list of steps of the last action;
+   - GET /api/events (Server-Sent Events) → streams the steps live, with a
+     ?speed= parameter to slow the replay down for the demo.
+3. Debug dashboard: "Replay" button that animates the steps (nodes turning red one
+   by one, alert "traveling" along the cross-company edge).
+4. Document the event format in docs/api.md, with an example of consuming SSE
+   in JavaScript (EventSource) for the colleague.
 
-Tests : l'état final reconstruit à partir de la timeline est identique à /api/state ; l'ordre
-est causal (un record n'est contaminé qu'après son parent, une alerte n'est reçue qu'après avoir
-été émise) ; test SSE minimal avec TestClient.
-Fini quand : pytest vert, rejeu visible dans le dashboard. Commit + push.
+Tests: the final state rebuilt from the timeline is identical to /api/state; the order
+is causal (a record is tainted only after its parent, an alert is received only after being
+sent); minimal SSE test with TestClient.
+Done when: pytest green, replay visible in the dashboard. Commit + push.
 ```
 
-## Handoff 5 — IA : Bedrock et lecture de documents (en parallèle de 2 à 4)
+## Handoff 5 — AI: Bedrock and document reading (in parallel with 2 to 4)
 
 ```text
-Projet : FIREBREAK, dépôt finswag. Lis docs/firebreak.md, docs/plan.md, docs/api.md.
-Ne modifie que src/firebreak/ai.py, src/firebreak/ingest/documents.py (nouveau), leurs tests et
-le minimum de câblage dans api.py : d'autres étapes travaillent en parallèle sur le moteur.
+Project: FIREBREAK, finswag repo. Read docs/firebreak.md, docs/plan.md, docs/api.md.
+Only modify src/firebreak/ai.py, src/firebreak/ingest/documents.py (new), their tests and
+the minimum wiring in api.py: other steps are working on the engine in parallel.
 
-Règle absolue : l'IA ne décide jamais d'un blocage. Elle explique, propose et extrait des données ;
-toute donnée extraite passe par les règles du graphe comme n'importe quel record.
+Absolute rule: the AI never decides a block. It explains, proposes and extracts data;
+any extracted data goes through the graph rules like any other record.
 
-1. BedrockExplainer : implémente l'interface Explainer existante (explain, remediation_plan) avec
-   AWS Bedrock via boto3 (Converse API). Modèle configurable par variable d'environnement
-   FIREBREAK_BEDROCK_MODEL, région via AWS_REGION. Sélection : FIREBREAK_AI=bedrock|mock (mock par
-   défaut). En cas d'erreur, de timeout (8 s) ou d'absence d'identifiants : repli automatique sur
-   MockExplainer, et la réponse indique source: "mock" ou "bedrock".
-   Le prompt reçoit uniquement le record, son taint_path et les règles appliquées ; il doit
-   produire une explication en français et un plan de reprise parmi les actions existantes
-   (revalidate, human_approval, trusted_source). Si la réponse n'est pas un JSON valide ou propose
-   une action hors liste, rejeter et utiliser le mock.
-2. Lecture de documents : POST /api/ingest/document?company=... accepte un PDF ou un texte de mail
-   fournisseur (bon de commande, avis d'expédition, facture, changement de RIB) et renvoie un record
-   proposé (kind, label, payload : montant, RIB, références, dates) avec un score de confiance.
-   Le record n'est ajouté au ledger qu'après confirmation (POST .../confirm). Version mock basée
-   sur des expressions régulières, version Bedrock si FIREBREAK_AI=bedrock.
-   Mettre 3 documents d'exemple dans assets/samples/ (dont une facture avec RIB modifié).
-3. Ne jamais journaliser les identifiants AWS. Aucun secret dans le dépôt.
+1. BedrockExplainer: implement the existing Explainer interface (explain, remediation_plan) with
+   AWS Bedrock via boto3 (Converse API). Model configurable via the environment variable
+   FIREBREAK_BEDROCK_MODEL, region via AWS_REGION. Selection: FIREBREAK_AI=bedrock|mock (mock by
+   default). On error, timeout (8 s) or missing credentials: automatic fallback to
+   MockExplainer, and the response indicates source: "mock" or "bedrock".
+   The prompt receives only the record, its taint_path and the rules applied; it must
+   produce an explanation in English and a recovery plan chosen from the existing actions
+   (revalidate, human_approval, trusted_source). If the response is not valid JSON or proposes
+   an action outside the list, reject it and use the mock.
+2. Document reading: POST /api/ingest/document?company=... accepts a PDF or the text of a supplier
+   email (purchase order, shipping notice, invoice, bank details change) and returns a proposed
+   record (kind, label, payload: amount, RIB, references, dates) with a confidence score.
+   The record is added to the ledger only after confirmation (POST .../confirm). Mock version based
+   on regular expressions, Bedrock version if FIREBREAK_AI=bedrock.
+   Put 3 sample documents in assets/samples/ (including an invoice with modified bank details).
+3. Never log AWS credentials. No secrets in the repo.
 
-Tests : tout en mode mock, Bedrock simulé par un faux client (pas d'appel réseau en test) ;
-repli sur le mock en cas d'erreur ; rejet d'une action hors liste ; extraction des 3 exemples.
-Fini quand : pytest vert, docs/api.md à jour (section IA + variables d'environnement). Commit + push.
+Tests: everything in mock mode, Bedrock simulated by a fake client (no network calls in tests);
+fallback to the mock on error; rejection of an off-list action; extraction of the 3 samples.
+Done when: pytest green, docs/api.md up to date (AI section + environment variables). Commit + push.
 ```
 
-## Handoff 6 — Prêt pour la démo
+## Handoff 6 — Demo-ready
 
 ```text
-Projet : FIREBREAK, dépôt finswag. Lis docs/firebreak.md, docs/benchmark-firebreak.md,
-docs/plan.md, docs/api.md. Les étapes 1 à 5 sont livrées.
+Project: FIREBREAK, finswag repo. Read docs/firebreak.md, docs/benchmark-firebreak.md,
+docs/plan.md, docs/api.md. Steps 1 to 5 are delivered.
 
-Objectif : une démo de 3 minutes qui ne peut pas planter, et les chiffres du pitch.
+Goal: a 3-minute demo that cannot crash, and the pitch numbers.
 
-1. Mode démo : FIREBREAK_DEMO=1 → scénario par défaut, IA en mock garanti (aucune dépendance
-   réseau), vitesse de rejeu réglée pour la scène, endpoint POST /api/demo/step qui avance la démo
-   d'un cran (pour piloter au clic depuis l'UI ou un clavier).
-2. Script de démo dans docs/demo.md : chaque clic, ce qu'on voit à l'écran, la phrase à dire,
-   et les chiffres réels lus depuis l'API (opérations bloquées, opérations qui continuent, gates
-   bloqués, entreprises touchées, montant du paiement frauduleux bloqué). Les chiffres doivent
-   venir d'une commande reproductible, pas être recopiés à la main.
-3. Robustesse : test de bout en bout qui déroule exactement le script de démo via l'API
-   (reset → compromise → rejeu → explain → remediate → release fédérée → audit verify) ; temps de
-   réponse de /api/state mesuré (< 200 ms sur le scénario) ; reset fiable entre deux passages.
-4. Lancement en une commande : scripts/demo.sh (uv sync, lance le serveur, ouvre le navigateur).
-   Optionnel si le temps le permet : Dockerfile minimal.
-5. README final : pitch en 3 lignes, architecture, lancement, liens vers docs/.
-6. Gel : tag git demo-freeze une fois tout vert.
+1. Demo mode: FIREBREAK_DEMO=1 → default scenario, AI guaranteed in mock (no network
+   dependency), replay speed tuned for the stage, endpoint POST /api/demo/step that advances the demo
+   by one notch (to drive it by click from the UI or a keyboard).
+2. Demo script in docs/demo.md: each click, what is shown on screen, the line to say,
+   and the real numbers read from the API (blocked operations, operations that keep flowing, blocked
+   gates, companies affected, amount of the fraudulent payment blocked). The numbers must
+   come from a reproducible command, not be copied by hand.
+3. Robustness: end-to-end test that runs exactly the demo script via the API
+   (reset → compromise → replay → explain → remediate → federated release → audit verify); response
+   time of /api/state measured (< 200 ms on the scenario); reliable reset between two runs.
+4. One-command launch: scripts/demo.sh (uv sync, starts the server, opens the browser).
+   Optional if time allows: minimal Dockerfile.
+5. Final README: 3-line pitch, architecture, launch, links to docs/.
+6. Freeze: git tag demo-freeze once everything is green.
 
-Fini quand : test de bout en bout vert, docs/demo.md avec chiffres réels, scripts/demo.sh testé
-depuis un clone propre. Commit + push + tag.
+Done when: end-to-end test green, docs/demo.md with real numbers, scripts/demo.sh tested
+from a clean clone. Commit + push + tag.
 ```

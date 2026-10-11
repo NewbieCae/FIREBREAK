@@ -1,4 +1,4 @@
-"""FirebreakRegistry sur une EVM en mémoire (eth-tester) : aucun réseau."""
+"""FirebreakRegistry on an in-memory EVM (eth-tester): no network."""
 
 import pytest
 
@@ -28,7 +28,7 @@ def chain():
     accounts = derive_accounts(TEST_MNEMONIC)
     pubkeys = Federation(list(COMPANIES)).public_keys
     contract = ensure_tester_registry(w3, accounts, pubkeys)
-    # Un compte extérieur financé mais jamais enregistré.
+    # An outside account, funded but never registered.
     outsider = w3.eth.account.create()
     send_value(w3, accounts["admin"], outsider.address, w3.to_wei(1, "ether"))
     return w3, contract, accounts, pubkeys, outsider
@@ -42,7 +42,7 @@ def test_build_matches_source():
     from firebreak.chain.artifact import source_sha256
 
     assert load_artifact()["sourceSha256"] == source_sha256(), \
-        "contracts/build périmé : relancer scripts/chain_compile.py"
+        "contracts/build is stale: rerun scripts/chain_compile.py"
     assert load_artifact()["evmVersion"] == "paris"
 
 
@@ -54,7 +54,7 @@ def test_members_registered_with_pubkeys(chain):
         assert company == ids.company_id(cid) and pubkey == pubkeys[cid] and active
         assert contract.functions.accountOf(ids.company_id(cid)).call() == accounts[cid].address
         assert contract.functions.pubKeyOf(ids.company_id(cid)).call() == pubkeys[cid]
-    # Relancer l'enregistrement n'envoie aucune transaction.
+    # Re-running the registration sends no transaction.
     assert register_members(w3, contract, accounts["admin"], accounts, pubkeys) == []
 
 
@@ -62,7 +62,7 @@ def test_only_admin_registers(chain):
     w3, contract, accounts, _, outsider = chain
     with pytest.raises(Exception):
         transact(w3, accounts["fabricant"],
-                 contract.functions.registerMember(outsider.address, ids.company_id("intrus"), b"\x01" * 32))
+                 contract.functions.registerMember(outsider.address, ids.company_id("intruder"), b"\x01" * 32))
 
 
 def test_company_cannot_be_hijacked(chain):
@@ -107,14 +107,14 @@ def test_alert_anchor_and_acknowledge(chain):
     assert ev.args.fromCompany == ids.company_id("fournisseur") and ev.args.toCompany == to
     frm, to_, kind, anchored_at, ack_at = contract.functions.alerts(h).call()
     assert kind == 0 and anchored_at > 0 and ack_at == 0
-    with pytest.raises(Exception):  # même empreinte deux fois
+    with pytest.raises(Exception):  # same fingerprint twice
         transact(w3, accounts["fournisseur"], contract.functions.anchorAlert(RUN, h, to, 0))
-    with pytest.raises(Exception):  # seul le destinataire acquitte
+    with pytest.raises(Exception):  # only the recipient acknowledges
         transact(w3, accounts["distributeur"], contract.functions.acknowledgeAlert(h))
     r = transact(w3, accounts["fabricant"], contract.functions.acknowledgeAlert(h))
     assert len(_events(contract, r, "AlertAcknowledged")) == 1
     assert contract.functions.alerts(h).call()[4] > 0
-    with pytest.raises(Exception):  # double acquittement
+    with pytest.raises(Exception):  # double acknowledgement
         transact(w3, accounts["fabricant"], contract.functions.acknowledgeAlert(h))
 
 
@@ -137,7 +137,7 @@ def test_audit_anchor_never_shrinks_within_a_run(chain):
     assert contract.functions.latestAudit(RUN, me).call()[1] == 7
     with pytest.raises(Exception):
         transact(w3, accounts["fabricant"], contract.functions.anchorAudit(RUN, b"\x0a" * 32, 6))
-    other_run = ids.new_run_id()  # nouvelle partie de démo : repart de zéro
+    other_run = ids.new_run_id()  # new demo run: starts from zero
     transact(w3, accounts["fabricant"], contract.functions.anchorAudit(other_run, b"\x0b" * 32, 1))
     assert contract.functions.latestAudit(other_run, me).call()[1] == 1
 
@@ -156,7 +156,7 @@ def test_revert_raises_transaction_failed_or_contract_error(chain):
 
 
 def test_quality_report_type_anchored_and_acknowledged(chain):
-    """Type 2 : signalement qualité du client vers son fournisseur (sens amont)."""
+    """Type 2: quality report from the customer to its supplier (upstream)."""
     w3, contract, accounts, _, _ = chain
     h = b"\x0e" * 32
     transact(w3, accounts["fabricant"],

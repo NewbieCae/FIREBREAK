@@ -1,4 +1,4 @@
-"""Endpoints qualité : lot suspect, analyse de rappel, signalements amont."""
+"""Quality endpoints: suspect lot, recall analysis, upstream reports."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,11 +24,11 @@ def _quarantined(state):
 
 def test_lot_suspect_then_withdraw_without_blacklisting(client):
     r = client.post("/api/lots/suspect", json={
-        "company": "fabricant", "lot": "COIL-104", "reason": "défaut de coulée"})
+        "company": "fabricant", "lot": "COIL-104", "reason": "casting defect"})
     assert r.status_code == 200
     q = _quarantined(r.json())
     assert {"m-lot-04", "m-lot-a4"} <= q
-    assert "m-pay-04" not in q and "f-inv-04" not in q  # fournisseur non blacklisté
+    assert "m-pay-04" not in q and "f-inv-04" not in q  # supplier not blacklisted
     assert r.json()["declarations"] == []
     audit = client.get("/api/audit", params={"company": "fabricant"}).json()
     assert "lot_suspect" in {e["event"] for e in audit["entries"]}
@@ -58,7 +58,7 @@ def test_recall_analysis_is_read_only(client):
 
 def test_report_chain_client_to_distributeur(client):
     r = client.post("/api/reports", json={
-        "company": "client", "ref": "c-gr-03", "reason": "casse sur chantier"})
+        "company": "client", "ref": "c-gr-03", "reason": "broke on site"})
     assert r.status_code == 200
     (rep,) = r.json()
     assert (rep["from"], rep["to"], rep["verified"], rep["status"]) == \
@@ -67,7 +67,7 @@ def test_report_chain_client_to_distributeur(client):
     assert [x["id"] for x in inbox] == [rep["id"]]
     assert _quarantined(client.get("/api/state").json()) == set()
 
-    # mauvais destinataire : refusé
+    # wrong recipient: refused
     assert client.post(f"/api/reports/{rep['id']}/decision",
                        json={"company": "fabricant", "decision": "confirm"}).status_code == 404
     assert client.post(f"/api/reports/{rep['id']}/decision",
@@ -81,7 +81,7 @@ def test_report_chain_client_to_distributeur(client):
     for company in ("client", "distributeur"):
         assert client.get("/api/audit", params={"company": company}).status_code == 200
     assert "d-out-03" in _quarantined(client.get("/api/state").json())
-    # déjà traité
+    # already handled
     assert client.post(f"/api/reports/{rep['id']}/decision",
                        json={"company": "distributeur", "decision": "reject"}).status_code == 400
 

@@ -1,4 +1,4 @@
-"""Interface finale servie par l'API (web/app/) et documents d'exemple."""
+"""Final interface served by the API (web/app/) and sample documents."""
 
 from fastapi.testclient import TestClient
 

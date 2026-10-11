@@ -1,7 +1,7 @@
 [project]
 name = "firebreak"
 version = "0.1.0"
-description = "Firebreak — confinement ciblé des compromissions dans les supply chains"
+description = "Firebreak — targeted containment of compromises in supply chains"
 requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.43.111",
@@ -35,6 +35,6 @@ dev = [
 testpaths = ["tests"]
 
 [tool.uv]
-# safe-pysha3 (tiré par eth-hash[pysha3]) n'a pas de wheel Windows et exige
-# un compilateur Visual Studio. eth-hash bascule seul sur pycryptodome.
+# safe-pysha3 (pulled in by eth-hash[pysha3]) has no Windows wheel and requires
+# a Visual Studio compiler. eth-hash falls back to pycryptodome on its own.
 override-dependencies = ["safe-pysha3 ; sys_platform == 'never'"]

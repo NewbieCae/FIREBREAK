@@ -1,14 +1,14 @@
-"""Journal d'audit Firebreak : ajout seul, chaîné par hash.
+"""Firebreak audit log: append-only, hash-chained.
 
-Chaque entreprise tient son propre journal. Chaque entrée porte le hash
-de la précédente (`prev_hash`) et son propre hash :
-`hash = sha256(prev_hash + json_canonique(entrée sans "hash"))`.
-Modifier, supprimer ou réordonner une entrée casse la chaîne à partir
-de cette entrée : `verify()` renvoie l'index de la première entrée cassée.
+Each company keeps its own log. Each entry carries the hash of the
+previous one (`prev_hash`) and its own hash:
+`hash = sha256(prev_hash + canonical_json(entry without "hash"))`.
+Modifying, deleting or reordering an entry breaks the chain from that
+entry on: `verify()` returns the index of the first broken entry.
 
-Limite : la chaîne prouve que le journal n'a pas été modifié par
-quelqu'un qui ne recalcule pas tous les hash suivants. Pour s'en
-protéger, il faut ancrer le dernier hash (`head`) à l'extérieur.
+Limitation: the chain proves the log was not modified by someone who
+does not recompute all following hashes. To guard against that, the
+last hash (`head`) must be anchored externally.
 """
 
 from __future__ import annotations
@@ -62,8 +62,8 @@ class AuditLog:
         return len(self._entries)
 
     def verify(self) -> int | None:
-        """Recalcule la chaîne. Renvoie None si intacte, sinon l'index de
-        la première entrée cassée."""
+        """Recomputes the chain. Returns None if intact, otherwise the index
+        of the first broken entry."""
         prev = GENESIS
         for i, entry in enumerate(self._entries):
             body = {k: v for k, v in entry.items() if k != "hash"}

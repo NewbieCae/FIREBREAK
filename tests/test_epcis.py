@@ -13,17 +13,17 @@ SAMPLE = json.loads((Path(__file__).resolve().parents[1]
                      / "assets/samples/epcis-sample.json").read_text())
 client = TestClient(app)
 
-# Sample (registre du fabricant) : COIL-12 livrée à 09:00, COIL-77 et COIL-78
-# expédiées après 14:00 ; COIL-78 contrôlée conforme ; LOT-801 = COIL-77 + COIL-12,
-# LOT-802 = COIL-78 ; LOT-801 palettisé puis expédié au distributeur.
+# Sample (manufacturer's ledger): COIL-12 delivered at 09:00, COIL-77 and COIL-78
+# shipped after 14:00; COIL-78 inspected as conformant; LOT-801 = COIL-77 + COIL-12,
+# LOT-802 = COIL-78; LOT-801 palletized then shipped to the distributor.
 EXPECTED_TAINTED = {
-    "m-epcis-03",  # avis d'expédition COIL-77 (14:20, fournisseur)
-    "m-epcis-04",  # avis d'expédition COIL-78 (14:30, fournisseur)
-    "m-epcis-05",  # réception COIL-77
-    "m-epcis-06",  # réception COIL-78
+    "m-epcis-03",  # shipping notice COIL-77 (14:20, supplier)
+    "m-epcis-04",  # shipping notice COIL-78 (14:30, supplier)
+    "m-epcis-05",  # receipt COIL-77
+    "m-epcis-06",  # receipt COIL-78
     "m-epcis-08",  # transformation COIL-77 + COIL-12 → LOT-801
-    "m-epcis-10",  # palettisation LOT-801
-    "m-epcis-11",  # expédition de la palette
+    "m-epcis-10",  # palletization LOT-801
+    "m-epcis-11",  # shipment of the pallet
 }
 
 
@@ -86,7 +86,7 @@ def test_unsupported_and_invalid_events_are_reported():
     assert len(result.records) == 11
     assert [i["index"] for i in result.ignored] == [11, 12, 14, 13]
     reasons = " ".join(i["reason"] for i in result.ignored)
-    assert "non géré" in reasons and "eventTime" in reasons and "GLN inconnu" in reasons
+    assert "unsupported" in reasons and "eventTime" in reasons and "unknown GLN" in reasons
 
 
 @pytest.mark.parametrize("doc", [{}, {"type": "EPCISDocument"}, [], "x"])
@@ -107,7 +107,7 @@ def test_second_import_links_to_first():
     _, second = _parse(follow_up, sim)
     (rec,) = second.records
     assert rec.id == "m-epcis-12" and rec.inputs == ["m-epcis-09"]
-    assert not rec.verified  # non conforme : pas une source de confiance
+    assert not rec.verified  # non-conformant: not a trusted source
 
 
 class TestApi:

@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""messages.py — messagerie d'équipe dans le dépôt (fichier messages.md).
+"""messages.py — team messaging inside the repo (messages.md file).
 
-    send <to> <texte>      ajoute un message (to = tous | yann | mika | celine | maria,
-                           ou plusieurs séparés par des virgules), commit et push
-    deliver [membre]       messages non lus pour le membre, marqués comme lus
-                           (utilisé par le hook team-sync.sh start)
-    pending [membre]       idem sans marquer comme lus
-    poll [membre]          fetch sans toucher l'arbre, notifie (notify-send) les
-                           nouveaux messages pour le membre (utilisé par le cron)
-    list                   tous les messages
-    whoami                 membre courant
+    send <to> <text>       append a message (to = tous | all | yann | mika | celine | maria,
+                           or several separated by commas), commit and push
+    deliver [member]       unread messages for the member, marked as read
+                           (used by the team-sync.sh start hook)
+    pending [member]       same without marking them as read
+    poll [member]          fetch without touching the work tree, notify (notify-send)
+                           new messages for the member (used by the cron job)
+    list                   all messages
+    whoami                 current member
 
-Format d'un message dans messages.md :
+Message format in messages.md:
 
     ### yann → tous · 2026-10-11 01:05:00
-    texte sur une ou plusieurs lignes
+    text on one or more lines
 
-Les curseurs « lu » et « notifié » vivent dans .git/ (par clone, donc par membre),
-jamais dans le dépôt. Aucune dépendance hors stdlib.
+The "read" and "notified" cursors live in .git/ (per clone, hence per member),
+never in the repo. No dependencies outside the stdlib.
 """
 from __future__ import annotations
 
@@ -131,37 +131,37 @@ def unseen(msgs: list[Message], kind: str, member: str) -> list[Message]:
 def resolve_member(argv: list[str], idx: int) -> str:
     member = argv[idx].lower() if len(argv) > idx else whoami()
     if member not in MEMBERS:
-        sys.exit("membre inconnu : passe-le en argument ou fais git config finswag.member <yann|mika|celine|maria>")
+        sys.exit("unknown member: pass it as an argument or run git config finswag.member <yann|mika|celine|maria>")
     return member
 
 
-# ---------------------------------------------------------------- commandes
+# ---------------------------------------------------------------- commands
 
 def cmd_send(argv: list[str]) -> None:
     if len(argv) < 2:
-        sys.exit("usage: messages.py send <to> <texte>")
+        sys.exit("usage: messages.py send <to> <text>")
     to, text = argv[0].strip().lower(), " ".join(argv[1:]).strip()
     for t in to.split(","):
         if t.strip() not in MEMBERS + ("tous", "all"):
-            sys.exit(f"destinataire inconnu : {t} (tous|{'|'.join(MEMBERS)})")
+            sys.exit(f"unknown recipient: {t} (tous|{'|'.join(MEMBERS)})")
     sender = whoami()
     if not sender:
-        sys.exit("expéditeur inconnu : git config finswag.member <yann|mika|celine|maria>")
+        sys.exit("unknown sender: git config finswag.member <yann|mika|celine|maria>")
     root = repo_root()
     p = root / "messages.md"
     at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     entry = f"\n### {sender} → {to} · {at}\n{text}\n"
     with p.open("a", encoding="utf-8") as f:
         f.write(entry)
-    # commit + rebase + push, sans toucher aux autres fichiers modifiés
+    # commit + rebase + push, without touching other modified files
     sh("git", "add", "messages.md")
     sh("git", "commit", "-q", "-m", f"{sender}: message → {to}")
     for _ in range(3):
         subprocess.run(["git", "pull", "--rebase", "--autostash", "-q"], capture_output=True)
         if subprocess.run(["git", "push", "-q"], capture_output=True).returncode == 0:
-            print(f"envoyé à {to} ({at})")
+            print(f"sent to {to} ({at})")
             return
-    sys.exit("commit local créé mais push échoué — le hook réessaiera au prochain tour")
+    sys.exit("local commit created but push failed — the hook will retry on the next turn")
 
 
 def cmd_deliver(argv: list[str], mark: bool) -> None:
@@ -186,7 +186,7 @@ def cmd_poll(argv: list[str]) -> None:
     try:
         msgs = read_remote()
     except RuntimeError:
-        return  # pas de réseau : on réessaie à la prochaine minute
+        return  # no network: retry next minute
     new = unseen(msgs, "notified", member)
     for m in new:
         notify(f"📨 firebreak · {m.sender} → {m.to}", m.body.strip()[:400])

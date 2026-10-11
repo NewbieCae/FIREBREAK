@@ -1,10 +1,10 @@
-"""Vérification en lecture seule de la L1 configurée dans `.env.local`.
+"""Read-only check of the L1 configured in `.env.local`.
 
-N'envoie aucune transaction. N'affiche ni le mnémonique ni aucune clé privée,
-uniquement des adresses publiques.
+Sends no transaction. Never prints the mnemonic or any private key,
+only public addresses.
 
     uv run python scripts/chain_smoke.py
-Code de sortie 0 si tout va bien, 1 sinon.
+Exit code 0 if everything is fine, 1 otherwise.
 """
 
 from __future__ import annotations
@@ -22,9 +22,9 @@ from firebreak.chain.config import explorer_address_link, load_chain_config  # n
 def main() -> int:
     cfg = load_chain_config()
     problems: list[str] = []
-    print(f"configuration : {cfg!r}")
+    print(f"configuration: {cfg!r}")
     if not cfg.rpc_url:
-        print("✗ FIREBREAK_CHAIN_RPC_URL manquant (voir docs/avalanche/tasks/00-setup.md)")
+        print("✗ FIREBREAK_CHAIN_RPC_URL missing (see docs/avalanche/tasks/00-setup.md)")
         return 1
 
     from firebreak.chain.deployer import (
@@ -40,11 +40,11 @@ def main() -> int:
         chain_id = w3.eth.chain_id
         block = w3.eth.block_number
     except Exception as exc:  # noqa: BLE001
-        print(f"✗ RPC injoignable : {type(exc).__name__}")
+        print(f"✗ RPC unreachable: {type(exc).__name__}")
         return 1
-    print(f"✓ RPC joignable — chainId {chain_id}, dernier bloc {block}")
+    print(f"✓ RPC reachable — chainId {chain_id}, latest block {block}")
     if cfg.chain_id is not None and cfg.chain_id != chain_id:
-        problems.append(f"chainId attendu {cfg.chain_id}, reçu {chain_id}")
+        problems.append(f"expected chainId {cfg.chain_id}, got {chain_id}")
 
     addresses: dict[str, str] = {}
     if cfg.mnemonic:
@@ -53,24 +53,24 @@ def main() -> int:
         addresses = public_addresses(derive_accounts(cfg.mnemonic))
         for role, addr in addresses.items():
             bal = w3.from_wei(w3.eth.get_balance(addr), "ether")
-            print(f"  {role:<13} {addr}  solde {bal:.4f}")
+            print(f"  {role:<13} {addr}  balance {bal:.4f}")
         if w3.eth.get_balance(addresses["admin"]) == 0:
-            problems.append("le compte admin (index 0) n'a aucun jeton")
+            problems.append("the admin account (index 0) has no tokens")
     else:
-        print("· FIREBREAK_CHAIN_MNEMONIC absent : comptes non vérifiés")
+        print("· FIREBREAK_CHAIN_MNEMONIC not set: accounts not checked")
 
     probe = addresses.get("admin", "0x" + "00" * 20)
     for name, precompile in (("TxAllowList", TX_ALLOWLIST), ("ContractDeployerAllowList", DEPLOYER_ALLOWLIST)):
         role = allowlist_role(w3, precompile, probe)
-        print(f"  {name:<26} {'non activé' if role is None else f'activé (rôle admin={role})'}")
+        print(f"  {name:<26} {'not enabled' if role is None else f'enabled (admin role={role})'}")
 
     if cfg.deployment_path.exists():
         dep = json.loads(cfg.deployment_path.read_text(encoding="utf-8"))
         code = w3.eth.get_code(w3.to_checksum_address(dep["address"]))
         if dep.get("chainId") != chain_id:
-            problems.append(f"déploiement pour chainId {dep.get('chainId')}, pas {chain_id}")
+            problems.append(f"deployment is for chainId {dep.get('chainId')}, not {chain_id}")
         elif not code:
-            problems.append(f"aucun code à l'adresse du contrat {dep['address']}")
+            problems.append(f"no code at the contract address {dep['address']}")
         else:
             contract = registry_contract(w3, dep["address"])
             print(f"✓ FirebreakRegistry {dep['address']} — admin {contract.functions.admin().call()}")
@@ -78,7 +78,7 @@ def main() -> int:
             if link:
                 print(f"  {link}")
     else:
-        print(f"· pas encore de déploiement ({cfg.deployment_path.relative_to(ROOT)})")
+        print(f"· no deployment yet ({cfg.deployment_path.relative_to(ROOT)})")
 
     for p in problems:
         print(f"✗ {p}")

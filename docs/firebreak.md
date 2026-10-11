@@ -1,46 +1,46 @@
-# FIREBREAK — Le pare-feu des supply chains
+# FIREBREAK — The supply chain firewall
 
-**Track 3 · Uncharted Frontiers** — Cyberdéfense × IA × Industrie
+**Track 3 · Uncharted Frontiers** — Cyber defense × AI × Industry
 
-> Quand un partenaire est compromis, on isole ce qui est contaminé, pas toute l'activité.
+> When a partner is compromised, isolate what's contaminated, not the whole business.
 
-## En une phrase
+## In one sentence
 
-Firebreak empêche qu'une compromission chez une entreprise se propage à ses clients, fournisseurs et partenaires, en mettant en quarantaine **uniquement les opérations contaminées** et en laissant tourner tout le reste.
+Firebreak stops a compromise at one company from spreading to its customers, suppliers and partners, by quarantining **only the contaminated operations** and letting everything else run.
 
-## Le problème
+## The problem
 
-Les entreprises d'une même chaîne d'approvisionnement échangent des données en continu : commandes, niveaux de stock, confirmations de livraison, mises à jour de catalogue. Si l'une d'elles est compromise, elle peut injecter de fausses informations dans les processus de ses partenaires.
+Companies in the same supply chain exchange data continuously: orders, stock levels, delivery confirmations, catalog updates. If one of them is compromised, it can inject false information into its partners' processes.
 
-Exemple fictif : quatre entreprises connectées entre elles. Un fournisseur piraté envoie de fausses confirmations de livraison et des stocks falsifiés. Ces données alimentent des commandes, des paiements et des expéditions chez ses partenaires, qui les traitent comme fiables.
+Fictional example: four interconnected companies. A hacked supplier sends fake delivery confirmations and falsified stock levels. This data feeds orders, payments and shipments at its partners, who treat it as reliable.
 
-Face à ça, les partenaires n'ont aujourd'hui que deux options : tout couper avec le fournisseur, et paralyser l'activité, ou continuer, et laisser passer l'attaque.
+Faced with this, partners today have only two options: cut everything off with the supplier and paralyze the business, or keep going and let the attack through.
 
-## Ce qui existe, et ce qui manque
+## What exists, and what's missing
 
-La gestion du risque fournisseur existe déjà. [SecurityScorecard](https://securityscorecard.com), par exemple, propose de la surveillance et de la réponse aux incidents de supply chain.
+Supplier risk management already exists. [SecurityScorecard](https://securityscorecard.com), for example, offers supply chain monitoring and incident response.
 
-Ces outils répondent à la question **« quel fournisseur est dangereux ? »**. Firebreak répond à une question plus fine : **« quelles opérations précises ont été contaminées par les données de ce fournisseur ? »**.
+These tools answer the question **"which supplier is dangerous?"**. Firebreak answers a finer question: **"which specific operations were contaminated by this supplier's data?"**.
 
-> Si une attaque touche 3 commandes sur 100, pourquoi bloquer les 100 ?
+> If an attack hits 3 orders out of 100, why block all 100?
 
-## Comment ça marche
+## How it works
 
-1. **Traçabilité.** Chaque entreprise installe un composant léger qui enregistre la provenance des événements métiers : de quelle source vient chaque donnée, et quelles opérations l'ont utilisée.
-2. **Graphe de dépendances.** Ces enregistrements forment un graphe qui relie chaque opération aux données dont elle dépend.
-3. **Déclaration de compromission.** Quand une source est déclarée compromise, Firebreak parcourt le graphe à partir de cette source.
-4. **Confinement ciblé.** Firebreak :
-   - identifie les opérations qui dépendent, directement ou indirectement, des données suspectes ;
-   - met ces opérations en quarantaine ;
-   - laisse passer les opérations indépendantes, qui restent autorisées.
-5. **Alerte des partenaires.** Firebreak envoie des alertes signées aux partenaires concernés, sans divulguer leurs données commerciales.
-6. **Remédiation.** L'IA prépare un plan de reprise pour chaque opération en quarantaine : revalidation, validation humaine ou reprise depuis une source de confiance.
+1. **Traceability.** Each company installs a lightweight component that records the provenance of business events: which source each piece of data comes from, and which operations used it.
+2. **Dependency graph.** These records form a graph linking each operation to the data it depends on.
+3. **Compromise declaration.** When a source is declared compromised, Firebreak walks the graph starting from that source.
+4. **Targeted containment.** Firebreak:
+   - identifies the operations that depend, directly or indirectly, on the suspect data;
+   - quarantines those operations;
+   - lets independent operations through; they remain authorized.
+5. **Partner alerts.** Firebreak sends signed alerts to the affected partners, without disclosing their commercial data.
+6. **Remediation.** The AI prepares a recovery plan for each quarantined operation: revalidation, human approval or recovery from a trusted source.
 
-## Principe clé : des règles qui décident, une IA qui explique
+## Key principle: rules that decide, an AI that explains
 
-- **Le cœur technique est un graphe de dépendances**, pas un chatbot qui attribue des scores de risque.
-- **La décision de blocage repose sur des règles vérifiables** : une opération est mise en quarantaine parce qu'elle dépend d'une source compromise, et on peut montrer le chemin exact dans le graphe.
-- **La blockchain prouve** : les empreintes des alertes, des accusés de réception, des déclarations et des journaux d'audit sont ancrées sur une L1 Avalanche. On peut ainsi prouver qui a prévenu qui, et quand, et qu'aucun journal n'a été réécrit après coup. Aucune donnée commerciale n'y est écrite, et la chaîne ne décide rien.
-- **L'IA intervient en soutien** : elle interprète les documents (bons de commande, avis d'expédition, mails fournisseurs), explique l'impact de l'incident et propose les actions de reprise.
+- **The technical core is a dependency graph**, not a chatbot assigning risk scores.
+- **The blocking decision relies on verifiable rules**: an operation is quarantined because it depends on a compromised source, and the exact path in the graph can be shown.
+- **The blockchain proves**: fingerprints of alerts, acknowledgments, declarations and audit logs are anchored on an Avalanche L1. This makes it possible to prove who warned whom, and when, and that no log was rewritten after the fact. No commercial data is written there, and the chain decides nothing.
+- **The AI plays a supporting role**: it interprets documents (purchase orders, shipping notices, supplier emails), explains the impact of the incident and proposes recovery actions.
 
-Résultat : un confinement auditable, explicable, et qui préserve la continuité d'activité.
+Result: containment that is auditable, explainable, and preserves business continuity.

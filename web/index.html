@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Firebreak — tableau de bord</title>
+<title>Firebreak — dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
 <style>
   * { box-sizing: border-box; }
@@ -66,13 +66,13 @@
 <body>
 <div id="topbar">
   <h1>🔥 Firebreak</h1>
-  <select id="sel-scenario" title="Scénario"></select>
-  <button id="btn-compromise">Déclarer le fournisseur compromis (depuis 14:00)</button>
-  <button id="btn-withdraw" class="secondary">Retirer la déclaration (fausse alerte)</button>
-  <button id="btn-replay" class="secondary">Rejouer</button>
-  <button id="btn-demo" class="secondary">Démo : étape suivante →</button>
-  <button id="btn-compare" class="secondary">Avec vs sans</button>
-  <button id="btn-reset" class="secondary">Réinitialiser</button>
+  <select id="sel-scenario" title="Scenario"></select>
+  <button id="btn-compromise">Declare the supplier compromised (since 14:00)</button>
+  <button id="btn-withdraw" class="secondary">Withdraw the declaration (false alarm)</button>
+  <button id="btn-replay" class="secondary">Replay</button>
+  <button id="btn-demo" class="secondary">Demo: next step →</button>
+  <button id="btn-compare" class="secondary">With vs without</button>
+  <button id="btn-reset" class="secondary">Reset</button>
   <span class="counter" id="cnt-main">—</span>
   <span class="counter" id="cnt-gates">—</span>
   <span class="counter" id="cnt-money">—</span>
@@ -80,55 +80,55 @@
 <div id="main">
   <div id="cy"></div>
   <div id="panel">
-    <h2>Détail</h2>
-    <div id="detail" class="muted">Cliquez sur une opération.</div>
-    <h2 style="margin-top:18px">Alertes signées</h2>
-    <div id="alerts" class="muted">Aucune alerte.</div>
-    <h2 style="margin-top:18px">Journal d'audit</h2>
+    <h2>Details</h2>
+    <div id="detail" class="muted">Click an operation.</div>
+    <h2 style="margin-top:18px">Signed alerts</h2>
+    <div id="alerts" class="muted">No alerts.</div>
+    <h2 style="margin-top:18px">Audit log</h2>
     <div id="audit" class="muted">—</div>
     <details id="chain-box" style="display:none;margin-top:18px">
       <summary><h2 style="display:inline">Avalanche</h2> <span id="chain-dot">●</span></summary>
       <div id="chain-head" class="muted"></div>
-      <button id="btn-onchain" class="secondary rem-btn">Vérifier sur Avalanche</button>
-      <button id="btn-rewrite" class="secondary rem-btn" style="display:none">Simuler une réécriture du journal</button>
+      <button id="btn-onchain" class="secondary rem-btn">Verify on Avalanche</button>
+      <button id="btn-rewrite" class="secondary rem-btn" style="display:none">Simulate a log rewrite</button>
       <div id="chain-verify"></div>
       <div id="chain-anchors" class="muted"></div>
     </details>
     <details id="quality-box" style="margin-top:18px">
-      <summary><h2 style="display:inline">Qualité (debug)</h2></summary>
-      <div class="muted">Incident qualité : on isole un lot, pas le fournisseur.</div>
+      <summary><h2 style="display:inline">Quality (debug)</h2></summary>
+      <div class="muted">Quality incident: isolate a lot, not the supplier.</div>
       <select id="q-company"></select>
-      <input id="q-ref" placeholder="lot ou record (COIL-104, c-gr-03)" style="width:95%">
-      <input id="q-reason" placeholder="motif" style="width:95%">
-      <button id="q-suspect" class="secondary rem-btn">Lot suspect</button>
-      <button id="q-withdraw" class="secondary rem-btn">Lever la suspicion</button>
-      <button id="q-recall" class="secondary rem-btn">Analyse rappel</button>
-      <button id="q-report" class="secondary rem-btn">Signaler en amont</button>
+      <input id="q-ref" placeholder="lot or record (COIL-104, c-gr-03)" style="width:95%">
+      <input id="q-reason" placeholder="reason" style="width:95%">
+      <button id="q-suspect" class="secondary rem-btn">Suspect lot</button>
+      <button id="q-withdraw" class="secondary rem-btn">Lift suspicion</button>
+      <button id="q-recall" class="secondary rem-btn">Recall analysis</button>
+      <button id="q-report" class="secondary rem-btn">Report upstream</button>
       <div id="q-out" class="muted"></div>
       <div id="q-inbox"></div>
     </details>
     <details id="inbound-box" style="margin-top:18px">
-      <summary><h2 style="display:inline">Entrées en stock</h2></summary>
-      <div class="muted">Note de confiance de chaque réception (commande, pièce, quantité, date, certificat, lot, RIB, alertes). Sous 80 : mise en attente, un humain décide.</div>
+      <summary><h2 style="display:inline">Stock entries</h2></summary>
+      <div class="muted">Trust score for each goods receipt (order, part, quantity, date, certificate, lot, bank details, alerts). Below 80: put on hold, a human decides.</div>
       <select id="in-company"></select>
-      <button id="in-screen" class="secondary rem-btn">Contrôler les réceptions</button>
-      <input id="in-reason" placeholder="motif de la décision (facultatif)" style="width:95%">
+      <button id="in-screen" class="secondary rem-btn">Check receipts</button>
+      <input id="in-reason" placeholder="reason for the decision (optional)" style="width:95%">
       <div id="in-out" class="muted"></div>
       <div id="in-list"></div>
     </details>
   </div>
 </div>
 <div id="compare">
-  <button id="cmp-close" class="secondary">Fermer ✕</button>
+  <button id="cmp-close" class="secondary">Close ✕</button>
   <div id="cmp-head"><div class="big" id="cmp-headline"></div><div class="sub" id="cmp-subline"></div></div>
   <div id="cmp-halves">
     <div class="cmp-half">
-      <div class="cmp-title"><h3>Sans Firebreak</h3><div class="muted" id="cmp-sub-l"></div></div>
+      <div class="cmp-title"><h3>Without Firebreak</h3><div class="muted" id="cmp-sub-l"></div></div>
       <div class="cmp-cy" id="cyL"></div>
       <div class="cmp-counters" id="cntL"></div>
     </div>
     <div class="cmp-half">
-      <div class="cmp-title"><h3>Avec Firebreak</h3><div class="muted" id="cmp-sub-r"></div></div>
+      <div class="cmp-title"><h3>With Firebreak</h3><div class="muted" id="cmp-sub-r"></div></div>
       <div class="cmp-cy" id="cyR"></div>
       <div class="cmp-counters" id="cntR"></div>
     </div>
@@ -144,16 +144,16 @@ const COL_X = { fournisseur: 80, fabricant: 330, distributeur: 580, client: 830 
 let cy = null, state = null;
 
 function fmtMoney(v) {
-  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v || 0) + ' €';
+  return '€' + new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(v || 0);
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function setCounters(c) {
   document.getElementById('cnt-main').innerHTML =
-    `<b>${c.quarantined}</b> opérations bloquées`;
+    `<b>${c.quarantined}</b> operations blocked`;
   document.getElementById('cnt-gates').innerHTML =
-    `<b>${c.gates_blocked}</b> actions irréversibles bloquées`;
+    `<b>${c.gates_blocked}</b> irreversible actions blocked`;
   document.getElementById('cnt-money').innerHTML =
-    `<b>${fmtMoney(c.amount_blocked)}</b> bloqués / ${fmtMoney(c.amount_flowing)} en circulation`;
+    `<b>${fmtMoney(c.amount_blocked)}</b> blocked / ${fmtMoney(c.amount_flowing)} flowing`;
 }
 
 async function api(path, method = 'GET', body = null) {
@@ -217,16 +217,16 @@ function cmpStat(v, k, cls) {
   return `<div class="cmp-stat"><div class="v ${cls}">${v}</div><div class="k">${k}</div></div>`;
 }
 function cmpCounters(m) {
-  return cmpStat(m.blocked, 'opérations bloquées', 'red') +
-    cmpStat(m.healthy_blocked, 'dont saines', 'orange') +
-    cmpStat(m.leaked, 'fuites', 'orange') +
-    cmpStat(fmtMoney(m.payments_blocked_eur), 'paiements bloqués', 'red') +
-    cmpStat(fmtMoney(m.payments_flowing_eur), 'paiements qui continuent', 'green') +
-    cmpStat((m.activity_preserved_pct ?? 0).toFixed(1) + ' %', 'activité saine préservée', 'amber');
+  return cmpStat(m.blocked, 'operations blocked', 'red') +
+    cmpStat(m.healthy_blocked, 'of which healthy', 'orange') +
+    cmpStat(m.leaked, 'leaks', 'orange') +
+    cmpStat(fmtMoney(m.payments_blocked_eur), 'payments blocked', 'red') +
+    cmpStat(fmtMoney(m.payments_flowing_eur), 'payments still flowing', 'green') +
+    cmpStat((m.activity_preserved_pct ?? 0).toFixed(1) + '%', 'healthy activity preserved', 'amber');
 }
 
 function showCompare(d) {
-  // vérité affichée ≈ bloqué-C ∪ fuites-B (C n'a pas de fuite sur le scénario)
+  // displayed truth ≈ blocked-C ∪ leaks-B (C has no leak in this scenario)
   const truthIds = new Set(d.with.blocked_ids.concat(d.without.leaked_ids.map(l => l.id)));
   const bIds = new Set(d.without.blocked_ids);
   const leakIds = new Set(d.without.leaked_ids.map(l => l.id));
@@ -237,12 +237,12 @@ function showCompare(d) {
   cyR = buildSplitCy('cyR', r => r.status);
   const ratio = d.healthy_blocked_ratio;
   document.getElementById('cmp-headline').textContent =
-    ratio !== null ? `${ratio.toFixed(1)}× moins d'opérations saines bloquées`
-    : `Sans Firebreak : ${d.without.healthy_blocked} opérations saines bloquées ` +
-      `et ${d.without.leaked} contaminées qui passent. ` +
-      `Avec Firebreak : ${d.with.healthy_blocked} et ${d.with.leaked}.`;
+    ratio !== null ? `${ratio.toFixed(1)}× fewer healthy operations blocked`
+    : `Without Firebreak: ${d.without.healthy_blocked} healthy operations blocked ` +
+      `and ${d.without.leaked} contaminated ones getting through. ` +
+      `With Firebreak: ${d.with.healthy_blocked} and ${d.with.leaked}.`;
   document.getElementById('cmp-subline').textContent =
-    `Vérité terrain : ${d.truth.contaminated} opérations réellement contaminées`;
+    `Ground truth: ${d.truth.contaminated} operations actually contaminated`;
   document.getElementById('cmp-sub-l').textContent = d.without.subtitle;
   document.getElementById('cmp-sub-r').textContent = d.with.subtitle;
   document.getElementById('cntL').innerHTML = cmpCounters(d.without);
@@ -250,9 +250,9 @@ function showCompare(d) {
   const benchEl = document.getElementById('cmp-bench');
   if (d.bench && d.bench.groups && d.bench.groups['p0.0:C'] && d.bench.groups['p0.0:B']) {
     const c = d.bench.groups['p0.0:C'], b = d.bench.groups['p0.0:B'];
-    benchEl.textContent = `Sur ${c.seeds} supply chains simulées : Firebreak bloque ` +
-      `${c.healthy_blocked_mean.toFixed(1)} opérations saines contre ` +
-      `${b.healthy_blocked_mean.toFixed(1)}, rappel ${(c.recall_mean * 100).toFixed(0)} %`;
+    benchEl.textContent = `Across ${c.seeds} simulated supply chains: Firebreak blocks ` +
+      `${c.healthy_blocked_mean.toFixed(1)} healthy operations versus ` +
+      `${b.healthy_blocked_mean.toFixed(1)}, recall ${(c.recall_mean * 100).toFixed(0)}%`;
   } else benchEl.textContent = '';
   document.getElementById('cmp-real').innerHTML = (d.real_world || []).map(rw =>
     `<div class="rw-card"><b>${rw.name}</b> <span class="date">— ${rw.date}</span>` +
@@ -278,14 +278,14 @@ function render(s) {
   sel.title = s.scenario.description;
   const hint = s.scenario.compromise;
   document.getElementById('btn-compromise').textContent =
-    `Déclarer ${hint.company} compromis (depuis ${hint.since.slice(11, 16)})`;
+    `Declare ${hint.company} compromised (since ${hint.since.slice(11, 16)})`;
   const g = s.counters.global;
   document.getElementById('cnt-main').innerHTML =
-    `<b>${g.quarantined}</b> opérations bloquées / ${g.ok + g.released} continuent`;
+    `<b>${g.quarantined}</b> operations blocked / ${g.ok + g.released} still flowing`;
   document.getElementById('cnt-gates').innerHTML =
-    `<b>${g.gates_blocked}</b> actions irréversibles bloquées`;
+    `<b>${g.gates_blocked}</b> irreversible actions blocked`;
   document.getElementById('cnt-money').innerHTML =
-    `<b>${fmtMoney(g.amount_blocked)}</b> bloqués / ${fmtMoney(g.amount_flowing)} en circulation`;
+    `<b>${fmtMoney(g.amount_blocked)}</b> blocked / ${fmtMoney(g.amount_flowing)} flowing`;
 
   const rows = {};
   const elements = [];
@@ -333,14 +333,14 @@ function render(s) {
   cy.on('tap', 'node[status]', evt => showDetail(evt.target.data('record')));
 
   const feed = document.getElementById('alerts');
-  feed.innerHTML = s.alerts.length ? '' : 'Aucune alerte.';
+  feed.innerHTML = s.alerts.length ? '' : 'No alerts.';
   s.alerts.forEach(a => {
     const div = document.createElement('div');
     div.className = 'alert';
-    const kind = a.type === 'release' ? 'levée' : 'contamination';
-    div.innerHTML = `<b>${kind}</b> ${a.from} → ${a.to} — ${a.tokens_count} jeton(s) — ` +
+    const kind = a.type === 'release' ? 'release' : 'contamination';
+    div.innerHTML = `<b>${kind}</b> ${a.from} → ${a.to} — ${a.tokens_count} token(s) — ` +
       `<span class="${a.verified ? 'sig-ok' : 'sig-ko'}">` +
-      `signature ${a.verified ? 'OK' : 'REJETÉE'}</span><br>` +
+      `signature ${a.verified ? 'OK' : 'REJECTED'}</span><br>` +
       `<span class="muted">${a.issued_at}</span>`;
     feed.appendChild(div);
   });
@@ -350,9 +350,9 @@ function render(s) {
 async function renderAudit() {
   const v = await api('/api/audit/verify');
   document.getElementById('audit').innerHTML = v.journals.map(j =>
-    `<div>${j.company} — ${j.entries} entrée(s) — ` +
+    `<div>${j.company} — ${j.entries} entry(ies) — ` +
     `<span class="${j.ok ? 'sig-ok' : 'sig-ko'}">` +
-    `${j.ok ? 'chaîne intacte' : 'cassée à l’entrée ' + j.first_broken_index}</span></div>`
+    `${j.ok ? 'chain intact' : 'broken at entry ' + j.first_broken_index}</span></div>`
   ).join('');
 }
 
@@ -364,7 +364,7 @@ async function showDetail(r) {
     <span class="muted">${r.kind} · ${r.company} · ${r.ts.slice(11, 16)}</span></div>
     <p>${data.explanation}</p>`;
   if (data.path.length > 1) {
-    html += '<div class="muted">Chemin :</div><ul class="path">' +
+    html += '<div class="muted">Path:</div><ul class="path">' +
       data.path.map(p => `<li>${p.label}</li>`).join('') + '</ul>';
   }
   if (r.status === 'quarantined') {
@@ -416,12 +416,12 @@ async function replay() {
         });
         const div = document.createElement('div');
         div.className = 'alert';
-        div.innerHTML = `${st.alert.from} → ${st.alert.to} — ${st.alert.tokens_count} jeton(s)`;
+        div.innerHTML = `${st.alert.from} → ${st.alert.to} — ${st.alert.tokens_count} token(s)`;
         feed.prepend(div);
       }
       if (st.counters) setCounters(st.counters);
       const det = document.getElementById('detail');
-      det.className = ''; det.innerHTML = `<b>Étape ${st.n}</b> — ${st.text}`;
+      det.className = ''; det.innerHTML = `<b>Step ${st.n}</b> — ${st.text}`;
       await sleep(500);
     }
   } finally { replaying = false; }
@@ -433,13 +433,13 @@ async function demoNext() {
   if (r.detail && r.detail.without && r.detail.with) showCompare(r.detail);
   const det = document.getElementById('detail');
   det.className = '';
-  let html = `<b>Démo — étape ${r.step + 1}/${r.total}</b><p>${r.caption}</p>`;
+  let html = `<b>Demo — step ${r.step + 1}/${r.total}</b><p>${r.caption}</p>`;
   if (r.error) html += `<p class="sig-ko">${r.error}</p>`;
   if (r.detail && r.detail.explanation)
     html += `<p>${r.detail.explanation}</p>`;
   else if (r.detail && typeof r.detail === 'object' && r.detail.ok !== undefined)
-    html += `<p>Journaux : <span class="${r.detail.ok ? 'sig-ok' : 'sig-ko'}">` +
-            `${r.detail.ok ? 'intègres' : 'cassés'}</span></p>`;
+    html += `<p>Logs: <span class="${r.detail.ok ? 'sig-ok' : 'sig-ko'}">` +
+            `${r.detail.ok ? 'intact' : 'broken'}</span></p>`;
   det.innerHTML = html;
 }
 document.getElementById('btn-demo').onclick = demoNext;
@@ -459,7 +459,7 @@ api('/api/scenarios').then(list => {
   return api('/api/state');
 }).then(render).catch(e => alert(e.message));
 
-// --- Panneau Avalanche : visible seulement si la chaîne est active ---
+// --- Avalanche panel: visible only if the chain is active ---
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const short = h => h ? h.slice(0, 8) + '…' + h.slice(-4) : '—';
 const STATUS_COLOR = { confirmed: '#66bb6a', sent: '#ffb300', pending: '#9aa0aa', failed: '#ef5350' };
@@ -476,30 +476,30 @@ async function refreshChain() {
   document.getElementById('chain-dot').style.color = st.connected ? '#66bb6a' : '#ef5350';
   const q = st.queue;
   document.getElementById('chain-head').innerHTML =
-    `mode ${esc(st.mode)} — ${st.connected ? 'connectée' : 'injoignable'}` +
+    `mode ${esc(st.mode)} — ${st.connected ? 'connected' : 'unreachable'}` +
     (st.chain_id ? ` — chainId ${st.chain_id}` : '') +
-    (st.contract ? `<br>contrat <code>${esc(short(st.contract))}</code>` : '') +
+    (st.contract ? `<br>contract <code>${esc(short(st.contract))}</code>` : '') +
     `<br>run <code>${esc(short(st.run_id))}</code> — ` +
-    `${q.confirmed} confirmé(s), ${q.pending + q.sent} en cours, ${q.failed} échec(s)`;
+    `${q.confirmed} confirmed, ${q.pending + q.sent} pending, ${q.failed} failed`;
   if (!box.open) return;
   const anchors = await api('/api/chain/anchors');
   document.getElementById('chain-anchors').innerHTML = anchors.slice(-30).reverse().map(a =>
     `<div class="alert">${KIND_ICON[a.kind] || ''} ${esc(a.kind)} · ${esc(a.company)} · ` +
     `<code>${esc(short(a.hash))}</code> <span style="color:${STATUS_COLOR[a.status] || '#9aa0aa'}">` +
-    `${esc(a.status)}${a.block ? ' · bloc ' + a.block : ''}</span>` +
+    `${esc(a.status)}${a.block ? ' · block ' + a.block : ''}</span>` +
     (a.explorer_link ? ` <a href="${esc(a.explorer_link)}" target="_blank" rel="noopener">tx</a>` : '') +
-    (a.error ? `<br><span class="sig-ko">${esc(a.error)}</span>` : '') + `</div>`).join('') || 'Aucun ancrage.';
+    (a.error ? `<br><span class="sig-ko">${esc(a.error)}</span>` : '') + `</div>`).join('') || 'No anchors.';
 }
 
 function showOnchain(v) {
   const mark = ok => `<span class="${ok ? 'sig-ok' : 'sig-ko'}">${ok ? '✓' : '✗'}</span>`;
   document.getElementById('chain-verify').innerHTML = v.journals.map(j =>
     `<div>${esc(j.company)} — local ${mark(j.ok)} — Avalanche ` +
-    (j.onchain && j.onchain.unreadable ? '<span class="muted">lecture impossible, réessayer</span>' :
-     j.onchain ? `${mark(j.onchain.matches)} (${j.onchain.anchored_entries} entrées` +
-      `${j.onchain.block ? ', bloc ' + j.onchain.block : ''})` : '<span class="muted">non ancré</span>') +
+    (j.onchain && j.onchain.unreadable ? '<span class="muted">unreadable, try again</span>' :
+     j.onchain ? `${mark(j.onchain.matches)} (${j.onchain.anchored_entries} entries` +
+      `${j.onchain.block ? ', block ' + j.onchain.block : ''})` : '<span class="muted">not anchored</span>') +
     `</div>`).join('') +
-    (v.onchain_ok === false ? '<b class="sig-ko">Le journal ne correspond plus à ce qui a été ancré.</b>' : '');
+    (v.onchain_ok === false ? '<b class="sig-ko">The log no longer matches what was anchored.</b>' : '');
 }
 
 document.getElementById('btn-onchain').onclick = async () => {
@@ -518,7 +518,7 @@ document.getElementById('chain-box').addEventListener('toggle', refreshChain);
 refreshChain().then(() => { if (chainOn) document.getElementById('btn-rewrite').style.display = ''; });
 setInterval(refreshChain, 2000);
 
-// --- Panneau Qualité (debug) : lot suspect, rappel, signalements amont ---
+// --- Quality panel (debug): suspect lot, recall, upstream reports ---
 const qv = id => document.getElementById(id).value.trim();
 function qFillCompanies() {
   const sel = document.getElementById('q-company');
@@ -544,9 +544,9 @@ async function qInbox() {
     `<div class="alert">${esc(r.id)} · ${esc(r.from)} → ${esc(r.to)} · ${esc(r.status)} · ` +
     `${r.verified ? 'signature ✓' : 'signature ✗'}<br>${esc(r.reason)}` +
     (r.status === 'pending' && r.to === company
-      ? ` <button class="secondary q-dec" data-id="${esc(r.id)}" data-d="confirm">Confirmer</button>` +
-        `<button class="secondary q-dec" data-id="${esc(r.id)}" data-d="reject">Rejeter</button>` : '') +
-    `</div>`).join('') || 'Aucun signalement.';
+      ? ` <button class="secondary q-dec" data-id="${esc(r.id)}" data-d="confirm">Confirm</button>` +
+        `<button class="secondary q-dec" data-id="${esc(r.id)}" data-d="reject">Reject</button>` : '') +
+    `</div>`).join('') || 'No reports.';
   document.querySelectorAll('.q-dec').forEach(b => b.onclick = () => qRun(async () => {
     render(await api(`/api/reports/${b.dataset.id}/decision`, 'POST',
       { company, decision: b.dataset.d }));
@@ -556,34 +556,35 @@ async function qInbox() {
 const qBody = () => ({ company: qv('q-company'), lot: qv('q-ref'), reason: qv('q-reason') });
 document.getElementById('q-suspect').onclick = () => qRun(async () => {
   render(await api('/api/lots/suspect', 'POST', qBody()));
-  document.getElementById('q-out').textContent = 'Lot déclaré suspect.';
+  document.getElementById('q-out').textContent = 'Lot declared suspect.';
 });
 document.getElementById('q-withdraw').onclick = () => qRun(async () => {
   const b = qBody();
   render(await api('/api/lots/suspect/withdraw', 'POST', { company: b.company, lot: b.lot }));
-  document.getElementById('q-out').textContent = 'Suspicion levée.';
+  document.getElementById('q-out').textContent = 'Suspicion lifted.';
 });
 document.getElementById('q-recall').onclick = () => qRun(async () => {
   const r = await api(`/api/recall?company=${encodeURIComponent(qv('q-company'))}&ref=${encodeURIComponent(qv('q-ref'))}`);
   document.getElementById('q-out').innerHTML = r.candidates.map(c =>
     `<div class="alert">${esc(c.record)} · ${esc(c.label)}${c.lot ? ' · ' + esc(c.lot) : ''}<br>` +
-    `isolerait ${c.impact_records} opérations, ${c.impact_gates} irréversibles` +
-    (c.impact_partners.length ? ', alerte : ' + esc(c.impact_partners.join(', ')) : '') + `</div>`).join('')
-    || 'Aucune cause candidate.';
+    `would isolate ${c.impact_records} operations, ${c.impact_gates} irreversible` +
+    (c.impact_partners.length ? ', alert: ' + esc(c.impact_partners.join(', ')) : '') + `</div>`).join('')
+    || 'No candidate cause.';
 });
 document.getElementById('q-report').onclick = () => qRun(async () => {
   const b = qBody();
   const r = await api('/api/reports', 'POST', { company: b.company, ref: b.lot, reason: b.reason });
-  document.getElementById('q-out').textContent = `Signalement envoyé à ${r.map(x => x.to).join(', ')}.`;
+  document.getElementById('q-out').textContent = `Report sent to ${r.map(x => x.to).join(', ')}.`;
   await qInbox();
 });
 document.getElementById('q-company').onchange = () => qRun(qInbox);
 document.getElementById('quality-box').addEventListener('toggle', () => { qFillCompanies(); qRun(qInbox); });
 setInterval(() => { qFillCompanies(); qRun(qInbox); }, 3000);
 
-// --- Panneau Entrées en stock : note de confiance, mise en attente, décision humaine ---
+// --- Stock entries panel: trust score, hold, human decision ---
 const IN_BAND = { confiance: '#43a047', doute: '#fb8c00', suspect: '#e53935' };
-const IN_STATUS = { non_controle: 'non contrôlée', en_attente: 'EN ATTENTE', accepte: 'acceptée', refuse: 'refusée' };
+const IN_BAND_LABEL = { confiance: 'trusted', doute: 'doubtful', suspect: 'suspect' };
+const IN_STATUS = { non_controle: 'not checked', en_attente: 'ON HOLD', accepte: 'accepted', refuse: 'rejected' };
 let inResults = [];
 function inFillCompanies() {
   const sel = document.getElementById('in-company');
@@ -596,23 +597,23 @@ async function inRun(fn) {
 }
 function inRender() {
   const box = document.getElementById('in-list');
-  if (!inResults.length) { box.innerHTML = 'Aucune réception contrôlée.'; return; }
+  if (!inResults.length) { box.innerHTML = 'No receipt checked.'; return; }
   box.innerHTML = inResults.map(r => {
     const failed = r.checks.filter(c => !c.ok);
     const col = IN_BAND[r.band] || '#888';
     const canReject = r.status === 'en_attente' || (r.hold && r.status === 'non_controle');
     const actions =
       (r.status === 'en_attente'
-        ? ` <button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="accept">Accepter</button>` : '') +
+        ? ` <button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="accept">Accept</button>` : '') +
       (canReject
-        ? `<button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="reject">Refuser</button>` : '');
+        ? `<button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="reject">Reject</button>` : '');
     return `<div class="alert" style="border-left:4px solid ${col}">` +
-      `<b style="color:${col}">${r.score}/100</b> · ${esc(r.band)} · <b>${esc(IN_STATUS[r.status] || r.status)}</b>` +
-      (r.physically_checked ? ' · <span class="muted">contrôlée physiquement</span>' : '') +
-      (!r.hold && r.band !== 'confiance' ? ' · <b>à surveiller</b>' : '') + `<br>` +
+      `<b style="color:${col}">${r.score}/100</b> · ${esc(IN_BAND_LABEL[r.band] || r.band)} · <b>${esc(IN_STATUS[r.status] || r.status)}</b>` +
+      (r.physically_checked ? ' · <span class="muted">physically checked</span>' : '') +
+      (!r.hold && r.band !== 'confiance' ? ' · <b>to watch</b>' : '') + `<br>` +
       `${esc(r.label)} <span class="muted">(${esc(r.receipt)}, ${esc(r.supplier)}${r.lot ? ', ' + esc(r.lot) : ''})</span><br>` +
-      (failed.length ? failed.map(c => `− ${c.penalty} · ${esc(c.detail)}`).join('<br>') : 'Aucun écart.') +
-      `<details><summary class="muted">les ${r.checks.length} contrôles</summary>` +
+      (failed.length ? failed.map(c => `− ${c.penalty} · ${esc(c.detail)}`).join('<br>') : 'No discrepancy.') +
+      `<details><summary class="muted">all ${r.checks.length} checks</summary>` +
       r.checks.map(c => `${c.ok ? '✓' : '✗'} ${esc(c.label)} : ${esc(c.detail)}`).join('<br>') +
       `</details>${actions}</div>`;
   }).join('');
@@ -623,7 +624,7 @@ function inRender() {
     const sent = (out.reports || []).map(x => x.to);
     document.getElementById('in-out').textContent =
       `${b.dataset.id} : ${IN_STATUS[out.status] || out.status}` +
-      (sent.length ? ` — signalement qualité signé envoyé à ${sent.join(', ')}.` : '.');
+      (sent.length ? ` — signed quality report sent to ${sent.join(', ')}.` : '.');
     await inRefresh();
   }));
 }
@@ -639,12 +640,12 @@ document.getElementById('in-screen').onclick = () => inRun(async () => {
   inResults = await api('/api/inbound/screen', 'POST', { company });
   const held = inResults.filter(r => r.status === 'en_attente').length;
   document.getElementById('in-out').textContent =
-    `${inResults.length} réception(s) contrôlée(s), ${held} mise(s) en attente.`;
+    `${inResults.length} receipt(s) checked, ${held} put on hold.`;
   inRender();
   render(await api('/api/state'));
 });
 document.getElementById('in-company').onchange = () => { inResults = []; inRender(); };
-// Réinitialisation, changement de scénario ou démo pas à pas : les résultats affichés ne valent plus.
+// Reset, scenario change or step-by-step demo: the displayed results are no longer valid.
 function inClear() { inResults = []; document.getElementById('in-out').textContent = ''; inRender(); }
 document.getElementById('btn-reset').addEventListener('click', inClear);
 document.getElementById('sel-scenario').addEventListener('change', inClear);

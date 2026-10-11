@@ -1,33 +1,33 @@
 # Session — Mika
 
-> Mis à jour par l'agent de Mika à chaque itération. Le plus récent en haut du journal. Mika travaille avec deux agents : `mika/pc1` (intégrateur, décide en dernier sur la partie Avalanche) et `mika/pc2` ; ils se coordonnent dans `docs/agents-canal.md`.
+> Updated by Mika's agent on every iteration. Most recent at the top of the log. Mika works with two agents: `mika/pc1` (integrator, has the final say on the Avalanche part) and `mika/pc2`; they coordinate in `docs/agents-canal.md`.
 
-## Où j'en suis
+## Where I am
 
-- **Avalanche L1** : L1 de l'équipe (chainId 569712), contrat `FirebreakRegistry` déployé (`contracts/deployments/l1.json`), ancrage des journaux d'audit, des alertes signées, des signalements qualité, des accusés de réception et des déclarations. Off par défaut (`FIREBREAK_CHAIN`). Validé sur la vraie L1 : démo complète et scénario `recall`, 0 échec, vérification on-chain conforme, réécriture de journal détectée. Mesures réelles dans `docs/avalanche/pitch.md`.
-- **Qualité, dans les deux sens** : lot suspect sans blacklister le fournisseur, analyse de rappel depuis un produit fini, signalement qualité signé vers l'amont avec décision au cas par cas. Scénarios `lot` et `recall`, API, panneau de debug.
-- **Contrôle des entrées en stock** : note de confiance /100 de chaque réception, mise en attente sous 80, décision humaine. Sur les 3 attaques, le lot piégé est arrêté à la réception. API, ancrage, panneau de debug. 325 tests verts. Feuille de démo : `docs/demo-avalanche-qualite.md`.
+- **Avalanche L1**: the team's L1 (chainId 569712), `FirebreakRegistry` contract deployed (`contracts/deployments/l1.json`), anchoring of audit logs, signed alerts, quality reports, acknowledgements of receipt and declarations. Off by default (`FIREBREAK_CHAIN`). Validated on the real L1: full demo and `recall` scenario, 0 failures, on-chain verification matches, log rewrite detected. Real measurements in `docs/avalanche/pitch.md`.
+- **Quality, in both directions**: suspect lot without blacklisting the supplier, recall analysis from a finished product, signed quality report sent upstream with a case-by-case decision. `lot` and `recall` scenarios, API, debug panel.
+- **Inbound stock control**: trust score /100 for each receipt, put on hold below 80, human decision. On all 3 attacks, the rigged lot is stopped at receipt. API, anchoring, debug panel. 325 tests green. Demo sheet: `docs/demo-avalanche-qualite.md`.
 
-## En cours
+## In progress
 
-- pc2 : test du panneau « Entrées en stock » dans le navigateur.
+- pc2: testing the "Inbound stock" panel in the browser.
 
-## Prochaine étape
+## Next step
 
-- Gel à 10 h (plus de changement de code sauf bug bloquant).
-- Aider le pitch : angle qualité, rappel produit et entrées en stock (`docs/qualite.md`), chiffres réels Avalanche (`docs/avalanche/pitch.md`).
+- Freeze at 10:00 (no more code changes except blocking bugs).
+- Help with the pitch: quality, product recall and inbound stock angle (`docs/qualite.md`), real Avalanche figures (`docs/avalanche/pitch.md`).
 
-## Besoin des autres
+## Needs from others
 
-- Yann : afficher le parcours qualité (scénarios `lot` et `recall`) dans l'interface finale, ou décider qu'on le montre depuis le panneau de debug. Sur ces scénarios, le bouton « Déclarer fournisseur compromis » est trompeur.
-- Céline : ajouter l'angle qualité au pitch ; les temps d'ancrage réels existent maintenant.
+- Yann: show the quality flow (`lot` and `recall` scenarios) in the final interface, or decide that we show it from the debug panel. On these scenarios, the "Declare supplier compromised" button is misleading.
+- Céline: add the quality angle to the pitch; real anchoring times now exist.
 
-## Journal
+## Log
 
-- **11/10 08 h 40** — Répétition complète sur la vraie L1 : démo principale + Avalanche (vérif ✓, réécriture détectée), entrées en stock (bobine piégée refusée, livraison légitime acceptée), rappel qualité complet. **60 preuves, 60 confirmées, tout vert.** 325 tests. Contrôle des entrées en stock livré (cœur, API, ancrage, panneau de debug) ; 2 bugs trouvés par la relecture de pc2, corrigés.
+- **11/10 08:40** — Full rehearsal on the real L1: main demo + Avalanche (check ✓, rewrite detected), inbound stock (rigged coil refused, legitimate delivery accepted), full quality recall. **60 proofs, 60 confirmed, all green.** 325 tests. Inbound stock control delivered (core, API, anchoring, debug panel); 2 bugs found by pc2's review, fixed.
 
-- **11/10 04 h 06** — Scénario `recall` rejoué sur la vraie L1 : 20 opérations isolées, 25 preuves ancrées sans échec, fournisseur jamais compromis. Contrat redéployé (type « signalement qualité »).
-- **11/10 03 h 58** — Chantier qualité : lot suspect, analyse de rappel, signalement signé vers l'amont (cœur pc1 ; scénarios, API, ancrage et panneau pc2).
-- **11/10 03 h 30** — Démo complète rejouée sur la vraie L1 ; pitch Avalanche corrigé (un seul validateur dit honnêtement, pas de finalité < 1 s).
-- **11/10 02 h 00** — Contrat déployé sur la L1, premiers ancrages réels.
-- **11/10 01 h 00 – 02 h 00** — Partie Avalanche : contrat, déploiement, client, API, panneau, démo de réécriture (pc1 + pc2), fusionnée dans `main` par Yann à 02 h 30.
+- **11/10 04:06** — `recall` scenario replayed on the real L1: 20 operations isolated, 25 proofs anchored with no failure, supplier never compromised. Contract redeployed (type "quality report").
+- **11/10 03:58** — Quality work: suspect lot, recall analysis, signed report sent upstream (core by pc1; scenarios, API, anchoring and panel by pc2).
+- **11/10 03:30** — Full demo replayed on the real L1; Avalanche pitch corrected (single validator stated honestly, no sub-1 s finality).
+- **11/10 02:00** — Contract deployed on the L1, first real anchorings.
+- **11/10 01:00 – 02:00** — Avalanche part: contract, deployment, client, API, panel, rewrite demo (pc1 + pc2), merged into `main` by Yann at 02:30.

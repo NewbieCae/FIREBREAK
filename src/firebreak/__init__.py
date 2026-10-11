@@ -1,1 +1,1 @@
-"""Firebreak — pare-feu des supply chains."""
+"""Firebreak — the supply chain firewall."""

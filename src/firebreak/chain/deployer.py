@@ -1,8 +1,8 @@
-"""Déploiement de FirebreakRegistry et enregistrement des membres.
+"""Deploying FirebreakRegistry and registering the members.
 
-Partagé par scripts/chain_deploy.py, les tests et le mode « tester » du
-client. Toutes les transactions sont signées localement (comptes dérivés du
-mnémonique) : même code sur l'EVM en mémoire et sur la vraie L1.
+Shared by scripts/chain_deploy.py, the tests and the client's "tester"
+mode. Every transaction is signed locally (accounts derived from the
+mnemonic): same code on the in-memory EVM and on the real L1.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 RECEIPT_TIMEOUT = 60
 
-# Precompiles Subnet-EVM (adresses fixes). readAllowList : 0 aucun, 1 enabled, 2 admin, 3 manager.
+# Subnet-EVM precompiles (fixed addresses). readAllowList: 0 none, 1 enabled, 2 admin, 3 manager.
 TX_ALLOWLIST = "0x0200000000000000000000000000000000000002"
 DEPLOYER_ALLOWLIST = "0x0200000000000000000000000000000000000000"
 ALLOWLIST_ABI = [
@@ -35,7 +35,7 @@ class TransactionFailed(RuntimeError):
     pass
 
 
-RECEIPT_POLL_SECONDS = 1.0  # web3 interroge toutes les 0,1 s par défaut : trop pour un nœud géré
+RECEIPT_POLL_SECONDS = 1.0  # web3 polls every 0.1 s by default: too much for a managed node
 _EXTRA_RETRY_METHODS = (
     "eth_blockNumber", "eth_getBlockByNumber", "eth_gasPrice", "eth_maxPriorityFeePerGas",
     "eth_getBalance", "eth_getCode",
@@ -43,14 +43,14 @@ _EXTRA_RETRY_METHODS = (
 
 
 def connect(rpc_url: str, timeout: int = 15) -> Web3:
-    """Client HTTP vers une L1 Subnet-EVM.
+    """HTTP client for a Subnet-EVM L1.
 
-    - Le middleware PoA tolère un champ `extraData` d'en-tête de bloc plus long
-      que sur Ethereum.
-    - Les nœuds gérés du Builder Hub limitent le débit (HTTP 429) : relance
-      automatique avec attente exponentielle (0,5 s → 16 s). Relancer
-      `eth_sendRawTransaction` est sans risque : même transaction signée,
-      même hash, le nœud ne l'applique qu'une fois.
+    - The PoA middleware tolerates a block header `extraData` field longer
+      than on Ethereum.
+    - Builder Hub managed nodes rate-limit (HTTP 429): automatic retry with
+      exponential backoff (0.5 s → 16 s). Retrying `eth_sendRawTransaction`
+      is safe: same signed transaction, same hash, the node only applies
+      it once.
     """
     from requests.exceptions import ConnectionError as RequestsConnectionError
     from requests.exceptions import HTTPError, Timeout
@@ -80,8 +80,8 @@ def _chain_id(w3: Web3) -> int:
 
 
 def allowlist_role(w3: Web3, precompile: str, address: str) -> int | None:
-    """Rôle de `address` dans une allowlist Subnet-EVM ; None si le precompile
-    n'est pas activé sur la chaîne (réponse vide)."""
+    """Role of `address` in a Subnet-EVM allowlist; None if the precompile
+    is not enabled on the chain (empty reply)."""
     selector = w3.keccak(text="readAllowList(address)")[:4]
     data = selector + bytes(12) + bytes.fromhex(address[2:])
     raw = w3.eth.call({"to": w3.to_checksum_address(precompile), "data": data})
@@ -109,7 +109,7 @@ def _finalize(w3: Web3, account: LocalAccount, tx: dict[str, Any]) -> dict[str, 
 
 
 def send_signed(w3: Web3, account: LocalAccount, tx: dict[str, Any], timeout: int = RECEIPT_TIMEOUT):
-    """Signe localement, envoie, attend le reçu. Lève TransactionFailed si revert."""
+    """Signs locally, sends, waits for the receipt. Raises TransactionFailed on revert."""
     signed = account.sign_transaction(_finalize(w3, account, tx))
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(
@@ -121,7 +121,7 @@ def send_signed(w3: Web3, account: LocalAccount, tx: dict[str, Any], timeout: in
 
 
 def transact(w3: Web3, account: LocalAccount, call, timeout: int = RECEIPT_TIMEOUT):
-    """Appel d'une fonction de contrat (`contract.functions.f(...)`) signé par `account`."""
+    """Contract function call (`contract.functions.f(...)`) signed by `account`."""
     return send_signed(w3, account, call.build_transaction({"from": account.address}), timeout)
 
 
@@ -149,15 +149,15 @@ def register_members(
     accounts: dict[str, LocalAccount],
     pubkeys: dict[str, bytes],
 ) -> list:
-    """Enregistre chaque entreprise de COMPANIES (compte EVM + clé Ed25519).
-    Idempotent : un membre déjà enregistré à l'identique n'est pas renvoyé."""
+    """Registers each company in COMPANIES (EVM account + Ed25519 key).
+    Idempotent: a member already registered identically is not sent again."""
     receipts = []
     for cid in COMPANIES:
         acct = accounts[cid]
         company = ids.company_id(cid)
         pubkey = pubkeys[cid]
         if len(pubkey) != 32:
-            raise ValueError(f"clé Ed25519 de {cid} : 32 octets attendus")
+            raise ValueError(f"Ed25519 key of {cid}: 32 bytes expected")
         current = contract.functions.members(acct.address).call()
         if current[0] == company and current[1] == pubkey and current[2]:
             continue
@@ -168,7 +168,7 @@ def register_members(
 def fund_accounts(
     w3: Web3, funder: LocalAccount, accounts: dict[str, LocalAccount], min_balance_wei: int
 ) -> list[str]:
-    """Complète le solde des comptes d'entreprise sous `min_balance_wei`. Renvoie les rôles financés."""
+    """Tops up company accounts below `min_balance_wei`. Returns the funded roles."""
     funded = []
     for cid in COMPANIES:
         addr = accounts[cid].address
@@ -182,8 +182,8 @@ def fund_accounts(
 def ensure_tester_registry(
     w3: Web3, accounts: dict[str, LocalAccount], pubkeys: dict[str, bytes]
 ) -> Contract:
-    """EVM en mémoire (EthereumTesterProvider) : finance l'admin et les entreprises
-    depuis le compte déverrouillé de eth-tester, déploie, enregistre les membres."""
+    """In-memory EVM (EthereumTesterProvider): funds the admin and the companies
+    from eth-tester's unlocked account, deploys, registers the members."""
     rich = w3.eth.accounts[0]
     amount = w3.to_wei(10, "ether")
     for role in ("admin", *COMPANIES):

@@ -1,13 +1,15 @@
-"""Lecture de documents fournisseurs → record proposé.
+"""Reading supplier documents → proposed record.
 
-Un PDF ou un mail (bon de commande, avis d'expédition, facture, changement
-de RIB) devient une *proposition* de record. Rien n'entre dans le registre
-sans confirmation explicite ; une fois confirmé, le record passe par les
-règles du graphe comme n'importe quel autre (l'IA ne décide d'aucun blocage).
+A PDF or an email (purchase order, shipping notice, invoice, bank details
+change) becomes a record *proposal*. Nothing enters the ledger without
+explicit confirmation; once confirmed, the record goes through the graph
+rules like any other (the AI never decides any blocking).
 
-- `MockExtractor` : expressions régulières, déterministe, hors ligne ;
-- `BedrockExtractor` : AWS Bedrock, repli sur le mock si erreur ou si la
-  réponse contient une valeur absente du document (RIB ou référence inventés).
+- `MockExtractor`: regular expressions, deterministic, offline;
+- `BedrockExtractor`: AWS Bedrock, falls back to the mock on error or if the
+  reply contains a value absent from the document (invented RIB or reference).
+
+The keyword lists below match French source documents on purpose.
 """
 
 from __future__ import annotations
@@ -32,7 +34,7 @@ MAX_PROMPT_CHARS = 12_000
 
 
 class DocumentError(ValueError):
-    """Document illisible ou vide."""
+    """Unreadable or empty document."""
 
 
 @dataclass(frozen=True)
@@ -41,15 +43,15 @@ class Party:
     name: str
 
 
-# -- texte brut ------------------------------------------------------------------
+# -- raw text --------------------------------------------------------------------
 
 
 def document_text(data: bytes) -> str:
-    """Texte d'un PDF, d'un mail RFC 822 (.eml) ou d'un texte brut UTF-8."""
+    """Text of a PDF, an RFC 822 email (.eml) or plain UTF-8 text."""
     if not data or not data.strip():
-        raise DocumentError("document vide")
+        raise DocumentError("empty document")
     if len(data) > MAX_DOCUMENT_BYTES:
-        raise DocumentError("document trop volumineux (2 Mo max)")
+        raise DocumentError("document too large (2 MB max)")
     if data.lstrip()[:5] == b"%PDF-":
         return _pdf_text(data)
     text = data.decode("utf-8", errors="replace")
@@ -67,22 +69,22 @@ def _pdf_text(data: bytes) -> str:
         reader = PdfReader(io.BytesIO(data))
         text = "\n".join(page.extract_text() or "" for page in reader.pages)
     except (PdfReadError, ValueError, KeyError, TypeError) as exc:
-        raise DocumentError("PDF illisible") from exc
+        raise DocumentError("unreadable PDF") from exc
     if not text.strip():
-        raise DocumentError("PDF sans texte extractible (scan ?)")
+        raise DocumentError("PDF without extractable text (scan?)")
     return text
 
 
 def _mail_text(data: bytes) -> str:
     msg = email.message_from_bytes(data, policy=email.policy.default)
-    head = [f"De : {msg.get('From', '')}", f"Objet : {msg.get('Subject', '')}",
-            f"Date : {msg.get('Date', '')}"]
+    head = [f"From: {msg.get('From', '')}", f"Subject: {msg.get('Subject', '')}",
+            f"Date: {msg.get('Date', '')}"]
     body = msg.get_body(preferencelist=("plain",))
     content = body.get_content() if body is not None else ""
     return "\n".join(head) + "\n\n" + content
 
 
-# -- extraction par expressions régulières -----------------------------------------
+# -- regular expression extraction --------------------------------------------------
 
 
 def _norm(text: str) -> str:
@@ -152,7 +154,7 @@ def _add_date(found: list[str], y: int, mo: int, d: int) -> None:
 
 
 def _ribs(text: str) -> tuple[str | None, str | None]:
-    """(rib retenu, rib précédent). Le RIB annoncé comme nouveau est retenu."""
+    """(selected rib, previous rib). The RIB announced as new is selected."""
     matches = [(m.start(), normalize_iban(m.group(0))) for m in IBAN_RE.finditer(text)]
     distinct: list[tuple[int, str]] = []
     for pos, iban in matches:
@@ -171,7 +173,7 @@ def _ribs(text: str) -> tuple[str | None, str | None]:
 
 
 def _kind(text: str) -> tuple[str | None, bool]:
-    """(kind, détecté dans l'en-tête). L'en-tête (objet, titre) pèse triple."""
+    """(kind, detected in the header). The header (subject, title) weighs triple."""
     norm, head = _norm(text), _norm(text[:300])
     scores = {}
     for kind, words in KIND_KEYWORDS.items():
@@ -214,22 +216,22 @@ def _label(kind: str | None, payload: dict) -> str:
         return next((r for r in refs if r.startswith(prefix + "-")), None)
 
     if kind == "invoice":
-        label = "Facture reçue " + (first("F") or "sans numéro")
+        label = "Received invoice " + (first("F") or "without number")
         if payload.get("bank_details_change"):
-            label += " — nouveau RIB"
+            label += " — new bank details"
         return label
     if kind == "asn":
-        return "ASN reçu — " + (first("BC") or first("ASN") or "sans référence")
+        return "Received ASN — " + (first("BC") or first("ASN") or "without reference")
     if kind == "purchase_order":
-        return "Bon de commande reçu " + (first("BC") or "sans numéro")
+        return "Received purchase order " + (first("BC") or "without number")
     if kind == "bank_details_change":
-        return "Changement de RIB reçu"
-    return "Document fournisseur non classé"
+        return "Received bank details change"
+    return "Unclassified supplier document"
 
 
 def _finish(kind: str | None, origin: str | None, payload: dict,
             known_ribs: set[str], kind_in_head: bool) -> tuple[dict, float, list[str]]:
-    """Complète le payload (changement de RIB), calcule confiance et manques."""
+    """Completes the payload (bank details change), computes confidence and missing fields."""
     rib = payload.get("rib")
     if rib and known_ribs and rib not in known_ribs:
         payload["bank_details_change"] = True
@@ -248,7 +250,7 @@ def _finish(kind: str | None, origin: str | None, payload: dict,
     expected = EXPECTED_FIELDS[kind]
     missing = [f for f in expected if not found[f]]
     ratio = (len(expected) - len(missing)) / len(expected)
-    # heuristique bornée à 0,9 : une regex ne garantit jamais l'exactitude
+    # heuristic capped at 0.9: a regex never guarantees accuracy
     confidence = round(0.15 + 0.6 * ratio + (0.15 if kind_in_head else 0.05), 2)
     return payload, confidence, missing
 
@@ -290,14 +292,14 @@ class MockExtractor:
 # -- Bedrock ---------------------------------------------------------------------
 
 EXTRACT_SYSTEM = (
-    "Tu extrais les données d'un document fournisseur pour FIREBREAK. Tu ne décides "
-    "de rien : ta sortie est une proposition qu'un humain confirmera. N'invente "
-    "aucune valeur : tout RIB, référence ou date doit figurer dans le document. "
-    "Réponds par un seul objet JSON, sans texte autour : {\"kind\": un de "
-    + ", ".join(KINDS) + " ou null, \"origin\": id de l'entreprise émettrice parmi "
-    "la liste fournie ou null, \"payload\": {\"amount\": nombre ou null, \"rib\": "
-    "IBAN ou null, \"previous_rib\": IBAN ou null, \"bank_details_change\": booléen, "
-    "\"references\": [chaînes], \"dates\": [AAAA-MM-JJ]}, \"confidence\": 0 à 1}"
+    "You extract the data of a supplier document for FIREBREAK. You decide "
+    "nothing: your output is a proposal that a human will confirm. Do not invent "
+    "any value: every RIB, reference or date must appear in the document. "
+    "Reply with a single JSON object, with no surrounding text: {\"kind\": one of "
+    + ", ".join(KINDS) + " or null, \"origin\": id of the issuing company from "
+    "the provided list or null, \"payload\": {\"amount\": number or null, \"rib\": "
+    "IBAN or null, \"previous_rib\": IBAN or null, \"bank_details_change\": boolean, "
+    "\"references\": [strings], \"dates\": [YYYY-MM-DD]}, \"confidence\": 0 to 1}"
 )
 
 
@@ -308,47 +310,47 @@ def _compact(s: str) -> str:
 def validate_extraction(data: dict, text: str, parties: list[Party], company: str) -> dict:
     kind = data.get("kind")
     if kind is not None and kind not in KINDS:
-        raise BedrockError(f"type de document hors liste: {kind!r}")
+        raise BedrockError(f"document type not in the list: {kind!r}")
     origin = data.get("origin")
     if origin is not None and origin not in {p.id for p in parties if p.id != company}:
-        raise BedrockError(f"émetteur inconnu: {origin!r}")
+        raise BedrockError(f"unknown issuer: {origin!r}")
     raw = data.get("payload")
     if not isinstance(raw, dict):
-        raise BedrockError("payload absent")
+        raise BedrockError("payload missing")
     compact_text = _compact(text)
     payload: dict = {}
     amount = raw.get("amount")
     if amount is not None:
         if isinstance(amount, bool) or not isinstance(amount, (int, float)) or amount < 0:
-            raise BedrockError("montant invalide")
+            raise BedrockError("invalid amount")
         payload["amount"] = int(amount) if float(amount).is_integer() else amount
     for key in ("rib", "previous_rib"):
         value = raw.get(key)
         if value is None:
             continue
         if not isinstance(value, str) or not IBAN_RE.fullmatch(normalize_iban(value)):
-            raise BedrockError(f"{key} invalide")
+            raise BedrockError(f"invalid {key}")
         if _compact(value) not in compact_text:
-            raise BedrockError(f"{key} absent du document")
+            raise BedrockError(f"{key} not in the document")
         payload[key] = normalize_iban(value)
     if raw.get("bank_details_change") is True:
         payload["bank_details_change"] = True
     refs = raw.get("references") or []
     if not isinstance(refs, list) or not all(isinstance(r, str) for r in refs):
-        raise BedrockError("références invalides")
+        raise BedrockError("invalid references")
     for r in refs:
         if _compact(r) not in compact_text:
-            raise BedrockError(f"référence absente du document: {r!r}")
+            raise BedrockError(f"reference not in the document: {r!r}")
     payload["references"] = list(dict.fromkeys(r.strip() for r in refs))
     dates = raw.get("dates") or []
     if not isinstance(dates, list) or not all(
             isinstance(d, str) and DATE_ISO_RE.fullmatch(d) for d in dates):
-        raise BedrockError("dates invalides")
+        raise BedrockError("invalid dates")
     payload["dates"] = list(dict.fromkeys(dates))
     confidence = data.get("confidence")
     if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) \
             or not 0 <= confidence <= 1:
-        raise BedrockError("confiance invalide")
+        raise BedrockError("invalid confidence")
     return {"kind": kind, "origin": origin, "payload": payload,
             "confidence": round(float(confidence), 2)}
 
@@ -364,15 +366,15 @@ class BedrockExtractor:
     def extract(self, text: str, company: str, parties: list[Party],
                 known_ribs: dict[str, set[str]] | None = None) -> dict:
         prompt = json.dumps({
-            "destinataire": company,
-            "entreprises": [{"id": p.id, "nom": p.name} for p in parties if p.id != company],
+            "recipient": company,
+            "companies": [{"id": p.id, "name": p.name} for p in parties if p.id != company],
             "document": text[:MAX_PROMPT_CHARS],
         }, ensure_ascii=False, indent=1)
         try:
             data = self.converser.ask_json(EXTRACT_SYSTEM, prompt)
             result = validate_extraction(data, text, parties, company)
         except BedrockError as exc:
-            log.warning("Bedrock indisponible, repli sur le mock : %s", exc)
+            log.warning("Bedrock unavailable, falling back to the mock: %s", exc)
             return self.fallback.extract(text, company, parties, known_ribs)
         kind, origin = result["kind"], result["origin"]
         ribs = (known_ribs or {}).get(origin or "", set())
@@ -389,7 +391,7 @@ class BedrockExtractor:
 
 
 def get_extractor() -> MockExtractor | BedrockExtractor:
-    """FIREBREAK_AI=bedrock → BedrockExtractor (repli mock intégré) ; sinon mock."""
+    """FIREBREAK_AI=bedrock → BedrockExtractor (built-in mock fallback); otherwise mock."""
     if ai_mode() == "bedrock":
         return BedrockExtractor()
     return MockExtractor()

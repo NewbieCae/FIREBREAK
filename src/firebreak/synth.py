@@ -1,31 +1,28 @@
-"""Mondes synthétiques à graine pour le banc d'essai Firebreak.
+"""Seeded synthetic worlds for the Firebreak benchmark.
 
-`generate(seed, ...)` construit une supply chain aléatoire mais
-reproductible : des entreprises reliées par des relations
-fournisseur → client, ~300 opérations, et une VÉRITÉ TERRAIN, c'est-à-dire
-toutes les vraies dépendances entre records.
+`generate(seed, ...)` builds a random but reproducible supply chain:
+companies linked by supplier → customer relationships, ~300 operations,
+and a GROUND TRUTH, i.e. every true dependency between records.
 
-Le moteur ne voit que les dépendances *enregistrées* : chaque vraie
-dépendance (entrée d'un record, ou envoi d'une entreprise à une autre) est
-cachée avec la probabilité `p_hidden`. Une dépendance d'envoi cachée donne
-une copie reçue sans provenance : pas de jeton, origine = l'entreprise qui
-la détient.
+The engine only sees *recorded* dependencies: each true dependency (a
+record's input, or a send from one company to another) is hidden with
+probability `p_hidden`. A hidden send dependency yields a received copy
+with no provenance: no token, origin = the company holding it.
 
-Vérité : les records émis par l'entreprise compromise à partir de `since`
-et tous leurs descendants par les vraies dépendances, sauf les records
-`verified` (jamais contaminés, ils arrêtent la propagation, comme dans le
-moteur).
+Truth: records issued by the compromised company from `since` onwards and
+all their descendants through the true dependencies, except `verified`
+records (never contaminated, they stop propagation, as in the engine).
 
-Quatre politiques sont évaluées sur le même monde :
-- A « alerte seule » : on prévient, rien n'est bloqué ;
-- B « blocage partenaires » : tout record daté de `since` ou après chez
-  l'entreprise compromise et ses clients directs est bloqué ;
-- C « Firebreak » : le moteur existant (Simulation.declare_compromise) ;
-- D « Firebreak + prudence » (banc uniquement) : C, plus la quarantaine des
-  réceptions sans provenance enregistrée chez les partenaires directs après
-  `since`, et de ce qui en dépend. Signal lu dans l'état du moteur seulement.
+Four policies are evaluated on the same world:
+- A "alert only": everyone is warned, nothing is blocked;
+- B "partner block": every record dated `since` or later at the
+  compromised company and its direct customers is blocked;
+- C "Firebreak": the existing engine (Simulation.declare_compromise);
+- D "Firebreak + caution" (benchmark only): C, plus quarantine of
+  receptions with no recorded provenance at direct partners after
+  `since`, and of whatever depends on them. Signal read from engine state only.
 
-Aucun appel réseau ni LLM : uniquement le moteur à règles.
+No network or LLM calls: rule engine only.
 """
 
 from __future__ import annotations
@@ -41,38 +38,38 @@ from .model import Company, Record
 from .simulation import Simulation
 
 START = datetime(2026, 10, 10, 8, 0, 0)
-ROLES = ["Fournisseur", "Sous-traitant", "Fabricant", "Assembleur",
-         "Distributeur", "Grossiste", "Client"]
+ROLES = ["Supplier", "Subcontractor", "Manufacturer", "Assembler",
+         "Distributor", "Wholesaler", "Customer"]
 NATIVE_KINDS = ["purchase_order", "asn", "quality_cert", "invoice",
                 "payment", "production", "shipment"]
 GATE_KINDS = {"payment", "shipment", "production"}
 
-P_RECEIVE = 0.3  # part des opérations qui sont une réception
-P_EXTERNAL = 0.1  # part des réceptions venues d'hors fédération : légitimes, sans jeton
-P_VERIFIED = 0.05  # part des opérations confirmées par une source de confiance
-WINDOW = 25  # les entrées d'un record sont prises parmi les WINDOW précédents
+P_RECEIVE = 0.3  # share of operations that are receptions
+P_EXTERNAL = 0.1  # share of receptions from outside the federation: legitimate, no token
+P_VERIFIED = 0.05  # share of operations confirmed by a trusted source
+WINDOW = 25  # a record's inputs are drawn from the previous WINDOW records
 
 POLICIES = {
-    "A": "Alerte seule",
-    "B": "Blocage fournisseur + partenaires",
+    "A": "Alert only",
+    "B": "Block supplier + partners",
     "C": "Firebreak",
-    "D": "Firebreak + prudence",
+    "D": "Firebreak + caution",
 }
 
 
 @dataclass(frozen=True)
 class SynthRecord:
-    """Record avec ses vraies dépendances (vérité terrain)."""
+    """Record with its true dependencies (ground truth)."""
 
     id: str
     company: str
     kind: str
     ts: datetime
-    inputs: tuple[str, ...]  # vraies entrées, même registre
+    inputs: tuple[str, ...]  # true inputs, same ledger
     gate: bool
     verified: bool
-    sent_from: tuple[str, str] | None = None  # (expéditeur, record) si copie reçue
-    external: bool = False  # réception légitime d'hors fédération (jamais de jeton)
+    sent_from: tuple[str, str] | None = None  # (sender, record) if received copy
+    external: bool = False  # legitimate reception from outside the federation (never a token)
 
     @property
     def origin(self) -> str:
@@ -84,12 +81,12 @@ class World:
     seed: int
     p_hidden: float
     companies: tuple[Company, ...]
-    partners: dict[str, tuple[str, ...]]  # expéditeur -> clients directs
-    records: tuple[SynthRecord, ...]  # ordre chronologique
+    partners: dict[str, tuple[str, ...]]  # sender -> direct customers
+    records: tuple[SynthRecord, ...]  # chronological order
     compromised: str
     since: datetime
-    hidden: frozenset[tuple[str, str]]  # arêtes (parent, enfant) non enregistrées
-    truth: frozenset[str]  # records réellement contaminés
+    hidden: frozenset[tuple[str, str]]  # unrecorded (parent, child) edges
+    truth: frozenset[str]  # actually contaminated records
 
     def true_edges(self) -> list[tuple[str, str]]:
         edges = []
@@ -100,8 +97,8 @@ class World:
         return edges
 
     def simulation(self) -> Simulation:
-        """Registres + fédération construits avec les seules dépendances
-        enregistrées. Objets neufs à chaque appel (le moteur les modifie)."""
+        """Ledgers + federation built from recorded dependencies only.
+        Fresh objects on every call (the engine mutates them)."""
         ids = [c.id for c in self.companies]
         ledgers = {cid: Ledger(cid) for cid in ids}
         fed = Federation(ids)
@@ -120,7 +117,7 @@ class World:
 
 
 def _company_graph(rng: random.Random, n: int) -> dict[str, tuple[str, ...]]:
-    """Relations fournisseur → client, sans cycle (rang i vers rang j > i)."""
+    """Supplier → customer relationships, acyclic (rank i to rank j > i)."""
     ids = [f"e{i}" for i in range(n)]
     out: dict[str, set[str]] = {cid: set() for cid in ids}
     for i in range(n):
@@ -154,13 +151,13 @@ def _truth(records: tuple[SynthRecord, ...], compromised: str,
 
 def generate(seed: int, n_companies: int = 5, n_ops: int = 300,
              p_hidden: float = 0.0, p_external: float = P_EXTERNAL) -> World:
-    """Monde déterministe pour (seed, n_companies, n_ops). Le monde réel ne
-    dépend pas de p_hidden ; seules les dépendances cachées en dépendent, et
-    elles sont emboîtées : ce qui est caché à p l'est aussi à p' > p.
-    `p_external` : part des réceptions venues d'hors fédération (bruit pour
-    le signal « provenance manquante » de la politique D)."""
+    """Deterministic world for (seed, n_companies, n_ops). The true world
+    does not depend on p_hidden; only the hidden dependencies do, and they
+    are nested: whatever is hidden at p is also hidden at p' > p.
+    `p_external`: share of receptions from outside the federation (noise for
+    policy D's "missing provenance" signal)."""
     if n_companies < 2:
-        raise ValueError("il faut au moins 2 entreprises")
+        raise ValueError("at least 2 companies are required")
     rng = random.Random(seed)
     partners = _company_graph(rng, n_companies)
     suppliers: dict[str, list[str]] = {cid: [] for cid in partners}
@@ -168,12 +165,12 @@ def generate(seed: int, n_companies: int = 5, n_ops: int = 300,
         for c in clients:
             suppliers[c].append(s)
     companies = tuple(
-        Company(cid, f"Entreprise {i + 1}", ROLES[min(i, len(ROLES) - 1)])
+        Company(cid, f"Company {i + 1}", ROLES[min(i, len(ROLES) - 1)])
         for i, cid in enumerate(partners)
     )
 
     by_company: dict[str, list[str]] = {cid: [] for cid in partners}
-    sent: set[tuple[str, str]] = set()  # (record expéditeur, destinataire)
+    sent: set[tuple[str, str]] = set()  # (sender record, recipient)
     records: list[SynthRecord] = []
     ts = START
     for i in range(n_ops):
@@ -206,10 +203,10 @@ def generate(seed: int, n_companies: int = 5, n_ops: int = 300,
         records.append(rec)
         by_company[owner].append(rid)
 
-    compromised = rng.choice(list(partners))  # toutes, y compris le client final
+    compromised = rng.choice(list(partners))  # any company, including the final customer
     since = records[int(n_ops * rng.uniform(0.3, 0.6))].ts
 
-    # Tirages de masquage indépendants du monde, un par vraie arête.
+    # Hiding draws independent of the world, one per true edge.
     hide_rng = random.Random(f"hide-{seed}")
     rec_tuple = tuple(records)
     world = World(seed, p_hidden, companies, partners, rec_tuple, compromised,
@@ -219,7 +216,7 @@ def generate(seed: int, n_companies: int = 5, n_ops: int = 300,
                  since, hidden, world.truth)
 
 
-# -- politiques ------------------------------------------------------------
+# -- policies --------------------------------------------------------------
 
 
 def policy_alert_only(world: World) -> set[str]:
@@ -232,7 +229,7 @@ def policy_partner_block(world: World) -> set[str]:
 
 
 def firebreak_run(world: World) -> Simulation:
-    """Le moteur, sur ce qu'il voit : registres + liens enregistrés."""
+    """The engine, on what it sees: ledgers + recorded links."""
     sim = world.simulation()
     sim.declare_compromise(world.compromised, world.since)
     return sim
@@ -248,16 +245,15 @@ def policy_firebreak(world: World) -> set[str]:
 
 
 def missing_provenance(sim: Simulation, compromised: str, since: datetime) -> set[str]:
-    """Signal « provenance manquante », lu UNIQUEMENT dans l'état du moteur
-    (registres + liens de la fédération) : réceptions venues de l'extérieur
-    (`kind == "received"`) datées de `since` ou après, sans jeton ni lien
-    enregistré, chez les partenaires directs connus de l'entreprise
-    compromise ; puis tout ce qui en dépend dans le graphe enregistré
-    (dépendances internes + liens entre entreprises), en épargnant
-    `verified` et `released` comme le moteur.
+    """"Missing provenance" signal, read ONLY from engine state (ledgers +
+    federation links): receptions from outside (`kind == "received"`) dated
+    `since` or later, with no token or recorded link, at the known direct
+    partners of the compromised company; then everything that depends on
+    them in the recorded graph (internal dependencies + inter-company
+    links), sparing `verified` and `released` records like the engine.
 
-    Ne reçoit pas le monde : n'a accès ni à la vérité terrain ni au drapeau
-    « dépendance cachée »."""
+    Does not receive the world: has no access to the ground truth or to the
+    "hidden dependency" flag."""
     linked = {link.recipient_record for link in sim.federation.links}
     partners = {link.recipient for link in sim.federation.links
                 if link.sender == compromised} - {compromised}
@@ -298,13 +294,13 @@ POLICY_FUNCS = {
 }
 
 
-# -- métriques -------------------------------------------------------------
+# -- metrics --------------------------------------------------------------
 
 
 def evaluate(world: World, blocked: set[str]) -> dict:
-    """Fuites (dont actions irréversibles), dégâts collatéraux, activité
-    saine préservée, précision, rappel. Précision (rien de bloqué) et rappel
-    (rien de contaminé) non définis : NaN."""
+    """Leaks (including irreversible actions), collateral damage, healthy
+    activity preserved, precision, recall. Undefined precision (nothing
+    blocked) and recall (nothing contaminated): NaN."""
     total = len(world.records)
     truth = world.truth
     gates = {r.id for r in world.records if r.gate}
@@ -327,11 +323,11 @@ def evaluate(world: World, blocked: set[str]) -> dict:
 
 
 def origin_rule_collateral(world: World, sim: Simulation) -> int:
-    """Diagnostic pour le rapport (lit la vérité, ne décide rien) : opérations
-    saines bloquées par Firebreak à cause de la règle d'origine : données
-    attribuées à l'entreprise compromise après `since` mais pas contaminées
-    (copie d'une donnée antérieure ou vérifiée, réception d'hors fédération
-    chez elle), et ce qui en découle dans le graphe enregistré."""
+    """Report diagnostic (reads the truth, decides nothing): healthy
+    operations blocked by Firebreak because of the origin rule, i.e. data
+    attributed to the compromised company after `since` but not contaminated
+    (copy of earlier or verified data, reception from outside the federation
+    at that company), and whatever follows from it in the recorded graph."""
     blocked_fp = quarantined(sim) - world.truth
     records = {rid: r for led in sim.ledgers.values() for rid, r in led.records.items()}
     succ: dict[str, list[str]] = {}
@@ -352,7 +348,7 @@ def origin_rule_collateral(world: World, sim: Simulation) -> int:
 
 
 def run_policies(world: World) -> dict[str, dict]:
-    """Métriques des 4 politiques ; le moteur ne tourne qu'une fois (C et D)."""
+    """Metrics for the 4 policies; the engine runs only once (C and D)."""
     sim = firebreak_run(world)
     blocked_c = quarantined(sim)
     blocked = {

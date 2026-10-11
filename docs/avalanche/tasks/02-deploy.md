@@ -1,48 +1,48 @@
-# Tâche 02 — Déploiement sur la L1 de Mika
+# Task 02 — Deployment on Mika's L1
 
-Lis d'abord `docs/avalanche/README.md`, `docs/avalanche/tasks/RULES.md` et le rapport de la tâche 01.
+First read `docs/avalanche/README.md`, `docs/avalanche/tasks/RULES.md` and the task 01 report.
 
-**Cette tâche touche la vraie L1.** Les scripts lisent la configuration depuis l'environnement (`.env.local`) ; **tu ne lis pas ce fichier toi-même** et tu n'affiches jamais le mnémonique ni une clé privée. Si une variable manque, le script s'arrête avec un message qui dit laquelle, sans afficher de valeur.
+**This task touches the real L1.** The scripts read the configuration from the environment (`.env.local`); **you do not read that file yourself** and you never display the mnemonic or a private key. If a variable is missing, the script stops with a message saying which one, without displaying any value.
 
-## Comptes
+## Accounts
 
-Dérivés du mnémonique `FIREBREAK_CHAIN_MNEMONIC` (chemin `m/44'/60'/0'/0/i`, `eth_account` avec les fonctions HD activées) :
+Derived from the mnemonic `FIREBREAK_CHAIN_MNEMONIC` (path `m/44'/60'/0'/0/i`, `eth_account` with HD features enabled):
 
-| i | Rôle |
+| i | Role |
 |---|---|
-| 0 | admin (déploie, enregistre les membres, finance les autres) |
+| 0 | admin (deploys, registers members, funds the others) |
 | 1 | `fournisseur` |
 | 2 | `fabricant` |
 | 3 | `distributeur` |
 | 4 | `client` |
 
-Les ids d'entreprise viennent de `src/firebreak/scenario.py` (vérifie qu'ils sont bien ces quatre-là pour tous les scénarios ; sinon, prends l'union et documente).
+Company ids come from `src/firebreak/scenario.py` (check that they are indeed these four for all scenarios; otherwise, take the union and document it).
 
 ## `scripts/chain_smoke.py`
 
-Lecture seule, sans risque. Affiche : RPC joignable, chainId (et comparaison avec `FIREBREAK_CHAIN_ID`), dernier bloc, **adresses publiques** et soldes des comptes 0 à 4, et si `contracts/deployments/l1.json` existe, que le code est bien présent à l'adresse et que `admin()` répond. Code de sortie ≠ 0 si quelque chose ne va pas.
+Read-only, risk-free. Displays: RPC reachable, chainId (and comparison with `FIREBREAK_CHAIN_ID`), latest block, **public addresses** and balances of accounts 0 to 4, and if `contracts/deployments/l1.json` exists, that the code is indeed present at the address and that `admin()` responds. Exit code ≠ 0 if anything is wrong.
 
 ## `scripts/chain_deploy.py`
 
-1. Vérifie chainId. Refuse de tourner si `FIREBREAK_CHAIN_ID` est 43114 (C-Chain mainnet) ou si le solde de l'admin est nul.
-2. **Allowlists** (si activées sur la L1, voir la fiche 00) : via les precompiles Subnet-EVM — `ContractDeployerAllowList` `0x0200000000000000000000000000000000000000`, `TxAllowList` `0x0200000000000000000000000000000000000002`, fonction `setEnabled(address)` et lecture `readAllowList(address)` (0 = aucun, 1 = enabled, 2 = admin, 3 = manager). Active les comptes 1 à 4 dans `TxAllowList` s'ils ne le sont pas. Option `--skip-allowlist`. **Sur la L1 de Mika, `TxAllowList` n'est pas activé (vérifié le 11/10)** : le script détecte une réponse vide `0x` à `readAllowList` et saute l'étape avec un message, sans erreur. Si le MCP `avalanche-docs` est disponible, vérifie ces adresses et ce comportement avant d'écrire le code.
-3. Finance les comptes 1 à 4 s'ils ont moins de `--min-balance` (défaut 0,5 jeton natif), depuis l'admin.
-4. Déploie `FirebreakRegistry` depuis `contracts/build/FirebreakRegistry.json` (sauf si `--reuse` et qu'un déploiement valide existe).
-5. Enregistre les 4 membres : `registerMember(account_i, company_id_bytes32, ed25519_pubkey)`. La clé Ed25519 est celle de `Federation.public_keys[cid]` pour le même `FIREBREAK_KEY_SEED` que le serveur ; si `FIREBREAK_KEY_SEED` n'est pas défini, le script s'arrête et explique qu'il faut le fixer dans `.env.local` (sinon les clés changent à chaque lancement du serveur).
-6. Écrit `contracts/deployments/l1.json` : `chainId`, `address`, `deployBlock`, `deployTx`, `admin` (adresse publique), `members: {company: account}`, `abiSha256`. **Aucun secret.** Ce fichier est versionné.
-7. Imprime un résumé avec les liens explorer si `FIREBREAK_CHAIN_EXPLORER_URL` est défini.
+1. Checks chainId. Refuses to run if `FIREBREAK_CHAIN_ID` is 43114 (C-Chain mainnet) or if the admin's balance is zero.
+2. **Allowlists** (if enabled on the L1, see sheet 00): via the Subnet-EVM precompiles — `ContractDeployerAllowList` `0x0200000000000000000000000000000000000000`, `TxAllowList` `0x0200000000000000000000000000000000000002`, function `setEnabled(address)` and read `readAllowList(address)` (0 = none, 1 = enabled, 2 = admin, 3 = manager). Enables accounts 1 to 4 in `TxAllowList` if they aren't already. Option `--skip-allowlist`. **On Mika's L1, `TxAllowList` is not enabled (checked on 11/10)**: the script detects an empty `0x` response to `readAllowList` and skips the step with a message, without error. If the `avalanche-docs` MCP is available, check these addresses and this behavior before writing the code.
+3. Funds accounts 1 to 4 if they have less than `--min-balance` (default 0.5 native token), from the admin.
+4. Deploys `FirebreakRegistry` from `contracts/build/FirebreakRegistry.json` (unless `--reuse` and a valid deployment exists).
+5. Registers the 4 members: `registerMember(account_i, company_id_bytes32, ed25519_pubkey)`. The Ed25519 key is the one from `Federation.public_keys[cid]` for the same `FIREBREAK_KEY_SEED` as the server; if `FIREBREAK_KEY_SEED` is not set, the script stops and explains that it must be fixed in `.env.local` (otherwise the keys change at every server launch).
+6. Writes `contracts/deployments/l1.json`: `chainId`, `address`, `deployBlock`, `deployTx`, `admin` (public address), `members: {company: account}`, `abiSha256`. **No secrets.** This file is committed.
+7. Prints a summary with explorer links if `FIREBREAK_CHAIN_EXPLORER_URL` is set.
 
-Les deux scripts réutilisent `src/firebreak/chain/config.py` et `ids.py` (tâche 03). Si la tâche 03 n'est pas encore faite, crée ces deux modules a minima avec exactement les fonctions décrites dans la fiche 03, et signale-le dans ton rapport.
+Both scripts reuse `src/firebreak/chain/config.py` and `ids.py` (task 03). If task 03 isn't done yet, create these two modules minimally with exactly the functions described in sheet 03, and mention it in your report.
 
 ## Tests
 
-`tests/test_chain_deploy.py` : déroule `chain_deploy` en appelant sa fonction principale sur `EthereumTesterProvider` (allowlist sautée), avec le mnémonique de test public. Vérifie le fichier de déploiement produit (dans un dossier temporaire) et les 4 membres enregistrés.
+`tests/test_chain_deploy.py`: runs `chain_deploy` by calling its main function on `EthereumTesterProvider` (allowlist skipped), with the public test mnemonic. Checks the produced deployment file (in a temporary folder) and the 4 registered members.
 
-## Exécution réelle
+## Real run
 
-Pas par toi : Mika lance `uv run python scripts/chain_smoke.py` puis `uv run python scripts/chain_deploy.py`. Termine ton rapport par ces deux commandes et ce qu'elles doivent afficher.
+Not by you: Mika runs `uv run python scripts/chain_smoke.py` then `uv run python scripts/chain_deploy.py`. End your report with these two commands and what they should display.
 
-## Fini quand
+## Done when
 
-- `uv run pytest -q` vert.
+- `uv run pytest -q` green.
 - Commit `chain: scripts de déploiement et de vérification de la L1`.

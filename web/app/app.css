@@ -1,46 +1,46 @@
-/* FIREBREAK — interface finale. Source de vérité du design : design.md.
-   Noir profond, un horizon de lumière granuleuse, aucune boîte inutile.
-   Le sain est neutre (blanc) : seul l'anormal porte une couleur. */
+/* FIREBREAK — final UI. Design source of truth: design.md.
+   Deep black, a grainy horizon of light, no needless boxes.
+   Healthy is neutral (white): only the abnormal gets a colour. */
 
 @font-face { font-family: "Geist"; font-weight: 100 900; font-display: swap; src: url(fonts/geist-variable.woff2) format("woff2"); }
 @font-face { font-family: "Geist Mono"; font-weight: 100 900; font-display: swap; src: url(fonts/geist-mono-variable.woff2) format("woff2"); }
 
 :root {
-  /* Fond et surfaces */
+  /* Background and surfaces */
   --bg: #050506;
-  --panel: #0d0e11;            /* surfaces pleines : tiroir, menus, toasts */
+  --panel: #0d0e11;            /* solid surfaces: drawer, menus, toasts */
   --panel-2: rgba(255, 255, 255, 0.035);
   --line: rgba(255, 255, 255, 0.08);
   --line-2: rgba(255, 255, 255, 0.16);
-  /* Compatibilité des anciens noms */
+  /* Backward-compatible old names */
   --glass: rgba(255, 255, 255, 0.04);
   --glass-hover: rgba(255, 255, 255, 0.07);
   --glass-border: var(--line);
   --glass-shine: transparent;
   --surface: var(--panel-2);
   --surface-border: var(--line);
-  /* Texte */
+  /* Text */
   --text: #f4f4f5;
   --text-2: rgba(244, 244, 245, 0.66);
   --text-3: rgba(244, 244, 245, 0.42);
-  /* Sémantique : le sain est neutre */
+  /* Semantics: healthy is neutral */
   --ok: #f4f4f5;
   --ok-rgb: 244, 244, 245;
-  --q: #ff5545;           /* contaminé, bloqué */
+  --q: #ff5545;           /* contaminated, blocked */
   --q-rgb: 255, 85, 69;
-  --r: #ffb02e;           /* en reprise, libéré */
+  --r: #ffb02e;           /* recovering, released */
   --r-rgb: 255, 176, 46;
-  --accent: #6e95ff;      /* signatures vérifiées, preuves, focus */
+  --accent: #6e95ff;      /* verified signatures, proofs, focus */
   --accent-rgb: 110, 149, 255;
-  /* Formes */
+  /* Shapes */
   --radius: 20px;
   --radius-sm: 12px;
   --radius-xs: 8px;
-  /* Mouvement : une seule courbe */
+  /* Motion: a single curve */
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --t-fast: 160ms;
   --t: 240ms;
-  /* Typo */
+  /* Type */
   --font-display: "Geist", system-ui, sans-serif;
   --font-text: "Geist", system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
@@ -72,7 +72,7 @@ svg.i.s16 { width: 16px; height: 16px; }
 svg.i.s18 { width: 18px; height: 18px; }
 svg.i.s20 { width: 20px; height: 20px; }
 
-/* ---------- Ambiance : un horizon de lumière granuleuse ---------- */
+/* ---------- Ambience: a grainy horizon of light ---------- */
 .bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
 .bg .orb {
   position: absolute; left: 50%; bottom: -62vh; width: 135vw; height: 95vh; border-radius: 50%;
@@ -103,7 +103,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
   100% { transform: translateX(-47%) scale(1.06); }
 }
 
-/* ---------- Surfaces : pas de verre, du noir et des filets ---------- */
+/* ---------- Surfaces: no glass, just black and hairlines ---------- */
 .glass { position: relative; }
 .surface {
   background: var(--panel-2);
@@ -111,7 +111,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
   border-radius: var(--radius-sm);
 }
 
-/* ---------- Mise en page ---------- */
+/* ---------- Layout ---------- */
 .app {
   position: relative; z-index: 1; height: 100vh;
   display: grid; grid-template-rows: var(--topbar-h) minmax(0, 1fr);
@@ -123,7 +123,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
   column-gap: 40px; row-gap: 22px; padding: 6px 32px 22px;
 }
 
-/* ---------- En-tête ---------- */
+/* ---------- Header ---------- */
 .topbar {
   display: flex; align-items: center; gap: 16px; padding: 0 22px 0 32px;
   z-index: 20;
@@ -138,7 +138,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .progress.on { opacity: 1; }
 .progress span { display: block; height: 100%; width: 0; background: var(--text); transition: width 420ms var(--ease); }
 
-/* Boutons : pilules fines */
+/* Buttons: thin pills */
 .btn {
   display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px;
   border-radius: 999px; border: 1px solid var(--line);
@@ -169,7 +169,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .chip.chain .led { background: var(--accent); }
 .chip.chain.off .led { background: var(--text-3); }
 
-/* Menus déroulants (scénario, vue partenaire) */
+/* Dropdown menus (scenario, partner view) */
 .menu-wrap { position: relative; }
 .menu-btn .lbl { color: var(--text-3); font-weight: 400; }
 .menu {
@@ -190,7 +190,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .menu .d { font-size: 12.5px; line-height: 1.45; color: var(--text-2); }
 @keyframes rise { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
-/* ---------- Chiffres : flottants, fins, sans cadre ---------- */
+/* ---------- Numbers: floating, thin, frameless ---------- */
 .kpis {
   grid-column: 1; grid-row: 1;
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.2fr); column-gap: 28px;
@@ -221,7 +221,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .scenario .s-state.healing { color: var(--r); }
 .scenario .s-state.healing .led { background: var(--r); }
 
-/* ---------- Carte de la chaîne : quatre colonnes qui flottent ---------- */
+/* ---------- Chain map: four floating columns ---------- */
 .map { grid-column: 1; grid-row: 2; position: relative; min-height: 0; }
 .map canvas.flows, .map svg.fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .map canvas.flows { z-index: 0; }
@@ -301,7 +301,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 @keyframes breathe { 0%, 100% { opacity: 0.72; } 50% { opacity: 1; } }
 @keyframes born { 0% { transform: scale(0); } 60% { transform: scale(1.8); } 100% { transform: scale(1); } }
 
-/* Vue partenaire : le registre des autres est flouté */
+/* Partner view: the other ledgers are blurred */
 .company .privacy {
   position: absolute; inset: 64px 0 0 0; display: none; z-index: 3;
   flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 18px;
@@ -318,14 +318,14 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .privacy .p-alert .mono { color: var(--text-2); margin-left: auto; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* Effets de causalité (calque SVG au-dessus) */
+/* Causality effects (SVG layer on top) */
 .fx .trace { fill: none; stroke-width: 1.6; stroke-linecap: round; }
 .fx .ripple { fill: none; stroke-width: 1; }
 .fx .tag rect { fill: var(--panel); stroke: rgba(var(--q-rgb), 0.6); }
 .fx .tag text { fill: var(--text); font: 450 11px var(--font-mono); }
 .fx .env path, .fx .env rect, .fx .env circle { fill: var(--panel); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ---------- Barre d'action : un dock flottant ---------- */
+/* ---------- Action bar: a floating dock ---------- */
 .actionbar { grid-column: 1; grid-row: 3; display: flex; align-items: center; justify-content: center; min-height: 56px; }
 .dock {
   display: flex; align-items: center; gap: 4px; padding: 6px;
@@ -354,7 +354,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .actionbar .step b { color: var(--text); font-weight: 500; }
 .btn.compare svg { color: var(--text); }
 
-/* ---------- Fil d'événements ---------- */
+/* ---------- Event feed ---------- */
 .feed { grid-column: 2; grid-row: 1 / span 3; display: flex; flex-direction: column; min-height: 0; overflow: hidden; border-left: 1px solid var(--line); padding-left: 8px; }
 .feed-head { display: flex; align-items: center; gap: 10px; padding: 12px 0 12px 16px; }
 .feed-head h2 { margin: 0; font: 450 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-2); white-space: nowrap; }
@@ -381,7 +381,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .ev .ev-meta .mono { font-size: 11px; color: var(--text-2); }
 .ev .ev-text { font-size: 13px; line-height: 1.5; color: var(--text); }
 .ev .ev-text b { font-weight: 500; }
-.ev .ev-text q { quotes: "«\00a0" "\00a0»"; }
+.ev .ev-text q { quotes: "\201C" "\201D"; }
 .ev-group .sec-title { margin: 14px 8px 4px !important; }
 @keyframes slidein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .feed-foot { border-top: 1px solid var(--line); padding: 12px 0 0 16px; display: flex; flex-direction: column; gap: 8px; }
@@ -390,7 +390,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .audit-row .btn { margin-left: auto; height: 32px; font-size: 13px; }
 .audit-row .btn svg { color: var(--accent); }
 
-/* ---------- Panneau latéral (preuve, journal, import) ---------- */
+/* ---------- Side panel (proof, log, import) ---------- */
 .scrim { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.5); opacity: 0; pointer-events: none; transition: opacity var(--t) var(--ease); }
 .scrim.on { opacity: 1; pointer-events: auto; }
 .drawer {
@@ -430,7 +430,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .fact .copy { border: 0; background: none; color: var(--text-2); padding: 0 0 0 6px; vertical-align: middle; }
 .fact .copy:hover { color: var(--accent); }
 
-/* Chemin de contamination */
+/* Contamination path */
 .path { list-style: none; margin: 0; padding: 0; position: relative; }
 .path li { position: relative; display: grid; grid-template-columns: 30px 1fr; gap: 12px; padding-bottom: 16px; animation: slidein 360ms var(--ease) both; }
 .path li:not(:last-child)::before { content: ""; position: absolute; left: 14.5px; top: 30px; bottom: 2px; width: 1px; background: linear-gradient(rgba(var(--q-rgb), 0.8), rgba(var(--q-rgb), 0.2)); }
@@ -463,14 +463,14 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .plan .pl-d { font-size: 12.5px; color: var(--text-2); line-height: 1.45; grid-column: 2; }
 .plan .pl-go { grid-row: 1 / span 2; grid-column: 3; color: var(--text-3); }
 
-/* Skeleton : balayage discret */
+/* Skeleton: subtle sweep */
 .sk { position: relative; overflow: hidden; border-radius: 6px; background: rgba(255, 255, 255, 0.05); }
 .sk::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); animation: sweep 1.4s var(--ease) infinite; }
 .sk.line { height: 11px; margin: 8px 0; }
 .sk.block { height: 60px; }
 @keyframes sweep { to { transform: translateX(100%); } }
 
-/* Journal d'audit */
+/* Audit log */
 .tabs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1px solid var(--line); }
 .tabs button { flex: 1; border: 0; background: transparent; padding: 7px 6px; border-radius: 999px; font-size: 12.5px; color: var(--text-2); }
 .tabs button[aria-selected="true"] { background: var(--text); color: #0a0a0b; font-weight: 500; }
@@ -488,7 +488,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .chainlist .ch { font-size: 11px; color: var(--text-3); display: flex; gap: 6px; align-items: center; margin-top: 3px; }
 .chainlist .ch .arrow { color: var(--accent); }
 
-/* Import de documents */
+/* Document import */
 .drop {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center;
   padding: 30px 16px; border-radius: 16px; border: 1px dashed var(--line-2); background: transparent;
@@ -515,7 +515,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .warnline { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; font-size: 13px; line-height: 1.5; border-color: rgba(var(--q-rgb), 0.4); }
 .warnline svg { color: var(--q); flex: none; }
 
-/* Rappel qualité : causes possibles */
+/* Quality recall: possible causes */
 .cands { display: grid; gap: 8px; }
 .cand { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; align-items: center; padding: 14px 16px; }
 .cand.hit { border-color: rgba(var(--q-rgb), 0.5); }
@@ -528,7 +528,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .report .mono { color: var(--text-2); }
 .report .badge { margin-left: auto; }
 
-/* ---------- Avec vs sans ---------- */
+/* ---------- With vs without ---------- */
 .versus { position: fixed; inset: var(--topbar-h) 0 0 0; z-index: 45; display: none; padding: 10px 32px 22px; }
 .versus.on { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 16px; }
 .versus::before { content: ""; position: fixed; inset: 0; z-index: -1; background: rgba(5, 5, 6, 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); animation: fade var(--t) var(--ease); }
@@ -583,7 +583,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .vs-note a { color: var(--accent); text-decoration: none; }
 .vs-note a:hover { text-decoration: underline; }
 
-/* ---------- Toasts et infobulle ---------- */
+/* ---------- Toasts and tooltip ---------- */
 .toasts { position: fixed; right: 24px; bottom: 24px; z-index: 80; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .toast { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; max-width: 460px; font-size: 13.5px; animation: rise var(--t) var(--ease); background: var(--panel); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9); }
 .toast.err { border-color: rgba(var(--q-rgb), 0.5); }
@@ -601,11 +601,11 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 .tip .td { color: var(--text-2); display: flex; gap: 8px; align-items: center; margin-top: 3px; }
 .tip .st-q { color: var(--q); } .tip .st-ok { color: var(--text); } .tip .st-r { color: var(--r); }
 
-/* Chargement initial : skeleton de la scène */
+/* Initial load: scene skeleton */
 .boot .kpi .k-value, .boot .scenario .s-title { color: transparent; }
 .boot .company .fams { opacity: 0; }
 
-/* Logo : une grille de points coupée par un pare-feu */
+/* Logo: a grid of dots cut by a firebreak */
 .logo .l-dot { fill: currentColor; }
 .logo .l-dot.far { opacity: 0.4; }
 .logo .l-bar { fill: currentColor; }
@@ -617,7 +617,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
 @keyframes l-drop { 0%, 22% { transform: scaleY(0); } 45%, 100% { transform: none; } }
 .logo .l-bar { transform-origin: center; transform-box: fill-box; }
 
-/* ---------- Portable 1440×900 et moins ---------- */
+/* ---------- Laptop 1440×900 and below ---------- */
 @media (max-height: 940px) {
   :root { --topbar-h: 60px; }
   .stage { row-gap: 16px; padding: 4px 26px 16px; column-gap: 32px; }
@@ -634,11 +634,11 @@ body.incident .bg .orb.cool { opacity: 0.35; }
   .brand .tag { display: none; }
 }
 
-/* Mode allégé (posé par scene.js si les images ralentissent) : on coupe le flou */
+/* Lite mode (set by scene.js when frames slow down): blur is turned off */
 .lite .dock, .lite .versus::before { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--panel); }
 .lite .bg .orb { filter: none; }
 
-/* ---------- Fenêtre étroite (< 1180 px) : la page défile verticalement ---------- */
+/* ---------- Narrow window (< 1180 px): the page scrolls vertically ---------- */
 @media (max-width: 1180px) {
   body { overflow-y: auto; }
   .app { height: auto; min-height: 100vh; }
@@ -655,7 +655,7 @@ body.incident .bg .orb.cool { opacity: 0.35; }
   .dock { flex-wrap: wrap; justify-content: center; border-radius: 22px; }
 }
 
-/* ---------- Mouvement réduit ---------- */
+/* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .bg .orb, .dot, .btn.declare .rec::after, .scenario .s-state .led, .vd.leak { animation: none !important; }
   .sk::after { animation: none; }

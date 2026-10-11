@@ -18,7 +18,7 @@ from firebreak.simulation import REMEDIATION_ACTIONS
 
 
 class FakeClient:
-    """Faux client bedrock-runtime : aucun appel réseau."""
+    """Fake bedrock-runtime client: no network call."""
 
     def __init__(self, reply=None, error=None, delay=0.0):
         self.reply, self.error, self.delay = reply, error, delay
@@ -43,10 +43,10 @@ def quarantined_payment():
 
 
 GOOD = {
-    "explanation": "Le paiement est bloqué : la facture vient du fournisseur compromis.",
+    "explanation": "The payment is blocked: the invoice comes from the compromised supplier.",
     "remediation_plan": [
-        {"action": "revalidate", "label": "Revalider", "rationale": "Appeler le fournisseur."},
-        {"action": "human_approval", "label": "Arbitrage", "rationale": "Décision du DAF."},
+        {"action": "revalidate", "label": "Revalidate", "rationale": "Call the supplier."},
+        {"action": "human_approval", "label": "Arbitration", "rationale": "CFO decision."},
     ],
 }
 
@@ -99,9 +99,9 @@ def test_fenced_json_is_accepted():
 
 
 @pytest.mark.parametrize("reply", [
-    "Voici mon analyse : le paiement est suspect.",
-    "{pas du json",
-    json.dumps(["liste"]),
+    "Here is my analysis: the payment is suspicious.",
+    "{not json",
+    json.dumps(["list"]),
     json.dumps({"explanation": "", "remediation_plan": GOOD["remediation_plan"]}),
     json.dumps({"explanation": "ok", "remediation_plan": []}),
 ])
@@ -116,7 +116,7 @@ def test_invalid_reply_falls_back_to_mock(reply):
 def test_action_outside_list_is_rejected():
     record, path = quarantined_payment()
     bad = dict(GOOD, remediation_plan=[
-        {"action": "release_now", "label": "Débloquer", "rationale": "Le client attend."}])
+        {"action": "release_now", "label": "Unblock", "rationale": "The customer is waiting."}])
     explainer, _ = bedrock(bad)
     out = explainer.analyze(record, path)
     assert out["source"] == "mock"
@@ -125,7 +125,7 @@ def test_action_outside_list_is_rejected():
 
 def test_client_error_falls_back_to_mock():
     record, path = quarantined_payment()
-    explainer, _ = bedrock(error=ConnectionError("réseau coupé"))
+    explainer, _ = bedrock(error=ConnectionError("network down"))
     assert explainer.analyze(record, path)["source"] == "mock"
 
 
@@ -147,7 +147,7 @@ def test_missing_credentials_falls_back_to_mock(monkeypatch, tmp_path):
     monkeypatch.setenv("AWS_CONFIG_FILE", str(tmp_path / "none"))
     monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")
     monkeypatch.setenv("AWS_REGION", "eu-west-3")
-    with pytest.raises(BedrockError, match="identifiants"):
+    with pytest.raises(BedrockError, match="credentials"):
         make_bedrock_client()
     record, path = quarantined_payment()
     assert BedrockExplainer().analyze(record, path)["source"] == "mock"
@@ -155,10 +155,10 @@ def test_missing_credentials_falls_back_to_mock(monkeypatch, tmp_path):
 
 def test_secrets_never_logged(caplog):
     record, path = quarantined_payment()
-    explainer, _ = bedrock(error=RuntimeError("AKIAFAKESECRET1234 refusé"))
+    explainer, _ = bedrock(error=RuntimeError("AKIAFAKESECRET1234 denied"))
     with caplog.at_level(logging.WARNING, logger="firebreak.ai"):
         explainer.analyze(record, path)
-    assert "repli sur le mock" in caplog.text
+    assert "falling back to the mock" in caplog.text
     assert "AKIAFAKESECRET1234" not in caplog.text
 
 

@@ -1,8 +1,8 @@
-"""API Firebreak — contrat pour le tableau de bord.
+"""Firebreak API — the contract for the dashboard.
 
-L'état est en mémoire : une instance globale de Simulation, protégée par
-un verrou (les endpoints FastAPI synchrones tournent dans un pool de threads).
-Contrat documenté dans docs/api.md ; schéma OpenAPI sur /docs.
+State lives in memory: one global Simulation instance, guarded by a lock
+(synchronous FastAPI endpoints run in a thread pool).
+Contract documented in docs/api.md; OpenAPI schema at /docs.
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ DEV_ORIGINS = [
 
 app = FastAPI(
     title="Firebreak",
-    description="Confinement ciblé des compromissions dans les supply chains.",
+    description="Targeted containment of compromises in supply chains.",
     version="1.4.0",
 )
 app.add_middleware(
@@ -80,8 +80,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mode démo : scénario fixe, IA forcée en mock (zéro dépendance réseau),
-# rejeu SSE cadencé pour la scène. FIREBREAK_DEMO=1.
+# Demo mode: fixed scenario, AI forced to mock (no network dependency),
+# paced SSE replay for the stage. FIREBREAK_DEMO=1.
 sim = build_simulation(DEMO_SCENARIO if DEMO_MODE else DEFAULT_SCENARIO)
 explainer = MockExplainer() if DEMO_MODE else get_explainer()
 demo_index = 0
@@ -93,9 +93,9 @@ proposals: dict[str, dict] = {}
 _lock = threading.Lock()
 
 ERRORS = {
-    400: {"model": ErrorOut, "description": "Requête refusée"},
-    404: {"model": ErrorOut, "description": "Ressource inconnue"},
-    422: {"model": ErrorOut, "description": "Corps de requête invalide"},
+    400: {"model": ErrorOut, "description": "Request refused"},
+    404: {"model": ErrorOut, "description": "Unknown resource"},
+    422: {"model": ErrorOut, "description": "Invalid request body"},
 }
 
 
@@ -112,14 +112,14 @@ async def validation_error(_: Request, exc: RequestValidationError) -> JSONRespo
         loc = ".".join(str(p) for p in err.get("loc", ()) if p != "body")
         parts.append(f"{loc}: {err.get('msg')}" if loc else str(err.get("msg")))
     return JSONResponse(
-        {"detail": "requête invalide — " + "; ".join(parts)}, status_code=422
+        {"detail": "invalid request — " + "; ".join(parts)}, status_code=422
     )
 
 
 class CompromiseBody(BaseModel):
     company: str = Field(examples=["fournisseur"])
     since: datetime = Field(
-        description="Début de la fenêtre de compromission. Sans fuseau : heure de Paris.",
+        description="Start of the compromise window. Without a time zone: Paris time.",
         examples=["2026-10-10T14:00:00"],
     )
 
@@ -130,8 +130,8 @@ class WithdrawBody(BaseModel):
 
 class LotSuspectBody(BaseModel):
     company: str = Field(examples=["fabricant"])
-    lot: str = Field(description="Numéro de lot ou id de record.", examples=["COIL-104"])
-    reason: str = Field(default="", examples=["Défaut de coulée"])
+    lot: str = Field(description="Lot number or record id.", examples=["COIL-104"])
+    reason: str = Field(default="", examples=["Casting defect"])
 
 
 class LotWithdrawBody(BaseModel):
@@ -140,33 +140,33 @@ class LotWithdrawBody(BaseModel):
 
 
 class ReportBody(BaseModel):
-    company: str = Field(description="Entreprise qui signale.", examples=["client"])
-    ref: str = Field(description="Lot ou id de record concerné.", examples=["c-gr-03"])
-    reason: str = Field(default="", examples=["Casse sur chantier"])
+    company: str = Field(description="Reporting company.", examples=["client"])
+    ref: str = Field(description="Affected lot or record id.", examples=["c-gr-03"])
+    reason: str = Field(default="", examples=["Broke on site"])
 
 
 class ReportDecisionBody(BaseModel):
-    company: str = Field(description="Destinataire du signalement.", examples=["fournisseur"])
-    decision: str = Field(description="« confirm » ou « reject ».", examples=["confirm"])
+    company: str = Field(description="Recipient of the report.", examples=["fournisseur"])
+    decision: str = Field(description="\"confirm\" or \"reject\".", examples=["confirm"])
 
 
 class InboundScreenBody(BaseModel):
-    company: str = Field(description="Entreprise qui réceptionne.", examples=["fabricant"])
+    company: str = Field(description="Receiving company.", examples=["fabricant"])
     receipt_id: str | None = Field(
         default=None,
-        description="Réception à contrôler ; sans valeur : toutes les réceptions de la journée.",
+        description="Receipt to check; if omitted: all of the day's receipts.",
         examples=["m-gr-X"])
 
 
 class InboundDecisionBody(BaseModel):
     company: str = Field(examples=["fabricant"])
-    decision: str = Field(description="« accept » ou « reject ».", examples=["reject"])
-    reason: str = Field(default="", examples=["Commande inconnue, certificat hors séquence"])
+    decision: str = Field(description="\"accept\" or \"reject\".", examples=["reject"])
+    reason: str = Field(default="", examples=["Unknown purchase order, certificate out of sequence"])
 
 
 class RemediateBody(BaseModel):
     action: str = Field(
-        description="Action de reprise.",
+        description="Remediation action.",
         json_schema_extra={"enum": sorted(REMEDIATION_ACTIONS)},
         examples=["human_approval"],
     )
@@ -177,7 +177,7 @@ def _chain_on() -> bool:
 
 
 def _with_onchain(result: dict) -> dict:
-    """Ajoute l'ancrage Avalanche à la vérification d'audit (appelé sous `_lock`)."""
+    """Add the Avalanche anchoring to the audit verification (called under `_lock`)."""
     if not _chain_on():
         return result
     checks = anchorer.verify_onchain(sim)
@@ -191,13 +191,13 @@ def _with_onchain(result: dict) -> dict:
     return result
 
 
-@app.get("/api/chain/status", summary="État de la couche Avalanche",
+@app.get("/api/chain/status", summary="Avalanche layer status",
          response_model=ChainStatusOut)
 def get_chain_status() -> dict:
     return {**chain.status(), "run_id": anchorer.run_id.hex()}
 
 
-@app.get("/api/chain/anchors", summary="Ancrages Avalanche",
+@app.get("/api/chain/anchors", summary="Avalanche anchors",
          response_model=list[AnchorOut])
 def get_chain_anchors(kind: str | None = None, company: str | None = None) -> list[dict]:
     records = [a.to_dict() for a in chain.anchors()
@@ -206,25 +206,25 @@ def get_chain_anchors(kind: str | None = None, company: str | None = None) -> li
     return sorted(records, key=lambda r: r["created_at"])
 
 
-@app.post("/api/chain/anchor", summary="Ancrer maintenant les têtes de journaux",
+@app.post("/api/chain/anchor", summary="Anchor the journal heads now",
           response_model=list[AnchorOut], responses={409: ERRORS[400]})
 def post_chain_anchor() -> list[dict]:
     if not _chain_on():
-        raise HTTPException(409, "chaîne désactivée (FIREBREAK_CHAIN=off)")
+        raise HTTPException(409, "chain disabled (FIREBREAK_CHAIN=off)")
     with _lock:
         ids = {r.id for r in anchorer.anchor_all(sim)}
     chain.flush(5.0)
     return [a.to_dict() for a in chain.anchors() if a.id in ids]
 
 
-@app.post("/api/demo/rewrite", summary="Démo : réécrire un journal en recalculant les hash",
+@app.post("/api/demo/rewrite", summary="Demo: rewrite a journal and recompute the hashes",
           responses=ERRORS)
 def post_demo_rewrite(body: RewriteBody) -> dict:
     if not DEMO_MODE:
         raise HTTPException(404, "Not Found")
     with _lock:
         if body.company not in sim.ledgers:
-            raise HTTPException(404, f"entreprise inconnue: {body.company}")
+            raise HTTPException(404, f"unknown company: {body.company}")
         try:
             index = rewrite_journal(sim, body.company, body.drop_event)
         except ValueError as exc:
@@ -233,29 +233,29 @@ def post_demo_rewrite(body: RewriteBody) -> dict:
                 "verify": _with_onchain(sim.audit_verify())}
 
 
-@app.get("/api/state", summary="État complet de la simulation", response_model=StateOut)
+@app.get("/api/state", summary="Full simulation state", response_model=StateOut)
 def get_state() -> dict:
     with _lock:
         return sim.state()
 
 
-@app.post("/api/compromise", summary="Déclarer une entreprise compromise",
+@app.post("/api/compromise", summary="Declare a company compromised",
           response_model=StateOut, responses=ERRORS)
 def post_compromise(body: CompromiseBody) -> dict:
     with _lock:
         if body.company not in sim.ledgers:
-            raise HTTPException(404, f"entreprise inconnue: {body.company}")
+            raise HTTPException(404, f"unknown company: {body.company}")
         sim.declare_compromise(body.company, to_scenario_time(body.since))
         anchorer.after_action(sim, "compromise")
         return sim.state()
 
 
-@app.post("/api/compromise/withdraw", summary="Retirer une déclaration (fausse alerte)",
+@app.post("/api/compromise/withdraw", summary="Withdraw a declaration (false alarm)",
           response_model=StateOut, responses=ERRORS)
 def post_withdraw(body: WithdrawBody) -> dict:
     with _lock:
         if body.company not in sim.ledgers:
-            raise HTTPException(404, f"entreprise inconnue: {body.company}")
+            raise HTTPException(404, f"unknown company: {body.company}")
         try:
             sim.withdraw_compromise(body.company)
         except ValueError as exc:
@@ -266,16 +266,16 @@ def post_withdraw(body: WithdrawBody) -> dict:
 
 def _quality_call(company: str, fn, *args):
     if company not in sim.ledgers:
-        raise HTTPException(404, f"entreprise inconnue: {company}")
+        raise HTTPException(404, f"unknown company: {company}")
     try:
         return fn(company, *args)
     except KeyError as exc:
-        raise HTTPException(404, f"inconnu: {exc.args[0]}") from exc
+        raise HTTPException(404, f"unknown: {exc.args[0]}") from exc
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
 
 
-@app.post("/api/lots/suspect", summary="Déclarer un lot suspect (sans blacklister le fournisseur)",
+@app.post("/api/lots/suspect", summary="Declare a lot suspect (without blacklisting the supplier)",
           response_model=StateOut, responses=ERRORS)
 def post_lot_suspect(body: LotSuspectBody) -> dict:
     with _lock:
@@ -284,7 +284,7 @@ def post_lot_suspect(body: LotSuspectBody) -> dict:
         return sim.state()
 
 
-@app.post("/api/lots/suspect/withdraw", summary="Lever la suspicion d'un lot",
+@app.post("/api/lots/suspect/withdraw", summary="Lift the suspicion on a lot",
           response_model=StateOut, responses=ERRORS)
 def post_lot_withdraw(body: LotWithdrawBody) -> dict:
     with _lock:
@@ -293,7 +293,7 @@ def post_lot_withdraw(body: LotWithdrawBody) -> dict:
         return sim.state()
 
 
-@app.get("/api/recall", summary="Analyse de rappel : causes possibles d'un défaut produit",
+@app.get("/api/recall", summary="Recall analysis: possible causes of a product defect",
          responses=ERRORS)
 def get_recall(company: str = Query(examples=["fabricant"]),
                ref: str = Query(examples=["LOT-503"])) -> dict:
@@ -301,7 +301,7 @@ def get_recall(company: str = Query(examples=["fabricant"]),
         return _quality_call(company, sim.recall_analysis, ref)
 
 
-@app.post("/api/reports", summary="Signaler un défaut qualité vers l'amont",
+@app.post("/api/reports", summary="Report a quality defect upstream",
           responses=ERRORS)
 def post_report(body: ReportBody) -> list[dict]:
     with _lock:
@@ -310,15 +310,15 @@ def post_report(body: ReportBody) -> list[dict]:
         return out
 
 
-@app.get("/api/reports", summary="Signalements qualité envoyés et reçus", responses=ERRORS)
+@app.get("/api/reports", summary="Quality reports sent and received", responses=ERRORS)
 def get_reports(company: str | None = None) -> list[dict]:
     with _lock:
         if company is not None and company not in sim.ledgers:
-            raise HTTPException(404, f"entreprise inconnue: {company}")
+            raise HTTPException(404, f"unknown company: {company}")
         return sim.reports(company)
 
 
-@app.post("/api/reports/{report_id}/decision", summary="Confirmer ou rejeter un signalement reçu",
+@app.post("/api/reports/{report_id}/decision", summary="Confirm or reject a received report",
           responses=ERRORS)
 def post_report_decision(report_id: str, body: ReportDecisionBody) -> dict:
     with _lock:
@@ -328,7 +328,7 @@ def post_report_decision(report_id: str, body: ReportDecisionBody) -> dict:
 
 
 @app.get("/api/inbound/{receipt_id}/check",
-         summary="Note de confiance d'une réception (lecture seule)", responses=ERRORS)
+         summary="Trust score of a receipt (read-only)", responses=ERRORS)
 def get_inbound_check(receipt_id: str,
                       company: str = Query(examples=["fabricant"])) -> dict:
     with _lock:
@@ -336,7 +336,7 @@ def get_inbound_check(receipt_id: str,
 
 
 @app.post("/api/inbound/screen",
-          summary="Contrôler les réceptions et mettre en attente les lots douteux",
+          summary="Check receipts and put doubtful lots on hold",
           responses=ERRORS)
 def post_inbound_screen(body: InboundScreenBody) -> list[dict]:
     with _lock:
@@ -349,7 +349,7 @@ def post_inbound_screen(body: InboundScreenBody) -> list[dict]:
 
 
 @app.post("/api/inbound/{receipt_id}/decision",
-          summary="Accepter ou refuser une réception mise en attente", responses=ERRORS)
+          summary="Accept or reject a receipt on hold", responses=ERRORS)
 def post_inbound_decision(receipt_id: str, body: InboundDecisionBody) -> dict:
     with _lock:
         out = _quality_call(body.company, sim.inbound_decide, receipt_id,
@@ -358,34 +358,34 @@ def post_inbound_decision(receipt_id: str, body: InboundDecisionBody) -> dict:
         return out
 
 
-@app.get("/api/audit", summary="Journal d'audit d'une entreprise",
+@app.get("/api/audit", summary="Audit journal of a company",
          response_model=AuditOut, responses=ERRORS)
 def get_audit(company: str = Query(examples=["fabricant"])) -> dict:
     with _lock:
         if company not in sim.ledgers:
-            raise HTTPException(404, f"entreprise inconnue: {company}")
+            raise HTTPException(404, f"unknown company: {company}")
         audit = sim.ledgers[company].audit
         return {"company": company, "head": audit.head, "entries": audit.entries()}
 
 
-@app.get("/api/audit/verify", summary="Vérifier la chaîne de hash des journaux",
+@app.get("/api/audit/verify", summary="Verify the journals' hash chain",
          response_model=AuditVerifyOut, responses=ERRORS)
 def get_audit_verify(company: str | None = None) -> dict:
     with _lock:
         if company is not None and company not in sim.ledgers:
-            raise HTTPException(404, f"entreprise inconnue: {company}")
+            raise HTTPException(404, f"unknown company: {company}")
         return _with_onchain(sim.audit_verify(company))
 
 
-@app.get("/api/records/{record_id}/explain", summary="Explication d'un record",
+@app.get("/api/records/{record_id}/explain", summary="Explain a record",
          response_model=ExplainOut, responses=ERRORS)
 def get_explain(record_id: str) -> dict:
     with _lock:
         record = sim.find_record(record_id)
         if record is None:
-            raise HTTPException(404, f"record inconnu: {record_id}")
+            raise HTTPException(404, f"unknown record: {record_id}")
         record, path = copy.deepcopy((record, sim.path_records(record)))
-    analysis = explainer.analyze(record, path)  # hors verrou : Bedrock peut prendre 8 s
+    analysis = explainer.analyze(record, path)  # outside the lock: Bedrock can take 8 s
     return {
         "record": serialize_record(record),
         "path": [serialize_record(r) for r in path],
@@ -393,14 +393,14 @@ def get_explain(record_id: str) -> dict:
     }
 
 
-@app.post("/api/records/{record_id}/remediate", summary="Remédier à un record",
+@app.post("/api/records/{record_id}/remediate", summary="Remediate a record",
           response_model=StateOut, responses=ERRORS)
 def post_remediate(record_id: str, body: RemediateBody) -> dict:
     with _lock:
         if sim.find_record(record_id) is None:
-            raise HTTPException(404, f"record inconnu: {record_id}")
+            raise HTTPException(404, f"unknown record: {record_id}")
         if body.action not in REMEDIATION_ACTIONS:
-            raise HTTPException(400, f"action invalide: {body.action}")
+            raise HTTPException(400, f"invalid action: {body.action}")
         try:
             sim.remediate(record_id, body.action)
         except ValueError as exc:
@@ -411,13 +411,13 @@ def post_remediate(record_id: str, body: RemediateBody) -> dict:
 
 class ConfirmBody(BaseModel):
     origin: str | None = Field(
-        default=None, description="Corrige l'émetteur détecté (id d'entreprise).")
+        default=None, description="Corrects the detected issuer (company id).")
     inputs: list[str] | None = Field(
-        default=None, description="Records du même registre dont ce document dépend.")
+        default=None, description="Records of the same ledger this document depends on.")
 
 
 def _known_ribs(company: str) -> dict[str, set[str]]:
-    """RIB déjà vus dans le registre, par émetteur, hors données suspectes."""
+    """Bank details (RIB) already seen in the ledger, by issuer, excluding suspect data."""
     ribs: dict[str, set[str]] = {}
     for r in sim.ledgers[company].records.values():
         rib = r.payload.get("rib")
@@ -427,7 +427,7 @@ def _known_ribs(company: str) -> dict[str, set[str]]:
 
 
 def _id_prefix(company: str) -> str:
-    """Même préfixe que les records du registre (ex. « m » pour fabricant)."""
+    """Same prefix as the ledger's records (e.g. "m" for fabricant)."""
     first = next(iter(sim.ledgers[company].records), "")
     return first.split("-", 1)[0] if "-" in first else company
 
@@ -442,7 +442,7 @@ def _next_record_id(company: str) -> str:
     return f"{prefix}-doc-{n:02d}"
 
 
-@app.post("/api/ingest/document", summary="Lire un document fournisseur",
+@app.post("/api/ingest/document", summary="Read a supplier document",
           response_model=ProposalOut, responses=ERRORS,
           openapi_extra={"requestBody": {"content": {
               "application/pdf": {"schema": {"type": "string", "format": "binary"}},
@@ -453,8 +453,8 @@ def _next_record_id(company: str) -> str:
           }}})
 async def post_ingest_document(request: Request, company: str,
                                received_at: datetime | None = None) -> dict:
-    """Corps brut : PDF, mail (.eml) ou texte ; ou JSON `{"text": "..."}`.
-    Renvoie une proposition : rien n'est ajouté au registre avant confirmation."""
+    """Raw body: PDF, email (.eml) or text; or JSON `{"text": "..."}`.
+    Returns a proposal: nothing is added to the ledger before confirmation."""
     data = await request.body()
     if request.headers.get("content-type", "").startswith("application/json"):
         try:
@@ -462,11 +462,11 @@ async def post_ingest_document(request: Request, company: str,
         except (ValueError, AttributeError):
             text_field = None
         if not isinstance(text_field, str):
-            raise HTTPException(422, "requête invalide — text: chaîne attendue")
+            raise HTTPException(422, "invalid request — text: string expected")
         data = text_field.encode()
     with _lock:
         if company not in sim.ledgers:
-            raise HTTPException(404, f"entreprise inconnue: {company}")
+            raise HTTPException(404, f"unknown company: {company}")
         parties = [Party(c.id, c.name) for c in sim.companies]
         known = _known_ribs(company)
     try:
@@ -501,29 +501,29 @@ async def post_ingest_document(request: Request, company: str,
 
 
 @app.post("/api/ingest/document/{proposal_id}/confirm",
-          summary="Confirmer un document lu : ajout au registre",
+          summary="Confirm a read document: add it to the ledger",
           response_model=StateOut, responses=ERRORS)
 def post_confirm_document(proposal_id: str, body: ConfirmBody | None = None) -> dict:
     body = body or ConfirmBody()
     with _lock:
         proposal = proposals.get(proposal_id)
         if proposal is None:
-            raise HTTPException(404, f"proposition inconnue: {proposal_id}")
+            raise HTTPException(404, f"unknown proposal: {proposal_id}")
         if proposal["status"] != "pending":
-            raise HTTPException(400, "proposition déjà confirmée")
+            raise HTTPException(400, "proposal already confirmed")
         rec = proposal["record"]
         ledger = sim.ledgers[rec["company"]]
         origin = body.origin or rec["origin"]
         if origin is None:
-            raise HTTPException(400, "émetteur non reconnu : préciser origin")
+            raise HTTPException(400, "issuer not recognized: specify origin")
         if origin not in sim.ledgers:
-            raise HTTPException(400, f"entreprise inconnue: {origin}")
+            raise HTTPException(400, f"unknown company: {origin}")
         if rec["kind"] is None:
-            raise HTTPException(400, "type de document non reconnu")
+            raise HTTPException(400, "document type not recognized")
         inputs = body.inputs if body.inputs is not None else rec["inputs"]
         unknown = [i for i in inputs if i not in ledger.records]
         if unknown:
-            raise HTTPException(400, f"inputs inconnus dans {rec['company']}: "
+            raise HTTPException(400, f"unknown inputs in {rec['company']}: "
                                      + ", ".join(unknown))
         ledger.add(Record(
             id=rec["id"], company=rec["company"], origin=origin, kind=rec["kind"],
@@ -542,21 +542,21 @@ def post_confirm_document(proposal_id: str, body: ConfirmBody | None = None) -> 
             "extraction_source": proposal["source"],
             "confidence": proposal["confidence"],
         })
-        sim.run()  # le record passe par les mêmes règles que les autres
+        sim.run()  # the record goes through the same rules as the others
         sim.timeline = sim.collect_timeline(marks)
         anchorer.after_action(sim, "document")
         return sim.state()
 
 
-@app.post("/api/ingest/epcis", summary="Importer un document GS1 EPCIS 2.0",
+@app.post("/api/ingest/epcis", summary="Import a GS1 EPCIS 2.0 document",
           response_model=EpcisImportOut, responses=ERRORS)
 def post_ingest_epcis(company: str, document: dict = Body(
-        description="Document EPCIS 2.0 JSON / JSON-LD (type: EPCISDocument).")) -> dict:
-    """Données structurées : les records sont ajoutés directement (pas de
-    confirmation), puis passent par les mêmes règles que les autres."""
+        description="EPCIS 2.0 JSON / JSON-LD document (type: EPCISDocument).")) -> dict:
+    """Structured data: records are added directly (no confirmation),
+    then go through the same rules as the others."""
     with _lock:
         if company not in sim.ledgers:
-            raise HTTPException(404, f"entreprise inconnue: {company}")
+            raise HTTPException(404, f"unknown company: {company}")
         ledger = sim.ledgers[company]
         taken = {rid for led in sim.ledgers.values() for rid in led.records}
         try:
@@ -587,18 +587,18 @@ class ResetBody(BaseModel):
     scenario: ScenarioId = Field(default=DEFAULT_SCENARIO, examples=["cert"])
 
 
-@app.get("/api/scenarios", summary="Scénarios disponibles",
+@app.get("/api/scenarios", summary="Available scenarios",
          response_model=list[ScenarioOut])
 def get_scenarios() -> list[dict]:
     return scenarios_meta()
 
 
-@app.get("/api/compare", summary="Avec vs sans Firebreak : comparaison des politiques",
+@app.get("/api/compare", summary="With vs without Firebreak: policy comparison",
          response_model=CompareOut, responses=ERRORS)
 def get_compare() -> dict:
-    """Politique B (couper le fournisseur et ses clients directs) vs
-    politique C (quarantaine ciblée), mesurées sur la même vérité
-    terrain. 400 tant qu'aucune déclaration n'est active."""
+    """Policy B (cut off the supplier and its direct customers) vs
+    policy C (targeted quarantine), measured against the same ground
+    truth. 400 while no declaration is active."""
     with _lock:
         try:
             return sim_compare(sim)
@@ -606,27 +606,27 @@ def get_compare() -> dict:
             raise HTTPException(400, str(exc)) from exc
 
 
-@app.get("/api/timeline", summary="Étapes ordonnées de la dernière action",
+@app.get("/api/timeline", summary="Ordered steps of the last action",
          response_model=TimelineOut)
 def get_timeline() -> dict:
-    """Rejeu pas à pas : déclarations, semences, contaminations avec parent,
-    alertes émises/vérifiées, gates bloqués, releases. Chaque étape porte
-    des compteurs d'impact cumulés (quarantined, gates_blocked,
+    """Step-by-step replay: declarations, seeds, contaminations with their parent,
+    alerts sent/verified, blocked gates, releases. Each step carries
+    cumulative impact counters (quarantined, gates_blocked,
     amount_blocked, amount_flowing)."""
     with _lock:
         return {"steps": copy.deepcopy(sim.timeline)}
 
 
-@app.get("/api/events", summary="Rejeu en direct (Server-Sent Events)",
+@app.get("/api/events", summary="Live replay (Server-Sent Events)",
          response_class=StreamingResponse)
 def get_events(speed: float = Query(
         default=DEMO_REPLAY_SPEED if DEMO_MODE else 0.5, ge=0, le=10,
-        description="Pause en secondes entre deux événements (0 = tout d'un coup).")):
+        description="Pause in seconds between two events (0 = all at once).")):
     with _lock:
         steps = copy.deepcopy(sim.timeline)
 
     def gen():
-        yield ": rejeu firebreak\n\n"
+        yield ": firebreak replay\n\n"
         for step in steps:
             yield f"data: {json.dumps(step, ensure_ascii=False)}\n\n"
             if speed:
@@ -635,14 +635,14 @@ def get_events(speed: float = Query(
     return StreamingResponse(gen(), media_type="text/event-stream")
 
 
-@app.post("/api/demo/step", summary="Démo : avancer d'une étape",
+@app.post("/api/demo/step", summary="Demo: advance one step",
           responses=ERRORS)
 def post_demo_step() -> dict:
-    """Pilote la démo au clic (ou flèche droite) :
-    0 reset(mixed) → 1 compromission → 2 explication du paiement bloqué
-    → 3 remédiation (levée fédérée en cascade) → 4 vérification d'audit ;
-    ensuite reste en fin. La réponse porte l'index, la légende française,
-    le détail de l'étape et l'état complet."""
+    """Drives the demo on click (or right arrow):
+    0 reset(mixed) → 1 compromise → 2 explanation of the blocked payment
+    → 3 remediation (cascading federated release) → 4 audit verification;
+    then stays at the end. The response carries the index, the caption,
+    the step detail and the full state."""
     global sim, demo_index
     with _lock:
         i = demo_index
@@ -666,7 +666,7 @@ def post_demo_step() -> dict:
         elif i == 3:
             record = sim.find_record("m-pay-X")
             if record is None or record.status != "quarantined":
-                error = "m-pay-X n'est pas en quarantaine — passer l'étape 1 d'abord."
+                error = "m-pay-X is not quarantined — run step 1 first."
             else:
                 rec_copy, path = copy.deepcopy((record, sim.path_records(record)))
                 detail = {
@@ -677,7 +677,7 @@ def post_demo_step() -> dict:
         elif i == 4:
             rec = sim.find_record("m-gr-X")
             if rec is None or rec.status != "quarantined":
-                error = "m-gr-X n'est pas en quarantaine — passer l'étape 1 d'abord."
+                error = "m-gr-X is not quarantined — run step 1 first."
             else:
                 sim.remediate("m-gr-X", "human_approval")
                 detail = {"steps": len(sim.timeline)}
@@ -702,13 +702,13 @@ def sim_scenario(sim) -> str:
     return (sim.scenario or {}).get("id", DEFAULT_SCENARIO)
 
 
-@app.post("/api/reset", summary="Réinitialiser (choix du scénario)",
+@app.post("/api/reset", summary="Reset (choose the scenario)",
           response_model=StateOut, responses=ERRORS)
 def post_reset(body: ResetBody | None = None) -> dict:
     global sim, demo_index
     scenario = (body or ResetBody()).scenario
     if scenario not in SCENARIOS:
-        raise HTTPException(400, f"scénario inconnu: {scenario}")
+        raise HTTPException(400, f"unknown scenario: {scenario}")
     with _lock:
         sim = build_simulation(scenario)
         proposals.clear()
@@ -723,8 +723,8 @@ def index() -> FileResponse:
 
 
 class _FreshStatic(StaticFiles):
-    """Fichiers statiques revalidés à chaque chargement (ETag → 304) :
-    après un `git pull`, le navigateur sert toujours la dernière interface."""
+    """Static files revalidated on every load (ETag → 304): after a
+    `git pull`, the browser always serves the latest interface."""
 
     async def get_response(self, path, scope):
         response = await super().get_response(path, scope)
@@ -732,7 +732,7 @@ class _FreshStatic(StaticFiles):
         return response
 
 
-# Interface finale (docs/brief-ui.md), servie sans build ni Node.
+# Final interface (docs/brief-ui.md), served without a build step or Node.
 app.mount("/app", _FreshStatic(directory=WEB_DIR / "app", html=True), name="app")
-# Documents d'exemple, pour essayer l'ingestion depuis l'interface.
+# Sample documents, to try ingestion from the interface.
 app.mount("/samples", StaticFiles(directory=SAMPLES_DIR), name="samples")

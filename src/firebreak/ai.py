@@ -1,12 +1,12 @@
-"""Explications Firebreak — l'IA explique et propose, elle ne décide jamais.
+"""Firebreak explanations — the AI explains and proposes, it never decides.
 
-Le blocage dépend uniquement des règles du moteur (engine.py). Ici :
-- `MockExplainer` : gabarits français déterministes (défaut, hors ligne) ;
-- `BedrockExplainer` : AWS Bedrock (Converse API), avec repli automatique
-  sur le mock en cas d'erreur, de timeout, d'identifiants absents ou de
-  réponse invalide (JSON cassé, action hors liste).
+Blocking depends only on the engine's rules (engine.py). Here:
+- `MockExplainer`: deterministic English templates (default, offline);
+- `BedrockExplainer`: AWS Bedrock (Converse API), with automatic fallback
+  to the mock on error, timeout, missing credentials or invalid reply
+  (broken JSON, action not in the list).
 
-Sélection par variables d'environnement : voir `get_explainer`.
+Selected through environment variables: see `get_explainer`.
 """
 
 from __future__ import annotations
@@ -30,9 +30,9 @@ DEFAULT_BEDROCK_MODEL = "anthropic.claude-3-haiku-20240307-v1:0"
 BEDROCK_TIMEOUT_S = 8.0
 
 GATE_LABELS = {
-    "payment": "un paiement",
-    "shipment": "une expédition",
-    "production_lot": "un lancement de production",
+    "payment": "a payment",
+    "shipment": "a shipment",
+    "production_lot": "a production launch",
 }
 
 
@@ -46,35 +46,35 @@ def ai_mode() -> str:
 
 
 def applied_rules(record: Record, path_records: list[Record]) -> list[str]:
-    """Règles du moteur qui expliquent le statut du record (texte factuel)."""
+    """Engine rules that explain the record's status (factual text)."""
     rules: list[str] = []
     if record.verified:
-        rules.append("verified : confirmé par une source de confiance, jamais contaminé, "
-                     "stoppe la propagation")
+        rules.append("verified: confirmed by a trusted source, never contaminated, "
+                     "stops propagation")
     if record.status == "released":
-        rules.append("released : débloqué par une remédiation, stoppe la propagation")
+        rules.append("released: unblocked by a remediation, stops propagation")
     if record.status == "quarantined":
         seed = path_records[0] if path_records else record
         if seed.token is not None and seed.origin != seed.company:
-            rules.append(f"seed : « {seed.label} » reçu de {seed.origin}, soit émis dans la "
-                         "fenêtre de compromission déclarée, soit signalé par une alerte "
-                         "signée valide")
+            rules.append(f"seed: \"{seed.label}\" received from {seed.origin}, either issued "
+                         "within the declared compromise window or flagged by a valid "
+                         "signed alert")
         else:
-            rules.append(f"seed : « {seed.label} » émis par {seed.origin} après le début de "
-                         "la fenêtre de compromission déclarée")
+            rules.append(f"seed: \"{seed.label}\" issued by {seed.origin} after the start of "
+                         "the declared compromise window")
         if len(path_records) > 1:
-            rules.append("propagation : un record est contaminé dès qu'une de ses entrées "
-                         "l'est (chemin taint_path)")
+            rules.append("propagation: a record is contaminated as soon as one of its inputs "
+                         "is (taint_path)")
         if record.gate:
-            rules.append("gate : action irréversible en quarantaine, bloquée jusqu'à "
-                         "remédiation")
+            rules.append("gate: irreversible action in quarantine, blocked until "
+                         "remediation")
     if record.status == "ok" and not record.verified:
-        rules.append("ok : aucune entrée ne dépend d'une donnée suspecte")
+        rules.append("ok: no input depends on suspect data")
     return rules
 
 
 class MockExplainer:
-    """Explainer déterministe basé sur des gabarits français."""
+    """Deterministic explainer based on English templates."""
 
     source: Source = "mock"
 
@@ -88,60 +88,60 @@ class MockExplainer:
     def explain(self, record: Record, path_records: list[Record]) -> str:
         if record.status == "quarantined":
             if path_records:
-                path = " → ".join(f"« {r.label} »" for r in path_records)
+                path = " → ".join(f"\"{r.label}\"" for r in path_records)
                 seed = path_records[0]
                 text = (
-                    f"« {record.label} » est mis en quarantaine : il dépend, "
-                    f"directement ou indirectement, de « {seed.label} » "
-                    f"({seed.origin}, {seed.ts.strftime('%H:%M')}), émis dans la "
-                    f"fenêtre de compromission déclarée. Chemin de contamination : "
+                    f"\"{record.label}\" is quarantined: it depends, "
+                    f"directly or indirectly, on \"{seed.label}\" "
+                    f"({seed.origin}, {seed.ts.strftime('%H:%M')}), issued within the "
+                    f"declared compromise window. Contamination path: "
                     f"{path}."
                 )
             else:
-                text = f"« {record.label} » est mis en quarantaine."
+                text = f"\"{record.label}\" is quarantined."
             if record.gate:
-                kind = GATE_LABELS.get(record.kind, f"une opération « {record.kind} »")
+                kind = GATE_LABELS.get(record.kind, f"a \"{record.kind}\" operation")
                 amount = record.payload.get("amount")
-                impact = f"Impact : blocage d'{kind}"
-                impact += f" de {amount} €." if amount else "."
+                impact = f"Impact: {kind} is blocked"
+                impact += f" ({amount} €)." if amount else "."
                 if record.payload.get("bank_details_change") or record.payload.get("rib"):
-                    impact += " Coordonnées bancaires suspectes (RIB modifié)."
+                    impact += " Suspicious bank details (RIB changed)."
                 text += " " + impact
             return text
         if record.status == "released":
             return (
-                f"« {record.label} » a été libéré après remédiation ; "
-                "il n'est plus considéré comme contaminé."
+                f"\"{record.label}\" was released after remediation; "
+                "it is no longer considered contaminated."
             )
         return (
-            f"« {record.label} » ne dépend d'aucune donnée compromise : "
-            "l'opération continue normalement."
+            f"\"{record.label}\" does not depend on any compromised data: "
+            "the operation continues normally."
         )
 
     def remediation_plan(self, record: Record) -> list[dict]:
         return [
             {
                 "action": "revalidate",
-                "label": "Revalider la donnée",
+                "label": "Revalidate the data",
                 "rationale": (
-                    "Comparer le document reçu avec la source d'origine "
-                    "(commande, certificat) pour confirmer son authenticité."
+                    "Compare the received document with the original source "
+                    "(purchase order, certificate) to confirm it is authentic."
                 ),
             },
             {
                 "action": "human_approval",
-                "label": "Validation humaine",
+                "label": "Human approval",
                 "rationale": (
-                    "Faire arbitrer un responsable : l'opération est critique "
-                    "et un blocage prolongé a un coût métier."
+                    "Have a manager decide: the operation is critical "
+                    "and a prolonged block has a business cost."
                 ),
             },
             {
                 "action": "trusted_source",
-                "label": "Reprendre depuis une source de confiance",
+                "label": "Restart from a trusted source",
                 "rationale": (
-                    "Reconstruire l'opération à partir d'une preuve physique "
-                    "ou d'un canal vérifié (scan de réception, appel signé)."
+                    "Rebuild the operation from physical evidence "
+                    "or a verified channel (receipt scan, signed call)."
                 ),
             },
         ]
@@ -151,23 +151,23 @@ class MockExplainer:
 
 
 class BedrockError(Exception):
-    """Échec Bedrock (réseau, identifiants, timeout, réponse invalide)."""
+    """Bedrock failure (network, credentials, timeout, invalid reply)."""
 
 
 def make_bedrock_client() -> Any:
-    """Client `bedrock-runtime`, ou BedrockError si boto3 ou les identifiants
-    manquent. Les identifiants ne sont jamais lus ni journalisés ici : boto3
-    les résout lui-même (variables AWS_*, profil, rôle)."""
+    """`bedrock-runtime` client, or BedrockError if boto3 or the credentials
+    are missing. Credentials are never read or logged here: boto3 resolves
+    them itself (AWS_* variables, profile, role)."""
     try:
         import boto3
         from botocore.config import Config
     except ImportError as exc:
-        raise BedrockError("boto3 indisponible") from exc
+        raise BedrockError("boto3 unavailable") from exc
     session = boto3.Session(region_name=os.environ.get("AWS_REGION") or None)
     if session.get_credentials() is None:
-        raise BedrockError("identifiants AWS absents")
+        raise BedrockError("AWS credentials missing")
     if not session.region_name:
-        raise BedrockError("région AWS absente (AWS_REGION)")
+        raise BedrockError("AWS region missing (AWS_REGION)")
     config = Config(
         connect_timeout=BEDROCK_TIMEOUT_S,
         read_timeout=BEDROCK_TIMEOUT_S,
@@ -180,21 +180,21 @@ _FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
 
 
 def parse_json_reply(text: str) -> dict:
-    """JSON objet strict ; tolère seulement un bloc ```json … ``` autour."""
+    """Strict JSON object; only tolerates a surrounding ```json … ``` block."""
     m = _FENCE.match(text)
     if m:
         text = m.group(1)
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
-        raise BedrockError("réponse non JSON") from exc
+        raise BedrockError("non-JSON reply") from exc
     if not isinstance(data, dict):
-        raise BedrockError("réponse JSON qui n'est pas un objet")
+        raise BedrockError("JSON reply that is not an object")
     return data
 
 
 class BedrockConverser:
-    """Appel Converse avec timeout global ; renvoie le JSON de la réponse."""
+    """Converse call with an overall timeout; returns the reply's JSON."""
 
     def __init__(self, client: Any = None, model: str | None = None,
                  timeout: float = BEDROCK_TIMEOUT_S) -> None:
@@ -214,7 +214,7 @@ class BedrockConverser:
             client = self.client
         except BedrockError:
             raise
-        except Exception as exc:  # profil introuvable, config invalide…
+        except Exception as exc:  # profile not found, invalid config…
             raise BedrockError(type(exc).__name__) from exc
         future = self._pool.submit(
             client.converse,
@@ -229,25 +229,25 @@ class BedrockConverser:
             raise BedrockError(f"timeout Bedrock ({self.timeout:g} s)") from exc
         except BedrockError:
             raise
-        except Exception as exc:  # botocore : ClientError, EndpointConnectionError…
+        except Exception as exc:  # botocore: ClientError, EndpointConnectionError…
             raise BedrockError(type(exc).__name__) from exc
         try:
             parts = response["output"]["message"]["content"]
             text = "".join(p.get("text", "") for p in parts)
         except (KeyError, TypeError, AttributeError) as exc:
-            raise BedrockError("réponse Converse mal formée") from exc
+            raise BedrockError("malformed Converse reply") from exc
         return parse_json_reply(text)
 
 
 EXPLAIN_SYSTEM = (
-    "Tu es l'assistant d'explication de FIREBREAK, un pare-feu de supply chain. "
-    "Le statut d'un record (ok, quarantined, released) est décidé par des règles "
-    "déterministes ; tu ne le modifies jamais et tu ne le remets pas en cause. "
-    "Tu expliques en français, pour un responsable métier, pourquoi le record a ce "
-    "statut, à partir uniquement des données fournies. Puis tu proposes un plan de "
-    "reprise ordonné choisi UNIQUEMENT parmi les actions : revalidate, "
-    "human_approval, trusted_source. Réponds par un seul objet JSON, sans texte "
-    'autour : {"explanation": "...", "remediation_plan": [{"action": "...", '
+    "You are the explanation assistant of FIREBREAK, a supply chain firewall. "
+    "A record's status (ok, quarantined, released) is decided by deterministic "
+    "rules; you never change it and never question it. "
+    "You explain in English, for a business manager, why the record has this "
+    "status, using only the data provided. Then you propose an ordered "
+    "remediation plan chosen ONLY from the actions: revalidate, "
+    "human_approval, trusted_source. Reply with a single JSON object, with no "
+    'surrounding text: {"explanation": "...", "remediation_plan": [{"action": "...", '
     '"label": "...", "rationale": "..."}]}'
 )
 
@@ -264,25 +264,25 @@ def validate_explanation(data: dict) -> dict:
     explanation = data.get("explanation")
     plan = data.get("remediation_plan")
     if not isinstance(explanation, str) or not explanation.strip():
-        raise BedrockError("explication absente")
+        raise BedrockError("explanation missing")
     if not isinstance(plan, list) or not plan:
-        raise BedrockError("plan de reprise absent")
+        raise BedrockError("remediation plan missing")
     clean = []
     for step in plan:
         if not isinstance(step, dict):
-            raise BedrockError("étape de plan invalide")
+            raise BedrockError("invalid plan step")
         action = step.get("action")
         if action not in REMEDIATION_ACTIONS:
-            raise BedrockError(f"action hors liste: {action!r}")
+            raise BedrockError(f"action not in the list: {action!r}")
         label, rationale = step.get("label"), step.get("rationale")
         if not isinstance(label, str) or not isinstance(rationale, str):
-            raise BedrockError("étape de plan incomplète")
+            raise BedrockError("incomplete plan step")
         clean.append({"action": action, "label": label.strip(), "rationale": rationale.strip()})
     return {"explanation": explanation.strip(), "remediation_plan": clean}
 
 
 class BedrockExplainer:
-    """Explainer AWS Bedrock ; toute erreur → réponse du MockExplainer."""
+    """AWS Bedrock explainer; any error → the MockExplainer's reply."""
 
     source: Source = "bedrock"
 
@@ -305,7 +305,7 @@ class BedrockExplainer:
             data = self.converser.ask_json(EXPLAIN_SYSTEM, self.prompt(record, path_records))
             result = validate_explanation(data)
         except BedrockError as exc:
-            log.warning("Bedrock indisponible, repli sur le mock : %s", exc)
+            log.warning("Bedrock unavailable, falling back to the mock: %s", exc)
             return self.fallback.analyze(record, path_records)
         result["source"] = self.source
         return result
@@ -319,7 +319,7 @@ class BedrockExplainer:
 
 
 def get_explainer() -> MockExplainer | BedrockExplainer:
-    """FIREBREAK_AI=bedrock → BedrockExplainer (repli mock intégré) ; sinon mock."""
+    """FIREBREAK_AI=bedrock → BedrockExplainer (built-in mock fallback); otherwise mock."""
     if ai_mode() == "bedrock":
         return BedrockExplainer()
     return MockExplainer()

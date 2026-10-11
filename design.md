@@ -1,106 +1,106 @@
 # Design System — FIREBREAK
 
-> Source de vérité du design. Synchro avec l'interface finale `web/app/` (servie sur `http://localhost:8000/app/`).
-> Les slides du pitch reprennent ces valeurs à l'identique. Trois adjectifs à vérifier sur chaque écran : **sobre, contrasté, prouvable**.
-> Refonte du 11/10 (04 h 45) : on quitte l'esthétique « néon / verre lumineux » pour un registre de keynote de startup — noir profond, un horizon de lumière granuleuse, aucune boîte inutile.
+> Design source of truth. Kept in sync with the final interface `web/app/` (served at `http://localhost:8000/app/`).
+> The pitch slides reuse these values exactly. Three adjectives to check on every screen: **sober, high-contrast, provable**.
+> Redesign of 11/10 (04:45): we leave the "neon / glowing glass" aesthetic for a startup-keynote register — deep black, a horizon of grainy light, no unnecessary boxes.
 
-## Principes
+## Principles
 
-- **Noir profond, une seule lumière** : fond `#050506`, un horizon de lumière bleue granuleuse qui monte du bas de l'écran. Il vire au corail quand un incident est en cours (transition de 1,6 s), puis revient au bleu.
-- **Pas de boîtes** : les entreprises, les chiffres et le fil flottent, séparés par des filets fins (1 px, blanc 8 à 16 %). Une surface pleine n'existe que pour ce qu'on manipule : tiroir, menus, dock d'action, toasts.
-- **Le sain est neutre** : une opération qui continue est un point blanc. Seul l'anormal porte une couleur (corail = bloqué, ambre = en reprise, bleu = preuve vérifiée).
-- **Aucune lueur** : pas de halo, pas de `text-shadow`, pas de néon. Le contraste vient du noir et du blanc.
-- **Icônes sans cadre** : trait fin, posées directement sur le fond.
-- **Aucun chiffre inventé** : tout nombre affiché vient de l'API (`docs/api.md`) ; les chiffres du banc viennent de `docs/bench-results.md`.
+- **Deep black, a single light**: background `#050506`, a horizon of grainy blue light rising from the bottom of the screen. It turns coral while an incident is in progress (1.6 s transition), then goes back to blue.
+- **No boxes**: companies, figures and the feed float, separated by thin rules (1 px, white at 8 to 16%). A solid surface exists only for what you interact with: drawer, menus, action dock, toasts.
+- **Healthy is neutral**: an operation that keeps running is a white dot. Only the abnormal carries a colour (coral = blocked, amber = recovering, blue = verified proof).
+- **No glow**: no halo, no `text-shadow`, no neon. Contrast comes from black and white.
+- **Frameless icons**: thin stroke, placed directly on the background.
+- **No invented figures**: every number displayed comes from the API (`docs/api.md`); benchmark figures come from `docs/bench-results.md`.
 
-## Couleurs
+## Colours
 
-| Rôle | Valeur | Usage |
+| Role | Value | Usage |
 |---|---|---|
-| Fond | `#050506` | partout, jamais de dégradé de fond hors horizon |
-| Surface pleine | `#0d0e11` + filet blanc 8 % | tiroir, menus, toasts, panneaux « avec vs sans » |
-| Surface interne | blanc 3,5 % + filet blanc 8 % | faits, explication, plan de reprise |
-| Horizon | bleu `rgba(170,200,255,.62)` → `rgba(70,112,255,.48)` → `rgba(24,48,190,.24)` ; variante incident corail `rgba(255,85,69,.34)` | ellipse floue (30 px) sous le bas de l'écran, dérive 38 s |
-| Grain | bruit fractal SVG, 11 %, `mix-blend-mode: overlay` | sur tout le fond |
-| **Sain / continue** | `#f4f4f5` (points à 56 %) | points, particules, « paiements qui continuent » |
-| **Contaminé / bloqué** | `#ff5545` (corail) | points bloqués, arêtes coupées, chiffres « bloqués », étiquette « Compromis » |
-| **En reprise / libéré** | `#ffb02e` (ambre) | remédiation, levée en cascade (transitoire) |
-| **Preuve** | `#6e95ff` (bleu) | signatures vérifiées, ancrage Avalanche, focus, anneau « vérifié » |
-| Texte principal | `#f4f4f5` | |
-| Texte secondaire | `#f4f4f5` à 66 % | 8,1:1 sur le fond |
-| Texte tertiaire | `#f4f4f5` à 42 % | décoratif seulement (compteurs, rôles) |
+| Background | `#050506` | everywhere, never a background gradient apart from the horizon |
+| Solid surface | `#0d0e11` + 8% white rule | drawer, menus, toasts, "with vs without" panels |
+| Inner surface | 3.5% white + 8% white rule | facts, explanation, recovery plan |
+| Horizon | blue `rgba(170,200,255,.62)` → `rgba(70,112,255,.48)` → `rgba(24,48,190,.24)`; coral incident variant `rgba(255,85,69,.34)` | blurred ellipse (30 px) below the bottom of the screen, 38 s drift |
+| Grain | SVG fractal noise, 11%, `mix-blend-mode: overlay` | over the whole background |
+| **Healthy / running** | `#f4f4f5` (dots at 56%) | dots, particles, "payments still flowing" |
+| **Contaminated / blocked** | `#ff5545` (coral) | blocked dots, cut edges, "blocked" figures, "Compromised" label |
+| **Recovering / released** | `#ffb02e` (amber) | remediation, cascading release (transient) |
+| **Proof** | `#6e95ff` (blue) | verified signatures, Avalanche anchoring, focus, "verified" ring |
+| Primary text | `#f4f4f5` | |
+| Secondary text | `#f4f4f5` at 66% | 8.1:1 on the background |
+| Tertiary text | `#f4f4f5` at 42% | decorative only (counters, roles) |
 
-Contrastes calculés (WCAG) sur `#050506` : texte principal 18,5:1 · secondaire 8,1:1 · corail 6,4:1 · ambre 11,2:1 · bleu 7,2:1.
+Computed contrasts (WCAG) on `#050506`: primary text 18.5:1 · secondary 8.1:1 · coral 6.4:1 · amber 11.2:1 · blue 7.2:1.
 
-## Typographie
+## Typography
 
-Polices auto-hébergées dans `web/app/fonts/` (aucun réseau externe pendant la démo) : **Geist** et **Geist Mono**, en fontes variables.
+Fonts self-hosted in `web/app/fonts/` (no external network during the demo): **Geist** and **Geist Mono**, as variable fonts.
 
-| Rôle | Police | Graisse | Taille |
+| Role | Font | Weight | Size |
 |---|---|---|---|
-| Gros chiffres | Geist | **300** | `clamp(44px, 4.1vw, 80px)`, interlettrage −0,055 em |
-| Titres | Geist | 500 | 15–22 px, interlettrage −0,02 à −0,03 em |
-| Texte courant | Geist | 400–450 | 14,5 px, interligne 1,5 |
-| Étiquettes (KPI, sections, méta du fil) | Geist Mono | 450 | 10,5–11 px, MAJUSCULES, interlettrage 0,07 em |
-| Identifiants, jetons, hash, heures | Geist Mono | 450 | 0,88 em ; jeton tronqué `7d4b…5efba` |
+| Big figures | Geist | **300** | `clamp(44px, 4.1vw, 80px)`, letter-spacing −0.055 em |
+| Titles | Geist | 500 | 15–22 px, letter-spacing −0.02 to −0.03 em |
+| Body text | Geist | 400–450 | 14.5 px, line height 1.5 |
+| Labels (KPIs, sections, feed meta) | Geist Mono | 450 | 10.5–11 px, UPPERCASE, letter-spacing 0.07 em |
+| Identifiers, tokens, hashes, times | Geist Mono | 450 | 0.88 em; truncated token `7d4b…5efba` |
 
-- Chiffres en `font-variant-numeric: tabular-nums`.
-- La graisse fine (300) est réservée aux grands chiffres et aux grandes valeurs : jamais sous 26 px.
-- Marque : `firebreak` en minuscules, Geist 600, 18 px, interlettrage −0,035 em. Sous-titre : « Pare-feu des supply chains » en texte tertiaire.
-- Tout est en français ; les identifiants techniques restent tels quels.
+- Figures in `font-variant-numeric: tabular-nums`.
+- The thin weight (300) is reserved for big figures and large values: never below 26 px.
+- Brand: `firebreak` in lowercase, Geist 600, 18 px, letter-spacing −0.035 em. Subtitle: "Supply-chain firewall" in tertiary text.
+- Everything is in English; technical identifiers stay as they are.
 
-## Espacement et rayons
+## Spacing and radii
 
-- Grille de 4 px. Marges de scène 32 px (26 px sous 940 px de haut), gouttière carte / fil 40 px.
-- Rayons : tiroir et panneaux 20 px · contrôles en **pilule** (999 px) · petites surfaces 12–14 px.
-- Entre les colonnes de la carte : `clamp(36px, 3.4vw, 72px)` — c'est là que coulent les particules.
-- Points d'opération : `clamp(9px, 2.4vh − 10px, 17px)` ; un point carré = action irréversible (gate) ; anneau bleu creux = vérifié.
+- 4 px grid. Stage margins 32 px (26 px below 940 px of height), map / feed gutter 40 px.
+- Radii: drawer and panels 20 px · controls as **pills** (999 px) · small surfaces 12–14 px.
+- Between map columns: `clamp(36px, 3.4vw, 72px)` — this is where the particles flow.
+- Operation dots: `clamp(9px, 2.4vh − 10px, 17px)`; a square dot = irreversible action (gate); hollow blue ring = verified.
 
-## Mouvement
+## Motion
 
-Une seule courbe : `cubic-bezier(0.2, 0.8, 0.2, 1)`. Jamais de rebond. Les animations de causalité sont inchangées par la refonte.
+A single curve: `cubic-bezier(0.2, 0.8, 0.2, 1)`. Never a bounce. The causality animations are unchanged by the redesign.
 
-| Registre | Durées | Exemples |
+| Register | Durations | Examples |
 |---|---|---|
-| Ambiance | 3,2–54 s, continu | horizon, respiration des points, particules (46 px/s) |
-| Causalité | 0,3–0,7 s par étape (flux SSE à 0,6 s) | trait corail parent → enfant, enveloppe scellée (aussi d'un registre à l'autre pour un signalement qualité), onde de déclaration, cadenas, flash ambre |
-| Micro-interactions | 160–240 ms | survol, focus, menus, tiroir (300 ms), écran « avec vs sans » (260 ms) |
+| Ambient | 3.2–54 s, continuous | horizon, dot breathing, particles (46 px/s) |
+| Causality | 0.3–0.7 s per step (SSE stream at 0.6 s) | coral line parent → child, sealed envelope (also from one ledger to another for a quality report), declaration wave, padlock, amber flash |
+| Micro-interactions | 160–240 ms | hover, focus, menus, drawer (300 ms), "with vs without" screen (260 ms) |
 
-`prefers-reduced-motion` : horizon, respiration et particules s'arrêtent ; les traits apparaissent en fondu.
+`prefers-reduced-motion`: horizon, breathing and particles stop; lines fade in.
 
 ## Logo
 
-Une **grille de points** (les opérations, la forêt) **coupée par une barre verticale** (le pare-feu) : deux colonnes de trois points à gauche, la barre, une colonne estompée à droite (`web/app/icons.js` → `logo()`, `web/app/favicon.svg`).
+A **grid of dots** (the operations, the forest) **cut by a vertical bar** (the firewall): two columns of three dots on the left, the bar, a faded column on the right (`web/app/icons.js` → `logo()`, `web/app/favicon.svg`).
 
-- Monochrome blanc. Une seule animation, à l'ouverture, 2,2 s, jamais en boucle : les points de gauche passent au corail l'un après l'autre, la barre se dresse, puis tout revient au blanc ; la colonne de droite n'est jamais touchée.
+- Monochrome white. A single animation, on open, 2.2 s, never looping: the left dots turn coral one after another, the bar rises, then everything returns to white; the right column is never touched.
 
-## Icônes
+## Icons
 
-Jeu custom (`web/app/icons.js`) : grille 24 px, trait 1,4 px, bouts et jointures arrondis, `currentColor`, **jamais de cadre ni de fond**.
+Custom set (`web/app/icons.js`): 24 px grid, 1.4 px stroke, rounded caps and joins, `currentColor`, **never a frame or background**.
 
-- Familles d'opérations : commande, avis d'expédition, certificat, facture, paiement, lot, expédition, réception, opérations internes.
-- Entreprises : usine (fournisseur), engrenage (fabricant), camion (distributeur), boutique (client).
-- Sémantique : cadenas (gate), bouclier coché (vérifié), enveloppe scellée (alerte ou signalement signé) et sa variante barrée, goutte (contamination), cercle pointillé (quarantaine), flèche de retour (levée), cloche barrée (fausse alerte), chaîne (journal d'audit), deux rectangles (avec / sans).
+- Operation families: order, shipping notice, certificate, invoice, payment, lot, shipment, receipt, internal operations.
+- Companies: factory (supplier), gear (manufacturer), truck (distributor), shop (customer).
+- Semantics: padlock (gate), checked shield (verified), sealed envelope (signed alert or report) and its crossed-out variant, drop (contamination), dotted circle (quarantine), return arrow (release), crossed-out bell (false alarm), chain (audit log), two rectangles (with / without).
 
-## Composants clés
+## Key components
 
-| Composant | Rôle |
+| Component | Role |
 |---|---|
-| En-tête | sans fond : logo, « Voir comme », scénario, indicateur d'IA, Avalanche (si actif), Importer, Réinitialiser ; ligne de progression blanche de 1 px dessous |
-| Chiffres | trois grands nombres fins, sans cadre, séparés de la carte par un filet ; étiquettes en Geist Mono majuscules |
-| Carte | 4 colonnes flottantes, un filet en tête de chaque colonne (corail si l'entreprise est compromise, avec l'étiquette « Compromis ») |
-| Dock d'action | pilule flottante en bas, floutée : un seul bouton primaire **blanc** avec un point corail qui pulse (« Déclarer… »), puis « Avec vs sans » et « Fausse alerte » |
-| Incident qualité | scénarios `lot` et `recall` : le dock guide les gestes humains (« Étape 2/6 · Distributeur ») : signaler, confirmer, remonter, analyser l'origine, isoler le lot, signaler au fournisseur, confirmation. Le fournisseur n'est jamais blacklisté |
-| Analyse de rappel | tiroir : causes possibles d'un produit en cause, impact d'un rappel, « cause probable » en corail, bouton « Isoler » |
-| Fil d'événements | colonne de droite séparée par un filet, icônes sans cadre, une ligne par étape SSE, cliquable vers la preuve |
-| Preuve | tiroir plein : faits, chemin de contamination (nœuds ronds), explication IA, plan de reprise |
-| Avec / sans | deux panneaux pleins qui glissent des bords, mini-cartes, jauges fines précision / rappel |
-| Journal d'audit | tiroir : chaîne d'entrées `#i · prev → hash`, onglets en pilule, vérification |
-| Import | tiroir : dépôt de document, exemples, proposition de l'IA, confirmation humaine |
-| Avalanche (optionnel) | pastille dans l'en-tête, tiroir des ancrages (confirmé = bleu, en cours = ambre, échec = corail) ; rien n'est affiché si la chaîne est éteinte |
-| Toasts, skeletons | surface pleine ; skeleton à balayage discret, jamais de spinner seul |
-| Mode allégé | si les images ralentissent, le dock et l'écran « avec vs sans » perdent leur flou |
+| Header | no background: logo, "View as", scenario, AI indicator, Avalanche (if active), Import, Reset; 1 px white progress line below |
+| Figures | three big thin numbers, frameless, separated from the map by a rule; labels in uppercase Geist Mono |
+| Map | 4 floating columns, a rule at the top of each column (coral if the company is compromised, with the "Compromised" label) |
+| Action dock | floating blurred pill at the bottom: a single **white** primary button with a pulsing coral dot ("Declare…"), then "With vs without" and "False alarm" |
+| Quality incident | `lot` and `recall` scenarios: the dock guides the human actions ("Step 2/6 · Distributor"): report, confirm, escalate, analyse the origin, isolate the lot, report to the supplier, confirmation. The supplier is never blacklisted |
+| Recall analysis | drawer: possible causes of a faulty product, impact of a recall, "probable cause" in coral, "Isolate" button |
+| Event feed | right-hand column separated by a rule, frameless icons, one line per SSE step, clickable to the proof |
+| Proof | solid drawer: facts, contamination path (round nodes), AI explanation, recovery plan |
+| With / without | two solid panels sliding in from the edges, mini-maps, thin precision / recall gauges |
+| Audit log | drawer: chain of entries `#i · prev → hash`, pill tabs, verification |
+| Import | drawer: document drop, examples, AI proposal, human confirmation |
+| Avalanche (optional) | badge in the header, drawer of anchorings (confirmed = blue, in progress = amber, failed = coral); nothing is shown if the chain is off |
+| Toasts, skeletons | solid surface; skeleton with a discreet sweep, never a lone spinner |
+| Lite mode | if images slow things down, the dock and the "with vs without" screen lose their blur |
 
-## Écrans testés
+## Tested screens
 
-1920×1080 (projecteur) et 1440×900 (portable), sans défilement horizontal.
+1920×1080 (projector) and 1440×900 (laptop), with no horizontal scrolling.

@@ -1,4 +1,4 @@
-"""Configuration, identifiants et comptes de la couche chaîne (sans réseau)."""
+"""Configuration, identifiers and accounts of the chain layer (no network)."""
 
 import subprocess
 import sys
@@ -47,13 +47,13 @@ def test_full_config_and_relative_deployment():
 def test_dotenv_does_not_override_environment(tmp_path):
     dotenv = tmp_path / ".env.local"
     dotenv.write_text(
-        "# commentaire\nFIREBREAK_CHAIN=tester\nexport FIREBREAK_CHAIN_ID='43113'\n"
+        "# comment\nFIREBREAK_CHAIN=tester\nexport FIREBREAK_CHAIN_ID='43113'\n"
         "FIREBREAK_CHAIN_EXPLORER_URL=\"https://e.example\"\n",
         encoding="utf-8",
     )
     assert parse_dotenv(dotenv)["FIREBREAK_CHAIN_ID"] == "43113"
     cfg = load_chain_config(env={"FIREBREAK_CHAIN": "off"}, dotenv_path=dotenv)
-    assert cfg.mode == "off"  # l'environnement gagne
+    assert cfg.mode == "off"  # the environment wins
     assert cfg.chain_id == 43113 and cfg.explorer_url == "https://e.example"
 
 
@@ -121,7 +121,7 @@ def test_derive_accounts_from_test_mnemonic():
 
     accounts = derive_accounts(TEST_MNEMONIC)
     assert tuple(accounts) == ROLES == ("admin", *COMPANIES)
-    # Compte 0 bien connu du mnémonique public Hardhat/Foundry.
+    # Well-known account 0 of the public Hardhat/Foundry mnemonic.
     assert accounts["admin"].address == "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     assert len(set(public_addresses(accounts).values())) == len(ROLES)
     with pytest.raises(ValueError):

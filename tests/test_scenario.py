@@ -3,14 +3,14 @@ import json
 from firebreak.scenario import COMPROMISED_SINCE, build_simulation
 
 EXPECTED_QUARANTINED = {
-    # fournisseur : les 3 malveillants + l'ASN légitime post-14:00 (fenêtre suspecte)
+    # supplier: the 3 malicious ones + the legitimate post-14:00 ASN (suspect window)
     "f-asn-X", "f-cert-X", "f-inv-X", "f-asn-08",
-    # fabricant : copies reçues + chaîne de production/paiement/expédition de X
+    # manufacturer: received copies + X's production/payment/shipment chain
     "m-asn-X", "m-cert-X", "m-inv-X", "m-asn-08",
     "m-gr-X", "m-lot-X", "m-pay-X", "m-ship-X",
-    # distributeur : réception + réexpédition du lot contaminé
+    # distributor: receipt + reshipment of the tainted lot
     "d-ship-X", "d-gr-X", "d-out-X",
-    # client : livraison + réception du lot contaminé
+    # customer: delivery + receipt of the tainted lot
     "c-ship-X", "c-gr-X",
 }
 
@@ -53,7 +53,7 @@ def test_propagation_reaches_distributeur_and_client():
     q = _q(sim)
     assert {"d-ship-X", "d-gr-X", "d-out-X"} <= q
     assert {"c-ship-X", "c-gr-X"} <= q
-    # alertes signées à chaque saut
+    # signed alerts at every hop
     hops = {(a.sender, a.recipient) for a in sim.federation.alerts}
     assert ("fournisseur", "fabricant") in hops
     assert ("fabricant", "distributeur") in hops
@@ -63,8 +63,8 @@ def test_propagation_reaches_distributeur_and_client():
 
 def test_verified_record_stops_propagation():
     sim = _sim_declared()
-    # m-asn-08 est contaminée (fenêtre suspecte) mais la réception
-    # vérifiée physiquement stoppe la propagation
+    # m-asn-08 is tainted (suspect window) but the physically
+    # verified goods receipt stops propagation
     assert sim.ledgers["fabricant"].records["m-asn-08"].status == "quarantined"
     assert sim.ledgers["fabricant"].records["m-gr-08"].status == "ok"
     assert sim.ledgers["fabricant"].records["m-gr-08"].verified
@@ -82,15 +82,15 @@ def test_remediate_frees_descendants():
     sim.remediate("m-gr-X", "human_approval")
     led = sim.ledgers["fabricant"]
     assert led.records["m-gr-X"].status == "released"
-    # lot / expédition ne dépendaient que de m-gr-X : libérés
+    # lot / shipment only depended on m-gr-X: freed
     assert led.records["m-lot-X"].status == "ok"
     assert led.records["m-ship-X"].status == "ok"
-    # levée signée propagée jusqu'au client
+    # signed release propagated all the way to the customer
     for rid in ("d-ship-X", "d-gr-X", "d-out-X"):
         assert sim.ledgers["distributeur"].records[rid].status == "ok"
     for rid in ("c-ship-X", "c-gr-X"):
         assert sim.ledgers["client"].records[rid].status == "ok"
-    # le paiement au RIB frauduleux reste bloqué (seed m-inv-X)
+    # the payment to the fraudulent RIB stays blocked (seed m-inv-X)
     assert led.records["m-pay-X"].status == "quarantined"
 
 
@@ -109,9 +109,9 @@ def test_alerts_carry_only_opaque_tokens():
         assert set(payload) == {"type", "from", "to", "tokens", "reason", "issued_at"}
         for tok in payload["tokens"]:
             assert len(tok) == 64 and int(tok, 16) >= 0
-        # Les jetons sont du hex aléatoire déjà validé ci-dessus : on les retire
-        # avant de chercher une fuite, sinon « 5210 » peut apparaître par hasard
-        # dans un jeton et faire échouer le test (flaky signalé par Mika).
+        # Tokens are random hex already validated above: remove them before
+        # looking for a leak, otherwise "5210" may appear by chance in a token
+        # and fail the test (flaky test reported by Mika).
         blob = json.dumps({k: v for k, v in payload.items() if k != "tokens"})
         assert not any(label in blob for label in labels)
         assert "5210" not in blob and "FR76" not in blob

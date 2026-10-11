@@ -1,8 +1,8 @@
-"""« Avec vs sans Firebreak » — comparaison de politiques (GET /api/compare).
+""""With vs without Firebreak": policy comparison (GET /api/compare).
 
-Vérité terrain (indépendante des statuts) : BFS depuis les records émis
-par la source dans son propre registre après `since`, le long des
-inputs + envois inter-entreprises ; `verified` arrête la propagation.
+Ground truth (independent of statuses): BFS from the records issued by
+the source in its own ledger after `since`, along inputs + cross-company
+sends; `verified` stops propagation.
 """
 
 import json
@@ -15,9 +15,9 @@ from firebreak.api import app
 
 client = TestClient(app)
 
-# Raisonné depuis scenario.py (attaque mixed, fournisseur compromise 14 h) :
-# truth = les 4 records émis par le fournisseur après 14 h + leurs copies
-# reçues et dérivés en aval. m-gr-08 est `verified` → arrête la propagation.
+# Reasoned from scenario.py (mixed attack, supplier compromised at 2 pm):
+# truth = the 4 records issued by the supplier after 2 pm + their received
+# copies and downstream derivatives. m-gr-08 is `verified` -> stops propagation.
 TRUTH_MIXED = {
     "f-asn-X", "f-cert-X", "f-inv-X", "f-asn-08",
     "m-asn-X", "m-cert-X", "m-inv-X", "m-asn-08",
@@ -25,10 +25,10 @@ TRUTH_MIXED = {
     "d-ship-X", "d-gr-X", "d-out-X",
     "c-ship-X", "c-gr-X",
 }
-# Périmètre de la politique B : fournisseur + client direct = fabricant.
-# Bloqués : tout record f/m avec ts >= 14:00, soit les 12 contaminés +
-# m-ship-07 (14:00 pile, sain) + m-gr-08 (vérifié, sain) + les 40 records
-# légitimes d'après-midi du fabricant = 54.
+# Policy B scope: supplier + direct customer = manufacturer.
+# Blocked: every f/m record with ts >= 14:00, i.e. the 12 tainted ones +
+# m-ship-07 (14:00 sharp, healthy) + m-gr-08 (verified, healthy) + the 40
+# legitimate afternoon records of the manufacturer = 54.
 AFTERNOON_M = {
     *[f"m-lot-a{i}" for i in range(1, 7)],
     *[f"m-qc-a{i}" for i in range(1, 7)],
@@ -59,7 +59,7 @@ def _compromise():
 def test_400_without_declaration():
     res = client.get("/api/compare")
     assert res.status_code == 400
-    assert "déclaration" in res.json()["detail"]
+    assert "declaration" in res.json()["detail"]
 
 
 def test_truth_and_metrics_mixed():
@@ -77,7 +77,7 @@ def test_truth_and_metrics_mixed():
     assert b["healthy_blocked"] == 42
     assert {l["id"] for l in b["leaked_ids"]} == B_LEAKS
     assert b["companies_hit"] == ["fabricant", "fournisseur"]
-    # vérité bloquée par B = les 12 contaminés du périmètre f+m
+    # truth blocked by B = the 12 tainted ones in the f+m scope
     assert b["recall"] == pytest.approx(12 / 17)
 
     assert set(c["blocked_ids"]) == TRUTH_MIXED
@@ -85,7 +85,7 @@ def test_truth_and_metrics_mixed():
     assert c["precision"] == 1.0 and c["recall"] == 1.0
     assert c["companies_hit"] == ["client", "distributeur", "fabricant", "fournisseur"]
 
-    assert d["healthy_blocked_ratio"] is None  # 0 sain bloqué avec C
+    assert d["healthy_blocked_ratio"] is None  # 0 healthy blocked with C
 
 
 def test_truth_independent_of_statuses():
@@ -94,7 +94,7 @@ def test_truth_independent_of_statuses():
     client.post("/api/records/m-gr-X/remediate", json={"action": "human_approval"})
     d = client.get("/api/compare").json()
     assert d["truth"]["contaminated"] == before == 17
-    # mais la politique C reflète la remédiation
+    # but policy C reflects the remediation
     assert "m-gr-X" not in d["with"]["blocked_ids"]
 
 
@@ -102,14 +102,14 @@ def test_payments_and_gates():
     _compromise()
     d = client.get("/api/compare").json()
     b, c = d["without"], d["with"]
-    # B : le RIB frauduleux + les 4 paiements d'après-midi (2250+2700+3150+3600)
+    # B: the fraudulent RIB + the 4 afternoon payments (2250+2700+3150+3600)
     assert b["payments_blocked_eur"] == 5210 + 11700 == 16910
     assert c["payments_blocked_eur"] == 5210
     assert b["payments_flowing_eur"] == 97312 - 16910 == 80402
     assert c["payments_flowing_eur"] == 97312 - 5210 == 92102
-    # B bloque 3 gates contaminés (m-lot-X, m-pay-X, m-ship-X) + le gate sain
-    # m-ship-07 (14:00 pile) + 14 gates d'après-midi : 6 lots, 4 paiements,
-    # 4 expéditions = 18
+    # B blocks 3 tainted gates (m-lot-X, m-pay-X, m-ship-X) + the healthy gate
+    # m-ship-07 (14:00 sharp) + 14 afternoon gates: 6 lots, 4 payments,
+    # 4 shipments = 18
     assert b["gates_blocked"] == 3 + 1 + 14 == 18
     assert c["gates_blocked"] == 4
 
@@ -123,7 +123,7 @@ def test_bench_block_present_and_coherent():
     g = d["bench"]["groups"]
     b0, c0 = g["p0.0:B"], g["p0.0:C"]
     assert b0["seeds"] == c0["seeds"] == 500
-    # cohérent avec docs/bench-results.md
+    # consistent with docs/bench-results.md
     assert b0["healthy_blocked_mean"] == pytest.approx(43.2, abs=0.2)
     assert c0["healthy_blocked_mean"] == pytest.approx(9.6, abs=0.2)
     assert c0["recall_mean"] == pytest.approx(1.0, abs=0.01)
@@ -141,12 +141,12 @@ def test_real_world_texts_exact():
     _compromise()
     d = client.get("/api/compare").json()
     rw = {r["name"]: r for r in d["real_world"]}
-    assert rw["Jaguar Land Rover"]["date"] == "septembre 2025"
+    assert rw["Jaguar Land Rover"]["date"] == "September 2025"
     assert rw["Jaguar Land Rover"]["text"].startswith(
-        "Après une cyberattaque, JLR coupe ses systèmes")
-    assert "196 M£" in rw["Jaguar Land Rover"]["text"]
-    assert rw["CDK Global"]["date"] == "juin 2024"
-    assert "15 000 concessions" in rw["CDK Global"]["text"]
+        "After a cyberattack, JLR shuts down its systems")
+    assert "£196M" in rw["Jaguar Land Rover"]["text"]
+    assert rw["CDK Global"]["date"] == "June 2024"
+    assert "15,000 car dealerships" in rw["CDK Global"]["text"]
     assert rw["CDK Global"]["source"].startswith("https://www.cnn.com/")
 
 
@@ -159,15 +159,15 @@ def test_compare_all_scenarios():
         assert d["truth"]["contaminated"] > 0, scenario
         assert d["without"]["blocked"] > 0, scenario
         assert d["with"]["blocked"] == d["truth"]["contaminated"], scenario
-        # la timeline reflète toujours l'état
+        # the timeline always reflects the state
         steps = client.get("/api/timeline").json()["steps"]
         g = client.get("/api/state").json()["counters"]["global"]
         assert steps[-1]["counters"]["quarantined"] == g["quarantined"], scenario
 
 
 def test_truth_ids_listed():
-    """`truth.ids` liste le vrai périmètre : l'interface hachure les
-    bloqués sains (`blocked_ids` hors `ids`) sans rien recalculer."""
+    """`truth.ids` lists the true scope: the interface hatches the healthy
+    blocked records (`blocked_ids` not in `ids`) without recomputing anything."""
     client.post("/api/reset", json={"scenario": "mixed"})
     client.post("/api/compromise",
                 json={"company": "fournisseur", "since": "2026-10-10T14:00:00"})

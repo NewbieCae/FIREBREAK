@@ -1,24 +1,23 @@
-"""Fédération Firebreak : jetons opaques et alertes signées Ed25519.
+"""Firebreak federation: opaque tokens and Ed25519-signed alerts.
 
-- Quand A envoie une donnée à B, le record reçu côté B porte un
-  `token = HMAC-SHA256(pair_secret, "{A}:{B}:{record_id_A}")`. B ne connaît
-  jamais l'identifiant du record de A ; A ne voit jamais les records
-  dérivés de B.
-- Quand un record sortant de A devient contaminé, A émet UNE alerte par
-  destinataire, signée canoniquement. Elle ne contient que des jetons :
-  aucune donnée commerciale (payload, prix, libellé).
-- B vérifie la signature avec la clé publique de A ; une alerte
-  falsifiée est rejetée (`verified: false`) et ne seede rien.
-- Quand un record sortant déjà signalé n'est plus contaminé (remédiation,
-  retrait d'une déclaration), A émet une alerte `type: "release"`, au même
-  format et signée de la même façon. B retire ces jetons de ses seeds,
-  recalcule, et lève à son tour vers l'aval. Une release falsifiée est
-  rejetée : les jetons restent en quarantaine chez B.
-- Dans l'autre sens, B peut envoyer à A un **signalement qualité** signé
-  (`QualityReport`) : « les données que tu m'as envoyées (ces jetons) sont
-  mises en cause ». Il ne met rien en quarantaine chez A : A retrouve ses
-  propres records à partir des jetons, et un humain décide (cas par cas).
-  Seul l'émetteur d'un jeton peut le résoudre : B n'apprend rien de plus.
+- When A sends data to B, the record received on B's side carries a
+  `token = HMAC-SHA256(pair_secret, "{A}:{B}:{record_id_A}")`. B never knows
+  the id of A's record; A never sees B's derived records.
+- When an outgoing record of A becomes tainted, A issues ONE alert per
+  recipient, canonically signed. It contains only tokens: no business
+  data (payload, price, label).
+- B checks the signature with A's public key; a forged alert is
+  rejected (`verified: false`) and seeds nothing.
+- When an already-reported outgoing record is no longer tainted
+  (remediation, withdrawn declaration), A issues a `type: "release"` alert,
+  in the same format and signed the same way. B removes those tokens from
+  its seeds, recomputes, and in turn releases downstream. A forged release
+  is rejected: the tokens stay quarantined at B.
+- In the other direction, B can send A a signed **quality report**
+  (`QualityReport`): "the data you sent me (these tokens) is being
+  questioned". It quarantines nothing at A: A finds its own records from
+  the tokens, and a human decides (case by case).
+  Only the issuer of a token can resolve it: B learns nothing more.
 """
 
 from __future__ import annotations
@@ -42,11 +41,11 @@ from cryptography.hazmat.primitives.serialization import (
 if TYPE_CHECKING:
     from .engine import Ledger
 
-# Secrets de processus. Aucun secret n'est écrit dans le code : sans variable
-# d'environnement, un secret aléatoire est tiré une fois par processus (stable
-# pendant toute la durée du processus, différent à chaque lancement). Pour un
-# comportement reproductible (démo, tests), définir FIREBREAK_PAIR_SECRET et
-# FIREBREAK_KEY_SEED dans `.env.local` (ignoré par Git), jamais dans le dépôt.
+# Process secrets. No secret is written in the code: without an environment
+# variable, a random secret is drawn once per process (stable for the whole
+# life of the process, different on each launch). For reproducible behavior
+# (demo, tests), set FIREBREAK_PAIR_SECRET and FIREBREAK_KEY_SEED in
+# `.env.local` (ignored by Git), never in the repo.
 _PROCESS_SECRETS: dict[str, bytes] = {}
 
 
@@ -60,11 +59,11 @@ def _secret(name: str) -> bytes:
 
 
 AlertType = Literal["taint", "release"]
-REASONS = {"taint": "source compromise", "release": "donnée de nouveau saine"}
+REASONS = {"taint": "source compromise", "release": "data clean again"}
 
 
 def make_token(sender: str, recipient: str, record_id: str) -> str:
-    """Jeton opaque : HMAC-SHA256 avec un secret que le code ne contient pas."""
+    """Opaque token: HMAC-SHA256 with a secret the code does not contain."""
     return hmac.new(
         _secret("FIREBREAK_PAIR_SECRET"),
         f"{sender}:{recipient}:{record_id}".encode(),
@@ -78,7 +77,7 @@ def _canonical(payload: dict) -> bytes:
 
 @dataclass
 class Link:
-    """Lien d'envoi A -> B : record sortant côté A, copie reçue côté B."""
+    """Send link A -> B: outgoing record on A's side, received copy on B's side."""
 
     sender: str
     sender_record: str
@@ -114,7 +113,7 @@ class Federation:
         self._priv: dict[str, Ed25519PrivateKey] = {}
         self.public_keys: dict[str, bytes] = {}
         for cid in company_ids:
-            # Clé dérivée d'un secret de processus, jamais du seul nom de l'entreprise.
+            # Key derived from a process secret, never from the company name alone.
             seed = hmac.new(
                 _secret("FIREBREAK_KEY_SEED"), f"ed25519:{cid}".encode(), hashlib.sha256
             ).digest()
@@ -151,10 +150,10 @@ class Federation:
             return False
 
     def emit_alerts(self, ledgers: dict[str, Ledger], issued_at: datetime) -> list[Alert]:
-        """Une alerte par (expéditeur, destinataire, type) :
-        - « taint » pour les records sortants nouvellement contaminés ;
-        - « release » pour ceux déjà signalés qui ne le sont plus.
-        Ne fuite que des jetons."""
+        """One alert per (sender, recipient, type):
+        - "taint" for newly tainted outgoing records;
+        - "release" for already-reported ones that no longer are.
+        Leaks only tokens."""
         new_alerts: list[Alert] = []
         grouped: dict[tuple[str, str, str], list[str]] = {}
         for link in self.links:
@@ -189,7 +188,7 @@ class Federation:
         return new_alerts
 
     def deliver(self, alert: Alert, ledgers: dict[str, Ledger]) -> bool:
-        """Remet l'alerte au destinataire. Retourne True si acceptée."""
+        """Delivers the alert to the recipient. Returns True if accepted."""
         ok = alert.recipient in ledgers and self.verify(
             alert.sender, alert.payload(), alert.signature
         )
@@ -202,11 +201,11 @@ class Federation:
             ledgers[alert.recipient].register_alert_tokens(list(alert.tokens))
         return True
 
-    # -- signalements qualité vers l'amont ----------------------------------
+    # -- upstream quality reports -------------------------------------------
 
     def make_report(self, sender: str, recipient: str, tokens: list[str], reason: str,
                     issued_at: datetime) -> QualityReport:
-        """Signalement signé par `sender` (le client) à l'émetteur des jetons."""
+        """Report signed by `sender` (the customer) to the issuer of the tokens."""
         self._report_counter += 1
         report = QualityReport(
             id=f"QR-{self._report_counter:03d}", sender=sender, recipient=recipient,
@@ -217,9 +216,9 @@ class Federation:
         return report
 
     def receive_report(self, report: QualityReport) -> list[str]:
-        """Côté destinataire : vérifie la signature, puis résout les jetons en
-        ses propres records (seul l'émetteur d'un jeton sait le faire).
-        Renvoie les ids de records ; [] si la signature est invalide."""
+        """Recipient side: checks the signature, then resolves the tokens into
+        its own records (only the issuer of a token can do that).
+        Returns the record ids; [] if the signature is invalid."""
         report.verified = self.verify(report.sender, report.payload(), report.signature)
         if not report.verified:
             report.records = []
@@ -235,7 +234,7 @@ class Federation:
 
 @dataclass
 class QualityReport:
-    """Signalement qualité vers l'amont : jetons opaques + motif, signé."""
+    """Upstream quality report: opaque tokens + reason, signed."""
 
     id: str
     sender: str
@@ -245,7 +244,7 @@ class QualityReport:
     issued_at: datetime
     signature: str = ""
     verified: bool | None = None
-    records: list[str] = field(default_factory=list)  # résolus chez le destinataire
+    records: list[str] = field(default_factory=list)  # resolved at the recipient
     status: str = "pending"  # pending | confirmed | rejected
 
     def payload(self) -> dict:

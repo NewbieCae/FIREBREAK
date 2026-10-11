@@ -1,6 +1,6 @@
-"""Identifiants et empreintes ancrés on-chain. Fonctions pures, sans `web3`.
+"""Identifiers and fingerprints anchored on-chain. Pure functions, no `web3`.
 
-Rien de commercial ne sort d'ici : uniquement des sha256 de 32 octets.
+Nothing commercial leaves this module: only 32-byte sha256 digests.
 """
 
 from __future__ import annotations
@@ -25,12 +25,12 @@ def new_run_id() -> bytes:
 
 
 def canonical_json(payload: dict) -> bytes:
-    """Même canonisation que federation._canonical (testé dans test_chain_ids)."""
+    """Same canonicalization as federation._canonical (tested in test_chain_ids)."""
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
 
 
 def alert_hash(alert: Alert) -> bytes:
-    """Empreinte de l'alerte telle que signée : payload canonique + signature."""
+    """Fingerprint of the alert as signed: canonical payload + signature."""
     return hashlib.sha256(
         canonical_json(alert.payload()) + b"|" + alert.signature.encode()
     ).digest()
@@ -44,12 +44,12 @@ def declaration_hash(company: str, since_iso: str, declarer: str) -> bytes:
 
 def hex32(b: bytes) -> str:
     if len(b) != 32:
-        raise ValueError(f"32 octets attendus, {len(b)} reçus")
+        raise ValueError(f"32 bytes expected, {len(b)} received")
     return "0x" + b.hex()
 
 
 def from_hex32(value: str) -> bytes:
     raw = bytes.fromhex(value[2:] if value.startswith("0x") else value)
     if len(raw) != 32:
-        raise ValueError(f"32 octets attendus, {len(raw)} reçus")
+        raise ValueError(f"32 bytes expected, {len(raw)} received")
     return raw

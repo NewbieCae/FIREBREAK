@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Démo Firebreak en une commande : installe les dépendances, lance le
-# serveur en mode démo (scénario figé, IA mock, zéro réseau) et ouvre
-# l'interface finale dans le navigateur.
+# One-command Firebreak demo: installs the dependencies, starts the
+# server in demo mode (fixed scenario, mock AI, no network) and opens
+# the final interface in the browser.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -10,9 +10,9 @@ uv sync
 
 URL="http://localhost:8000"
 if curl -sf --max-time 2 "$URL/api/state" >/dev/null 2>&1; then
-  echo "→ serveur déjà en ligne sur $URL"
+  echo "→ server already running on $URL"
 else
-  echo "→ démarrage FIREBREAK_DEMO=1 sur $URL"
+  echo "→ starting FIREBREAK_DEMO=1 on $URL"
   uv run env FIREBREAK_DEMO=1 uvicorn firebreak.api:app --port 8000 &
   SRV=$!
   trap 'kill $SRV 2>/dev/null || true' EXIT
@@ -22,13 +22,13 @@ else
   done
 fi
 
-echo "→ interface : $URL/app/   ·   debug : $URL/   ·   API : $URL/docs"
+echo "→ interface: $URL/app/   ·   debug: $URL/   ·   API: $URL/docs"
 if command -v xdg-open >/dev/null 2>&1; then
   xdg-open "$URL/app/" >/dev/null 2>&1 || true
 fi
 
-# Si on a lancé le serveur, attendre dessus ; sinon sortir.
+# If we started the server, wait on it; otherwise exit.
 if [ -n "${SRV:-}" ]; then
-  echo "→ Ctrl+C pour arrêter"
+  echo "→ Ctrl+C to stop"
   wait "$SRV"
 fi

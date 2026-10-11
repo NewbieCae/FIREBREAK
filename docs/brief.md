@@ -1,110 +1,110 @@
-# Finswag — brief Secure Horizons
+# Finswag — Secure Horizons brief
 
-Page Notion : https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e
+Notion page: https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e
 
-**Finswag — Secure Horizons, Team 14, Track 1 « Guardians of Value ».** Espace de cadrage et de coordination de l’équipe. Le Track 1 est confirmé dans le brief ; le produit à construire et la répartition des rôles restent à valider.
+**Finswag — Secure Horizons, Team 14, Track 1 "Guardians of Value".** The team's scoping and coordination space. Track 1 is confirmed in the brief; the product to build and the role split are still to be validated.
 
-# Projet et sources
-- **Dépôt GitHub privé :** [Sc4rville/finswag](https://github.com/Sc4rville/finswag)
-- **Source principale :** mail « \[CODEX\] brief hackathon Secure Horizons - Track 1 Guardians of Value (Avalanche + AWS) », reçu le 2026-10-10 à 12:26 (Europe/Paris).
-- **Nom du projet :** le mail mentionnait « secureswag » ; le dépôt et cette page utilisent « finswag », conformément à la demande actuelle de Yann.
-- Les informations événementielles et techniques ci-dessous sont reprises du mail. Le [Candidate Guide](https://app.notion.com/p/Candidate-Guide-Track-Guidance-EN-3f400920c77e81beb3b4fad01fc5eeda) n’est pas accessible avec la connexion Notion actuelle ; ses indications sont rapportées depuis le brief.
+# Project and sources
+- **Private GitHub repo:** [Sc4rville/finswag](https://github.com/Sc4rville/finswag)
+- **Main source:** email "\[CODEX\] brief hackathon Secure Horizons - Track 1 Guardians of Value (Avalanche + AWS)", received 2026-10-10 at 12:26 (Europe/Paris).
+- **Project name:** the email mentioned "secureswag"; the repo and this page use "finswag", as currently requested by Yann.
+- The event and technical information below is taken from the email. The [Candidate Guide](https://app.notion.com/p/Candidate-Guide-Track-Guidance-EN-3f400920c77e81beb3b4fad01fc5eeda) is not accessible with the current Notion connection; its guidance is reported from the brief.
 
-# Contexte du hackathon
-- **Événement :** Secure Horizons, organisé par UTOPIA × KRYPTOSPHERE × ESSEC MetaLab.
-- **Lieu :** ESSEC Cergy, 3 avenue Bernard Hirsch.
-- **Format annoncé :** 150 builders, 36 heures, 3 tracks ; équipes jusqu’à 5 personnes. Repas et hébergement gratuits.
-- **Accueil :** 2026-10-10 à 09:00 (Europe/Paris) ; présentation de 10 h à 11 h ; formation d’équipe de 10 h 50 à 11 h 30.
-- **Hacking :** début annoncé le 2026-10-10 à 11:00 (Europe/Paris) ; fin annoncée le 2026-10-11 à 17:00 (Europe/Paris).
-- **Changement de track :** possible jusqu’au point de contrôle du 2026-10-10 à 18:30 (Europe/Paris) ; places possiblement plafonnées.
-- **Équipe :** Team 14, équipe AWS. Le brief rapporte la décision de Yann à 12 h 25 : partir sur le Track 1.
-- **Prix annoncés :** environ 15 000 € au total, plus des crédits infrastructure. Répartition par track et critères de jury non précisés dans le mail.
-- **Soutien cité :** France 2030 (ANR-23-CMAS-0020) / NextGenerationEU.
+# Hackathon context
+- **Event:** Secure Horizons, organized by UTOPIA × KRYPTOSPHERE × ESSEC MetaLab.
+- **Venue:** ESSEC Cergy, 3 avenue Bernard Hirsch.
+- **Announced format:** 150 builders, 36 hours, 3 tracks; teams of up to 5 people. Free meals and accommodation.
+- **Check-in:** 2026-10-10 at 09:00 (Europe/Paris); presentation from 10:00 to 11:00; team formation from 10:50 to 11:30.
+- **Hacking:** announced start 2026-10-10 at 11:00 (Europe/Paris); announced end 2026-10-11 at 17:00 (Europe/Paris).
+- **Track change:** possible until the checkpoint on 2026-10-10 at 18:30 (Europe/Paris); spots may be capped.
+- **Team:** Team 14, AWS team. The brief reports Yann's decision at 12:25: go for Track 1.
+- **Announced prizes:** about €15,000 in total, plus infrastructure credits. Split per track and judging criteria not specified in the email.
+- **Support cited:** France 2030 (ANR-23-CMAS-0020) / NextGenerationEU.
 
-# Brief — Track 1 « Guardians of Value »
-## Objectif
-Construire une solution défensive qui sécurise les systèmes financiers, les transactions ou les actifs numériques : **surveiller, détecter et répondre aux menaces visant l’argent**, de la banque à la DeFi.
-## Public et besoin
-Finance, blockchain, antifraude et conformité. Le guide cité décrit des défenseurs noyés d’alertes et de faux positifs, des agents IA non supervisés, des abus d’outils et de privilèges, ainsi que des besoins de détection, réponse et assurance cyber.
-## Cadre attendu
-- Approche **Blue Team**, centrée sur la défense.
-- Traiter au moins une fonction du **NIST CSF 2.0**, idéalement **Detect** ou **Respond**.
-- Référentiels cités : MITRE ATT&CK, MITRE ATLAS, MITRE D3FEND et OWASP Top 10 for Agentic Applications.
-- **Jury Track 1 :** Team1 / Avalanche, KPMG, KRYPTOSPHERE France.
-- Angle suggéré dans le brief pour KPMG : conformité, auditabilité et réduction des faux positifs.
-- Le guide ne fournit pas de défi précis, de barème ni de prix par track selon le mail.
-## Autres tracks, pour contexte
-- Track 2 « Defenders Augmented » : IA × cyber ; jury GitGuardian, ESSEC MetaLab, KPMG.
-- Track 3 « Uncharted Frontiers » : sujets libres ; jury Bpifrance, ESSEC Alumni, UTOPIA.
+# Brief — Track 1 "Guardians of Value"
+## Goal
+Build a defensive solution that secures financial systems, transactions or digital assets: **monitor, detect and respond to threats targeting money**, from banking to DeFi.
+## Audience and need
+Finance, blockchain, anti-fraud and compliance. The cited guide describes defenders drowning in alerts and false positives, unsupervised AI agents, tool and privilege abuse, as well as needs for detection, response and cyber insurance.
+## Expected framework
+- **Blue Team** approach, focused on defense.
+- Address at least one **NIST CSF 2.0** function, ideally **Detect** or **Respond**.
+- Frameworks cited: MITRE ATT&CK, MITRE ATLAS, MITRE D3FEND and OWASP Top 10 for Agentic Applications.
+- **Track 1 jury:** Team1 / Avalanche, KPMG, KRYPTOSPHERE France.
+- Angle suggested in the brief for KPMG: compliance, auditability and false-positive reduction.
+- According to the email, the guide provides no specific challenge, scoring grid or per-track prize.
+## Other tracks, for context
+- Track 2 "Defenders Augmented": AI × cyber; jury GitGuardian, ESSEC MetaLab, KPMG.
+- Track 3 "Uncharted Frontiers": open topics; jury Bpifrance, ESSEC Alumni, UTOPIA.
 
-# Ressources techniques
+# Technical resources
 ## Avalanche / Team1
-Le brief prévoit Avalanche pour la partie on-chain, avec une utilité démontrable : preuve, traçabilité ou journal d’audit.
-- **Réseau :** testnet Fuji, C-Chain compatible EVM.
-- **Outils possibles :** Solidity, MetaMask ou Core, Hardhat ou Foundry.
-- **Chain ID annoncé :** 43113 ; token de test AVAX.
-- [Explorer Fuji](https://testnet.snowtrace.io)
-- [Builder Hub — inscription](https://build.avax.network/signup?ref=HGURW)
+The brief plans Avalanche for the on-chain part, with demonstrable utility: proof, traceability or audit log.
+- **Network:** Fuji testnet, EVM-compatible C-Chain.
+- **Possible tools:** Solidity, MetaMask or Core, Hardhat or Foundry.
+- **Announced chain ID:** 43113; test token AVAX.
+- [Fuji Explorer](https://testnet.snowtrace.io)
+- [Builder Hub — sign-up](https://build.avax.network/signup?ref=HGURW)
 - [Faucet](https://build.avax.network/console/primary-network/faucet)
-- Le lien [Chainlist 43113](https://chainlist.org/chain/43113) fourni par les organisateurs décrit le réseau. L’endpoint candidat `https://api.avax-test.network/ext/bc/C/rpc` reste **à tester** ; le brief ne le présente pas comme confirmé par les organisateurs.
-- Si le faucet ne suffit pas : contacter Yassir à l'adresse indiquée dans le mail des organisateurs avec l’adresse EVM publique du wallet.
-- Utiliser un wallet dédié au hackathon. Consigner les adresses des contrats déployés dans GitHub.
+- The [Chainlist 43113](https://chainlist.org/chain/43113) link provided by the organizers describes the network. The candidate endpoint `https://api.avax-test.network/ext/bc/C/rpc` is still **to be tested**; the brief does not present it as confirmed by the organizers.
+- If the faucet is not enough: contact Yassir at the address given in the organizers' email with the wallet's public EVM address.
+- Use a wallet dedicated to the hackathon. Record the addresses of deployed contracts in GitHub.
 
 ## AWS / Bedrock
-- Compte temporaire, gratuit et isolé par équipe.
-- **Région unique annoncée :** `us-east-1`.
-- Bedrock, Bedrock AgentCore et services AWS de base ; modèles cités dans le mail : Claude, Amazon Nova, GPT-5.x, Llama et Mistral.
-- **Pas de GPU.** Rester sous environ une requête par seconde et par personne.
-- Un membre de l’équipe doit remplir le formulaire d’usage Claude dans la console Bedrock.
-- Le lien unique d’accès Team 14 se trouve dans le mail organisateur du 10 octobre à 11 h 03. Le récupérer depuis la boîte de Yann.
-- **Kiro :** offre annoncée de 100 codes de 1 000 crédits, premier arrivé premier servi ; à réclamer avant le dimanche 11 octobre à minuit selon le mail : [promotion Kiro](https://pulse.amazon/promotion/L9OJAMMY).
-- Le compte AWS sera supprimé à la fin : sauvegarder régulièrement le code sur GitHub et enregistrer une vidéo de démo avant la fin.
+- Temporary, free account, isolated per team.
+- **Single announced region:** `us-east-1`.
+- Bedrock, Bedrock AgentCore and basic AWS services; models cited in the email: Claude, Amazon Nova, GPT-5.x, Llama and Mistral.
+- **No GPU.** Stay under about one request per second per person.
+- One team member must fill in the Claude usage form in the Bedrock console.
+- The unique Team 14 access link is in the organizers' email of October 10 at 11:03. Retrieve it from Yann's inbox.
+- **Kiro:** announced offer of 100 codes of 1,000 credits, first come first served; to be claimed before Sunday October 11 at midnight according to the email: [Kiro promotion](https://pulse.amazon/promotion/L9OJAMMY).
+- The AWS account will be deleted at the end: back up the code to GitHub regularly and record a demo video before the end.
 
-# Règles du hackathon reprises du mail
-- Tester et attaquer uniquement ce que notre équipe déploie dans son propre compte.
-- Ne pas cibler une autre équipe, le réseau ESSEC, AWS ou un site externe.
-- Pas de déni de service, malware, phishing ou jailbreak de modèles.
-- Utiliser des données synthétiques et de faux secrets, par exemple `FLAG{team14-canary}` ; aucune donnée personnelle réelle.
-- Ne jamais partager une vraie clé ou une seed phrase.
-- Pousser le code sur GitHub au moins toutes les heures.
-- Les liens Discord doivent être récupérés depuis le canal ou l’écran officiel sur place : le brief signale deux invitations différentes dans les mails organisateurs.
+# Hackathon rules taken from the email
+- Test and attack only what our team deploys in its own account.
+- Do not target another team, the ESSEC network, AWS or an external site.
+- No denial of service, malware, phishing or model jailbreaking.
+- Use synthetic data and fake secrets, for example `FLAG{team14-canary}`; no real personal data.
+- Never share a real key or seed phrase.
+- Push code to GitHub at least every hour.
+- Discord links must be taken from the official channel or screen on site: the brief notes two different invites in the organizers' emails.
 
-# Pistes de produit — à valider avec l’équipe
-Les quatre idées suivantes sont des propositions du brief, **aucune n’est validée par Yann**.
-## A — Triage d’alertes antifraude
-Flux de transactions synthétiques ; agent Bedrock qui classe et explique les alertes et vise à réduire les faux positifs. Hash des décisions et preuves ancré dans un contrat Fuji pour un audit vérifiable.
-## B — Moniteur de contrats et transactions
-Surveillance de transactions Fuji : drain, approvals suspects et appels anormaux. Évaluation du risque avec un LLM ; réponse par alerte ou pause d’un contrat de démo via un circuit breaker Pausable. Les scénarios portent uniquement sur nos propres contrats.
-## C — Garde-fou pour agents IA qui paient
-Proxy qui contrôle les droits, plafonds et destinataires d’un agent exécutant des paiements. Politique on-chain d’allowlist et de limites ; journal d’actions vérifiable et détection d’abus de privilèges ou d’outils.
-## D — Journal d’audit pour la conformité
-Ancrage périodique des hashes de logs sur Fuji, vérificateur d’intégrité et résumé IA. Démontrer la traçabilité et les preuves utilisables pour un audit ou l’assurance cyber.
-## Recommandation contenue dans le mail
-Discuter d’une combinaison **B + C** : détection et réponse sur contrats, avec un agent IA encadré. Préparer une démonstration claire en trois minutes ; la durée officielle reste à confirmer.
+# Product ideas — to be validated with the team
+The four ideas below are proposals from the brief; **none has been validated by Yann**.
+## A — Anti-fraud alert triage
+Synthetic transaction stream; a Bedrock agent that classifies and explains alerts and aims to reduce false positives. Hash of decisions and evidence anchored in a Fuji contract for a verifiable audit.
+## B — Contract and transaction monitor
+Monitoring of Fuji transactions: drains, suspicious approvals and abnormal calls. Risk assessment with an LLM; response by alert or by pausing a demo contract via a Pausable circuit breaker. Scenarios only target our own contracts.
+## C — Guardrail for paying AI agents
+Proxy that controls the permissions, limits and recipients of an agent executing payments. On-chain allowlist and limits policy; verifiable action log and detection of privilege or tool abuse.
+## D — Compliance audit log
+Periodic anchoring of log hashes on Fuji, integrity checker and AI summary. Demonstrate traceability and evidence usable for an audit or cyber insurance.
+## Recommendation contained in the email
+Discuss a **B + C** combination: detection and response on contracts, with a supervised AI agent. Prepare a clear three-minute demo; the official duration is still to be confirmed.
 
-# Plan de travail proposé — à confirmer
-1. **Cadrage :** choisir le scénario, valider le périmètre, les rôles, la stack et les critères de réussite ; récupérer les accès AWS et Fuji.
-2. **Premier parcours :** données synthétiques, contrat de démonstration Fuji, première analyse Bedrock et interface minimale.
-3. **Intégration :** relier événement suspect, explication, garde-fou ou réponse et preuve on-chain.
-4. **Validation :** scénarios normal / suspect, comportement en cas d’échec et mesure de l’effet attendu.
-5. **Rendu :** README, adresses des contrats, vidéo enregistrée et pitch. Caler les jalons sur les horaires officiels et le format de soumission.
+# Proposed work plan — to be confirmed
+1. **Scoping:** choose the scenario, validate the scope, roles, stack and success criteria; get AWS and Fuji access.
+2. **First path:** synthetic data, Fuji demo contract, first Bedrock analysis and minimal interface.
+3. **Integration:** connect suspicious event, explanation, guardrail or response, and on-chain proof.
+4. **Validation:** normal / suspicious scenarios, failure behavior and measurement of the expected effect.
+5. **Delivery:** README, contract addresses, recorded video and pitch. Align milestones with the official schedule and submission format.
 
-# Équipe et accès
-Les accès (Notion, GitHub) sont gérés hors de ce dépôt ; les adresses personnelles n'y figurent pas.
+# Team and access
+Access (Notion, GitHub) is managed outside this repo; personal addresses are not stored here.
 
-# Actions et questions ouvertes
-- [x] Retrouver et intégrer le brief transmis à Codex.
-- [x] Créer la page Finswag et lier le dépôt existant.
-- [ ] Inviter les trois adresses sur Notion avec accès en modification.
-- [ ] Choisir le produit et préciser le périmètre du MVP.
-- [ ] Confirmer le nombre de membres, la stack, les ressources déjà prêtes et la répartition des rôles.
-- [ ] Demander aux organisateurs : barème Track 1, prix par track, durée de démo, format et échéance exacte du rendu.
-- [ ] Vérifier les accès AWS, le formulaire Claude, le wallet dédié et le RPC Fuji.
-- [ ] Consigner les contrats déployés ; pousser au moins toutes les heures.
-- [ ] Enregistrer la démo avant suppression du compte AWS.
+# Actions and open questions
+- [x] Find and integrate the brief sent to Codex.
+- [x] Create the Finswag page and link the existing repo.
+- [ ] Invite the three addresses to Notion with edit access.
+- [ ] Choose the product and define the MVP scope.
+- [ ] Confirm the number of members, the stack, the resources already available and the role split.
+- [ ] Ask the organizers: Track 1 scoring grid, prizes per track, demo length, exact submission format and deadline.
+- [ ] Check AWS access, the Claude form, the dedicated wallet and the Fuji RPC.
+- [ ] Record deployed contracts; push at least every hour.
+- [ ] Record the demo before the AWS account is deleted.
 
-# Organisation du dépôt
-- `src/` : code source.
-- `assets/` : ressources.
-- `scripts/` : utilitaires.
-- `docs/` : brief et documentation.
+# Repo layout
+- `src/`: source code.
+- `assets/`: resources.
+- `scripts/`: utilities.
+- `docs/`: brief and documentation.

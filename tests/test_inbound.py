@@ -1,7 +1,6 @@
-"""Contrôle des entrées en stock : note de confiance, mise en attente,
-décision humaine. Les assertions portent sur les bandes, les décisions et
-les contrôles en échec (pas sur les notes exactes), pour rester valides
-quand les données de réception s'enrichissent."""
+"""Inbound stock control: trust score, hold, human decision. Assertions
+target bands, decisions and failed checks (not exact scores), so they stay
+valid as goods-receipt data gets richer."""
 
 import pytest
 
@@ -34,9 +33,9 @@ def test_mixed_attack_receipt_is_suspect_and_explained():
     r = sim.inbound_check("fabricant", "m-gr-X")
     assert r["band"] == "suspect" and r["hold"] and r["score"] < 60
     assert {"order", "rib"} <= failed(r)
-    assert "BC-9999" in r["explanation"] and "humain" in r["explanation"]
+    assert "BC-9999" in r["explanation"] and "human" in r["explanation"]
     assert r["status"] == "non_controle"
-    assert quarantined(sim) == set()  # lecture seule
+    assert quarantined(sim) == set()  # read-only
 
 
 def test_phantom_delivery_is_suspect():
@@ -47,7 +46,7 @@ def test_phantom_delivery_is_suspect():
 def test_wrong_grade_certificate_is_held():
     sim = build_simulation("cert")
     if "lot" not in sim.find_record("m-cert-X").payload:
-        pytest.skip("payload du certificat reçu pas encore enrichi (données de réception, pc2)")
+        pytest.skip("received certificate payload not yet enriched (goods-receipt data, pc2)")
     r = sim.inbound_check("fabricant", "m-gr-X")
     assert r["hold"] and "cert" in failed(r)
 
@@ -58,7 +57,7 @@ def test_screen_holds_receipt_and_everything_downstream():
     assert r["status"] == "en_attente"
     q = quarantined(sim)
     assert {"m-gr-X", "m-lot-X", "m-ship-X", "d-gr-X", "c-gr-X"} <= q
-    # La facture au RIB modifié n'est pas une entrée en stock : hors périmètre ici.
+    # The invoice with the modified RIB is not a stock entry: out of scope here.
     assert "m-pay-X" not in q
     types = [s["type"] for s in sim.timeline]
     assert types[0] == "inbound_hold"
@@ -86,7 +85,7 @@ def test_screen_all_only_holds_doubtful_receipts():
 def test_accept_makes_receipt_trusted_and_releases():
     sim = build_simulation("mixed")
     sim.inbound_screen("fabricant", "m-gr-X")
-    out = sim.inbound_decide("fabricant", "m-gr-X", "accept", "contrôle physique conforme")
+    out = sim.inbound_decide("fabricant", "m-gr-X", "accept", "physical check compliant")
     assert out["status"] == "accepte"
     assert sim.find_record("m-gr-X").verified is True
     assert "m-lot-X" not in quarantined(sim)
@@ -97,7 +96,7 @@ def test_accept_makes_receipt_trusted_and_releases():
 def test_reject_keeps_isolated_and_reports_to_supplier():
     sim = build_simulation("mixed")
     sim.inbound_screen("fabricant", "m-gr-X")
-    out = sim.inbound_decide("fabricant", "m-gr-X", "reject", "commande inconnue")
+    out = sim.inbound_decide("fabricant", "m-gr-X", "reject", "unknown order")
     assert out["status"] == "refuse"
     assert {"m-gr-X", "m-lot-X"} <= quarantined(sim)
     (report,) = out["reports"]
@@ -115,51 +114,51 @@ def test_reject_without_prior_screen_also_isolates():
 def test_errors():
     sim = build_simulation("mixed")
     with pytest.raises(ValueError):
-        sim.inbound_check("fabricant", "m-lot-01")  # pas une réception
+        sim.inbound_check("fabricant", "m-lot-01")  # not a goods receipt
     with pytest.raises(KeyError):
-        sim.inbound_check("fabricant", "inconnu")
+        sim.inbound_check("fabricant", "unknown")
     with pytest.raises(KeyError):
-        sim.inbound_check("inconnue", "m-gr-01")
+        sim.inbound_check("unknown", "m-gr-01")
     with pytest.raises(ValueError):
-        sim.inbound_decide("fabricant", "m-gr-X", "peut-être")
+        sim.inbound_decide("fabricant", "m-gr-X", "maybe")
 
 
 def test_cannot_accept_a_receipt_that_was_never_held():
-    """Relecture pc2 : accepter sans contrôle préalable court-circuitait la mise en attente."""
+    """pc2 review: accepting without a prior check bypassed the hold."""
     sim = build_simulation("mixed")
     with pytest.raises(ValueError):
         sim.inbound_decide("fabricant", "m-gr-X", "accept")
     assert sim.find_record("m-gr-X").verified is False
-    with pytest.raises(ValueError):  # réception de confiance : jamais en attente
+    with pytest.raises(ValueError):  # trusted goods receipt: never on hold
         sim.inbound_decide("fabricant", "m-gr-01", "accept")
 
 
 def test_accept_does_not_erase_an_independent_lot_suspicion():
-    """Relecture pc2 : accepter la réception effaçait un lot déclaré suspect par la qualité."""
+    """pc2 review: accepting the receipt erased a lot declared suspect by quality."""
     sim = build_simulation("lot")
-    sim.declare_lot_suspect("fabricant", "COIL-104", "défaut de coulée")
+    sim.declare_lot_suspect("fabricant", "COIL-104", "casting defect")
     with pytest.raises(ValueError):
         sim.inbound_decide("fabricant", "m-gr-04", "accept")
     assert sim.find_record("m-gr-04").status == "quarantined"
-    assert sim.ledgers["fabricant"].suspects["m-gr-04"] == "défaut de coulée"
+    assert sim.ledgers["fabricant"].suspects["m-gr-04"] == "casting defect"
 
 
 def test_screen_does_not_overwrite_an_existing_suspicion():
     sim = build_simulation("mixed")
-    sim.declare_lot_suspect("fabricant", "m-gr-X", "alerte qualité préalable")
+    sim.declare_lot_suspect("fabricant", "m-gr-X", "prior quality alert")
     sim.inbound_screen("fabricant", "m-gr-X")
-    assert sim.ledgers["fabricant"].suspects["m-gr-X"] == "alerte qualité préalable"
+    assert sim.ledgers["fabricant"].suspects["m-gr-X"] == "prior quality alert"
     with pytest.raises(ValueError):
         sim.inbound_decide("fabricant", "m-gr-X", "accept")
 
 
 def test_physically_checked_receipt_in_doubt_is_flagged_not_held():
-    """Arbitrage pc1 (relecture pc2) : la livraison de 14 h 45 a été contrôlée
-    physiquement ; en zone de doute, on signale sans bloquer."""
+    """pc1 decision (pc2 review): the 2:45 pm delivery was physically
+    checked; in the doubt zone, flag without blocking."""
     sim = build_simulation("mixed")
     r = sim.inbound_check("fabricant", "m-gr-08")
     assert r["physically_checked"] and r["band"] == "doute" and not r["hold"]
-    assert "contrôlé physiquement" in r["explanation"]
+    assert "physically checked" in r["explanation"]
     sim.inbound_screen("fabricant", "m-gr-08")
     assert sim.find_record("m-gr-08").status == "ok"
 

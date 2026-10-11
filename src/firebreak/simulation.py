@@ -1,4 +1,4 @@
-"""Simulation Firebreak : registres + fédération, propagation à point fixe."""
+"""Firebreak simulation: ledgers + federation, fixed-point propagation."""
 
 from __future__ import annotations
 
@@ -14,13 +14,13 @@ from .genealogy import lot_of, records_of_lot
 from .model import Company, Record, payment_amount
 
 REMEDIATION_ACTIONS = {"revalidate", "human_approval", "trusted_source"}
-INBOUND_HOLD_REASON = "en attente de validation à réception"
+INBOUND_HOLD_REASON = "awaiting goods-receipt validation"
 SCENARIO_TZ = ZoneInfo("Europe/Paris")
 
 
 def to_scenario_time(dt: datetime) -> datetime:
-    """Les horodatages du scénario sont naïfs, en heure de Paris. Une date
-    avec fuseau (ex. « …Z ») est convertie, sinon la comparaison échoue."""
+    """Scenario timestamps are naive, in Paris time. A timezone-aware date
+    (e.g. "...Z") is converted, otherwise the comparison fails."""
     if dt.tzinfo is None:
         return dt
     return dt.astimezone(SCENARIO_TZ).replace(tzinfo=None)
@@ -56,8 +56,8 @@ class Simulation:
         self.companies = companies
         self.ledgers = ledgers
         self.federation = federation
-        self.clock = datetime(2026, 10, 10, 15, 0, 0)  # heure du scénario
-        self.timeline: list[dict] = []  # étapes de la dernière action
+        self.clock = datetime(2026, 10, 10, 15, 0, 0)  # scenario time
+        self.timeline: list[dict] = []  # steps of the last action
 
     # -- propagation ------------------------------------------------------
 
@@ -75,17 +75,17 @@ class Simulation:
             for rid in cleared:
                 ledger.audit.append(self.clock, "release", "règle", {
                     "record": rid,
-                    "reason": "ne dépend plus d'aucune donnée suspecte",
+                    "reason": "no longer depends on any suspect data",
                 })
 
     def run(self) -> None:
-        """Recompute tous les registres puis alertes (contamination et
-        levée), jusqu'à point fixe.
+        """Recomputes all ledgers then alerts (taint and release), until a
+        fixed point.
 
-        Chaque lien bascule au plus une fois par sens (signalé / levé) par
-        tour : sur une chaîne sans cycle, le point fixe est atteint en
-        ≤ 2 × len(links) + 1 tours. Au-delà, on lève une erreur plutôt que
-        de renvoyer un état non stabilisé."""
+        Each link flips at most once per direction (reported / released) per
+        round: on an acyclic chain, the fixed point is reached in
+        <= 2 x len(links) + 1 rounds. Beyond that, raise an error rather than
+        return a non-stabilized state."""
         for _ in range(2 * len(self.federation.links) + 2):
             self._recompute_all()
             alerts = self.federation.emit_alerts(self.ledgers, self.clock)
@@ -97,7 +97,7 @@ class Simulation:
             self.clock += timedelta(minutes=1)
             for alert in alerts:
                 self._deliver(alert)
-        raise RuntimeError("propagation non stabilisée")
+        raise RuntimeError("propagation did not stabilize")
 
     def _deliver(self, alert: Alert) -> bool:
         ok = self.federation.deliver(alert, self.ledgers)
@@ -106,7 +106,7 @@ class Simulation:
             recipient.audit.append(self.clock, "alert_received", "règle", {
                 **self._alert_details(alert),
                 "verified": ok,
-                "outcome": "appliquée" if ok else "rejetée : signature invalide",
+                "outcome": "applied" if ok else "rejected: invalid signature",
             })
         return ok
 
@@ -122,8 +122,8 @@ class Simulation:
         }
 
     def _declaring_ledgers(self, company: str) -> list[str]:
-        """L'entreprise compromise et ses partenaires directs (ceux qui ont
-        reçu ses données)."""
+        """The compromised company and its direct partners (those that
+        received its data)."""
         partners = {
             link.recipient
             for link in self.federation.links
@@ -132,9 +132,9 @@ class Simulation:
         return [company] + sorted(partners - {company})
 
     def declare_compromise(self, company: str, since: datetime) -> None:
-        """L'entreprise compromise se déclare elle-même et ses partenaires
-        directs la déclarent aussi. Redéclarer la même source garde l'heure
-        la plus ancienne."""
+        """The compromised company declares itself and its direct partners
+        declare it too. Re-declaring the same source keeps the earliest
+        time."""
         since = to_scenario_time(since)
         marks = self.audit_marks()
         for cid in self._declaring_ledgers(company):
@@ -149,8 +149,8 @@ class Simulation:
         self.timeline = self.collect_timeline(marks)
 
     def withdraw_compromise(self, company: str) -> None:
-        """Retire la déclaration (fausse alerte) partout où elle est
-        enregistrée, puis recalcule : les levées partent en cascade."""
+        """Withdraws the declaration (false alarm) everywhere it is
+        recorded, then recomputes: releases cascade downstream."""
         withdrawn = False
         marks = self.audit_marks()
         for cid, ledger in self.ledgers.items():
@@ -163,18 +163,18 @@ class Simulation:
                 "since": decl.since.isoformat(),
             })
         if not withdrawn:
-            raise ValueError(f"aucune déclaration active pour {company}")
+            raise ValueError(f"no active declaration for {company}")
         self.run()
         self.timeline = self.collect_timeline(marks)
 
     def remediate(self, record_id: str, action: str, actor: Actor = "humain") -> Record:
         if action not in REMEDIATION_ACTIONS:
-            raise ValueError(f"action inconnue: {action}")
+            raise ValueError(f"unknown action: {action}")
         record = self.find_record(record_id)
         if record is None:
             raise KeyError(record_id)
         if record.status != "quarantined":
-            raise ValueError("record non mis en quarantaine")
+            raise ValueError("record not quarantined")
         marks = self.audit_marks()
         record.status = "released"
         self.ledgers[record.company].audit.append(self.clock, "remediation", actor, {
@@ -182,12 +182,12 @@ class Simulation:
             "action": action,
             "taint_path": list(record.taint_path or []),
         })
-        self.run()  # recompute complet : libère les descendants qui ne
-        # dépendaient que de ce record, puis levées signées vers l'aval
+        self.run()  # full recompute: frees the descendants that only
+        # depended on this record, then signed releases downstream
         self.timeline = self.collect_timeline(marks)
         return record
 
-    # -- qualité : lot suspect, rappel, signalement vers l'amont -------------
+    # -- quality: suspect lot, recall, upstream report ---------------------
 
     def _lot_records(self, company: str, lot: str) -> list[str]:
         ledger = self.ledgers.get(company)
@@ -199,7 +199,7 @@ class Simulation:
         return ids
 
     def _ref_records(self, company: str, ref: str) -> list[str]:
-        """`ref` = id d'un record du registre, ou numéro de lot."""
+        """`ref` = id of a record in the ledger, or a lot number."""
         ledger = self.ledgers.get(company)
         if ledger is None:
             raise KeyError(company)
@@ -209,11 +209,11 @@ class Simulation:
 
     def declare_lot_suspect(self, company: str, lot: str, reason: str,
                             actor: Actor = "humain") -> list[str]:
-        """Isole un lot précis dans le registre de `company` : ce lot et tout
-        ce qui en dépend, chez elle puis chez ses clients (alertes signées).
-        Son fournisseur n'est pas déclaré compromis : ses autres lots, ses
-        factures et ses paiements continuent."""
-        ids = self._ref_records(company, lot)  # numéro de lot ou id de record
+        """Isolates a specific lot in `company`'s ledger: that lot and
+        everything depending on it, at the company and then at its customers
+        (signed alerts). Its supplier is not declared compromised: its other
+        lots, invoices and payments keep flowing."""
+        ids = self._ref_records(company, lot)  # lot number or record id
         marks = self.audit_marks()
         ledger = self.ledgers[company]
         ledger.mark_suspect(ids, reason)
@@ -226,12 +226,12 @@ class Simulation:
 
     def withdraw_lot_suspect(self, company: str, lot: str,
                              actor: Actor = "humain") -> list[str]:
-        """Lève la suspicion (analyse concluante) : les levées partent en cascade."""
-        ids = self._ref_records(company, lot)  # numéro de lot ou id de record
+        """Lifts the suspicion (conclusive analysis): releases cascade downstream."""
+        ids = self._ref_records(company, lot)  # lot number or record id
         ledger = self.ledgers[company]
         active = [rid for rid in ids if rid in ledger.suspects]
         if not active:
-            raise ValueError(f"le lot {lot} n'est pas déclaré suspect chez {company}")
+            raise ValueError(f"lot {lot} is not declared suspect at {company}")
         marks = self.audit_marks()
         ledger.clear_suspect(active)
         ledger.audit.append(self.clock, "lot_suspect_withdrawn", actor, {
@@ -242,11 +242,11 @@ class Simulation:
         return active
 
     def recall_analysis(self, company: str, ref: str) -> dict:
-        """Défaut constaté tard sur un produit (record ou lot) : remonte sa
-        généalogie dans le registre de `company` et liste les causes possibles
-        (lots consommés, données reçues de partenaires), avec pour chacune le
-        périmètre qu'isolerait sa mise en cause. Lecture seule : c'est
-        l'analyste qualité qui choisit la cause et déclare le lot suspect."""
+        """Defect found late on a product (record or lot): walks up its
+        genealogy in `company`'s ledger and lists the possible causes
+        (consumed lots, data received from partners), each with the scope
+        that blaming it would isolate. Read-only: the quality analyst picks
+        the cause and declares the lot suspect."""
         ledger = self.ledgers.get(company)
         if ledger is None:
             raise KeyError(company)
@@ -263,7 +263,7 @@ class Simulation:
             r = ledger.records[rid]
             received = r.token is not None and r.origin != company
             if lot_of(r) is None and not received:
-                continue  # étape interne sans lot : pas une cause à désigner
+                continue  # internal step without a lot: not a cause to point at
             scope = {rid} | nx.descendants(ledger.graph, rid)
             candidates.append({
                 "record": rid, "label": r.label, "kind": r.kind, "lot": lot_of(r),
@@ -282,10 +282,10 @@ class Simulation:
 
     def report_upstream(self, company: str, ref: str, reason: str,
                         actor: Actor = "humain") -> list[dict]:
-        """Signalement qualité signé vers l'origine des données reçues qui ont
-        servi à `ref` (lot ou record ; un signalement par partenaire). Ne met
-        rien en quarantaine chez eux : ils décident au cas par cas
-        (`decide_report`). Chaque maillon peut à son tour signaler plus haut."""
+        """Signed quality report to the origin of the received data used for
+        `ref` (lot or record; one report per partner). Quarantines nothing
+        at their end: they decide case by case (`decide_report`). Each link
+        in the chain can in turn report further upstream."""
         ledger = self.ledgers[company] if company in self.ledgers else None
         if ledger is None:
             raise KeyError(company)
@@ -300,7 +300,7 @@ class Simulation:
             if r.token is not None and r.origin != company:
                 by_origin.setdefault(r.origin, []).append(r.token)
         if not by_origin:
-            raise ValueError(f"{ref} ne dépend d'aucune donnée reçue d'un partenaire")
+            raise ValueError(f"{ref} does not depend on any data received from a partner")
         marks = self.audit_marks()
         out = []
         for origin, tokens in sorted(by_origin.items()):
@@ -324,18 +324,18 @@ class Simulation:
 
     def decide_report(self, company: str, report_id: str, decision: str,
                       actor: Actor = "humain") -> dict:
-        """Le fournisseur tranche : `confirm` déclare suspects ses records mis
-        en cause (puis alerte tous les clients qui en dépendent), `reject`
-        clôt le signalement sans rien bloquer."""
+        """The supplier decides: `confirm` declares its questioned records
+        suspect (then alerts every customer depending on them), `reject`
+        closes the report without blocking anything."""
         report = next((r for r in self.federation.reports if r.id == report_id), None)
         if report is None or report.recipient != company:
             raise KeyError(report_id)
         if report.status != "pending":
-            raise ValueError(f"signalement {report_id} déjà traité ({report.status})")
+            raise ValueError(f"report {report_id} already handled ({report.status})")
         if decision not in ("confirm", "reject"):
-            raise ValueError(f"décision inconnue: {decision}")
+            raise ValueError(f"unknown decision: {decision}")
         if decision == "confirm" and not report.verified:
-            raise ValueError("signature invalide : impossible de confirmer ce signalement")
+            raise ValueError("invalid signature: cannot confirm this report")
         marks = self.audit_marks()
         ledger = self.ledgers[company]
         report.status = "confirmed" if decision == "confirm" else "rejected"
@@ -345,7 +345,7 @@ class Simulation:
         })
         if decision == "confirm":
             ledger.mark_suspect(report.records,
-                                f"signalement {report.id} de {report.sender} : {report.reason}")
+                                f"report {report.id} from {report.sender}: {report.reason}")
             self.run()
         self.timeline = self.collect_timeline(marks)
         return self._report_view(report)
@@ -367,7 +367,7 @@ class Simulation:
             "status": report.status, "issued_at": report.issued_at.isoformat(),
         }
 
-    # -- contrôle des entrées en stock ------------------------------------
+    # -- inbound stock control --------------------------------------------
 
     def _referentiel(self, company: str):
         from .inbound import default_referentiels
@@ -377,7 +377,7 @@ class Simulation:
         return self.referentiels.get(company)
 
     def inbound_check(self, company: str, receipt_id: str) -> dict:
-        """Note de confiance d'une réception (lecture seule)."""
+        """Trust score of a goods receipt (read-only)."""
         from .inbound import evaluate_receipt
 
         ledger = self.ledgers.get(company)
@@ -398,8 +398,8 @@ class Simulation:
                 "inbound_rejected": "refuse"}.get(decided.get(receipt_id), "non_controle")
 
     def inbound_screen(self, company: str, receipt_id: str, actor: Actor = "règle") -> dict:
-        """Contrôle une réception ; sous le seuil, la met en attente (elle et
-        tout ce qui en dépend) jusqu'à la décision d'un humain."""
+        """Checks a goods receipt; below the threshold, puts it on hold (it and
+        everything depending on it) until a human decides."""
         marks = self.audit_marks()
         result = self._screen_one(company, receipt_id, actor)
         if result["hold"]:
@@ -412,7 +412,7 @@ class Simulation:
         result = self.inbound_check(company, receipt_id)
         if result["hold"] and result["status"] == "non_controle":
             ledger = self.ledgers[company]
-            if receipt_id not in ledger.suspects:  # ne pas écraser une suspicion déclarée par ailleurs
+            if receipt_id not in ledger.suspects:  # do not overwrite a suspicion declared elsewhere
                 ledger.mark_suspect([receipt_id],
                                     f"{INBOUND_HOLD_REASON} ({result['score']}/100)")
             ledger.audit.append(self.clock, "inbound_hold", actor, {
@@ -423,8 +423,8 @@ class Simulation:
         return result
 
     def inbound_screen_all(self, company: str, actor: Actor = "règle") -> list[dict]:
-        """Passe au crible toutes les réceptions de marchandise de `company`
-        qui proviennent d'un partenaire, dans l'ordre chronologique."""
+        """Screens all of `company`'s goods receipts that come from a
+        partner, in chronological order."""
         from .inbound import RECEIPT_KINDS
 
         ledger = self.ledgers.get(company)
@@ -446,53 +446,53 @@ class Simulation:
 
     def inbound_decide(self, company: str, receipt_id: str, decision: str,
                        reason: str = "", actor: Actor = "humain") -> dict:
-        """Décision humaine sur une réception mise en attente.
-        `accept` : l'attente est levée et la réception devient fiable
-        (`verified`) ; `reject` : elle reste isolée et un signalement qualité
-        signé part vers le fournisseur."""
+        """Human decision on a goods receipt put on hold.
+        `accept`: the hold is lifted and the receipt becomes trusted
+        (`verified`); `reject`: it stays isolated and a signed quality
+        report goes out to the supplier."""
         if decision not in ("accept", "reject"):
-            raise ValueError(f"décision inconnue: {decision}")
+            raise ValueError(f"unknown decision: {decision}")
         status = self.inbound_check(company, receipt_id)["status"]
         if status in ("accepte", "refuse"):
-            raise ValueError(f"réception {receipt_id} déjà traitée ({status})")
+            raise ValueError(f"receipt {receipt_id} already handled ({status})")
         ledger = self.ledgers[company]
         record = ledger.records[receipt_id]
         marks = self.audit_marks()
         out: dict = {"receipt": receipt_id, "decision": decision, "reports": []}
         if decision == "accept":
             if status != "en_attente":
-                raise ValueError(f"réception {receipt_id} non mise en attente : rien à accepter "
-                                 "(la contrôler d'abord)")
+                raise ValueError(f"receipt {receipt_id} is not on hold: nothing to accept "
+                                 "(check it first)")
             other = ledger.suspects.get(receipt_id)
             if other is not None and not other.startswith(INBOUND_HOLD_REASON):
-                raise ValueError(f"réception {receipt_id} déclarée suspecte par ailleurs "
-                                 f"({other}) : lever cette suspicion d'abord")
+                raise ValueError(f"receipt {receipt_id} declared suspect elsewhere "
+                                 f"({other}): lift that suspicion first")
             ledger.clear_suspect([receipt_id])
             record.verified = True
             ledger.audit.append(self.clock, "inbound_accepted", actor, {
-                "receipt": receipt_id, "reason": reason or "contrôle humain concluant",
+                "receipt": receipt_id, "reason": reason or "conclusive human check",
             })
             self.run()
         else:
             if receipt_id not in ledger.suspects:
-                ledger.mark_suspect([receipt_id], "réception refusée")
+                ledger.mark_suspect([receipt_id], "receipt rejected")
             ledger.audit.append(self.clock, "inbound_rejected", actor, {
-                "receipt": receipt_id, "reason": reason or "réception refusée",
+                "receipt": receipt_id, "reason": reason or "receipt rejected",
             })
             self.run()
             try:
                 out["reports"] = self.report_upstream(
-                    company, receipt_id, reason or "réception refusée au contrôle d'entrée", actor)
+                    company, receipt_id, reason or "receipt rejected at inbound check", actor)
             except ValueError:
                 out["reports"] = []
         self.timeline = self.collect_timeline(marks)
         out["status"] = self._inbound_status(company, receipt_id)
         return out
 
-    # -- timeline (rejeu pas à pas) ----------------------------------------
+    # -- timeline (step-by-step replay) ------------------------------------
 
     def audit_marks(self) -> dict[str, int]:
-        """Position de chaque journal d'audit, pour mesurer une action."""
+        """Position of each audit log, to measure an action."""
         return {cid: len(led.audit) for cid, led in self.ledgers.items()}
 
     def _record(self, rid: str) -> Record | None:
@@ -503,13 +503,13 @@ class Simulation:
         return payment_amount(r) if r is not None else 0
 
     def collect_timeline(self, marks: dict[str, int] | None = None) -> list[dict]:
-        """Convertit les entrées d'audit ajoutées depuis `marks` (toutes si
-        None) en étapes ordonnées de rejeu, avec compteurs d'impact cumulés.
+        """Converts the audit entries added since `marks` (all if None) into
+        ordered replay steps, with cumulative impact counters.
 
-        Ordre : ts simulé, puis entreprise, puis index — et, à instant et
-        registre égaux, les contaminations par longueur du chemin (un parent
-        précède toujours son enfant). Ne change aucun résultat du moteur :
-        c'est une lecture du journal."""
+        Order: simulated ts, then company, then index; and, for the same
+        instant and ledger, quarantines by path length (a parent always
+        precedes its child). Changes no engine result: it is a read of the
+        log."""
         new: list[tuple[str, str, dict]] = []
         for cid, ledger in self.ledgers.items():
             start = (marks or {}).get(cid, 0)
@@ -517,9 +517,9 @@ class Simulation:
                 new.append((entry["ts"], cid, entry))
         order = {cid: i for i, cid in enumerate(self.ledgers)}
         new.sort(key=lambda t: (t[0], order[t[1]], t[2]["index"]))
-        # Causalité intra-groupe : dans un même (ts, registre), les entrées
-        # "quarantine" se trient par longueur du chemin (parent avant enfant)
-        # en conservant les positions des autres événements.
+        # Intra-group causality: within the same (ts, ledger), "quarantine"
+        # entries are sorted by path length (parent before child) while
+        # keeping the positions of the other events.
         ordered: list[tuple[str, str, dict]] = []
         i = 0
         while i < len(new):
@@ -539,7 +539,7 @@ class Simulation:
             i = j
         new = ordered
 
-        # Compteurs au début du rejeu : état courant ± ce que l'action a changé.
+        # Counters at the start of the replay: current state +/- what the action changed.
         current_q = {
             r.id
             for led in self.ledgers.values()
@@ -637,57 +637,57 @@ class Simulation:
         match stype:
             case "declaration":
                 since = d.get("effective_since", d.get("since", ""))[:16].replace("T", " ")
-                return f"{d.get('source')} déclarée compromise depuis {since} — registre {cid}."
+                return f"{d.get('source')} declared compromised since {since} (ledger {cid})."
             case "withdrawal":
-                return f"Déclaration retirée pour {d.get('source')} — registre {cid}."
+                return f"Declaration withdrawn for {d.get('source')} (ledger {cid})."
             case "seed":
-                return f"Semence de contamination : « {label} » ({cid})."
+                return f"Taint seed: \"{label}\" ({cid})."
             case "quarantine":
                 p = self._record(parent)
-                via = f" via « {p.label} »" if p else ""
-                return f"« {label} » contaminée{via} ({cid})."
+                via = f" via \"{p.label}\"" if p else ""
+                return f"\"{label}\" tainted{via} ({cid})."
             case "gate_blocked":
                 amount = record.payload.get("amount") if record else None
                 m = f" ({amount} €)" if amount else ""
-                return f"Action irréversible bloquée : « {label} »{m} ({cid})."
+                return f"Irreversible action blocked: \"{label}\"{m} ({cid})."
             case "release":
-                return f"« {label} » libérée ({cid})."
+                return f"\"{label}\" released ({cid})."
             case "remediation":
-                return f"Remédiation « {d.get('action')} » sur « {label} » ({cid})."
+                return f"Remediation \"{d.get('action')}\" on \"{label}\" ({cid})."
             case "alert_sent":
-                kind = "levée" if d.get("type") == "release" else "contamination"
-                return (f"Alerte signée {kind} émise : {d.get('from')} → {d.get('to')} "
-                        f"({len(d.get('tokens', []))} jeton(s)).")
+                kind = "release" if d.get("type") == "release" else "taint"
+                return (f"Signed {kind} alert sent: {d.get('from')} → {d.get('to')} "
+                        f"({len(d.get('tokens', []))} token(s)).")
             case "alert_received":
                 ok = d.get("verified")
-                return (f"Alerte reçue chez {d.get('to')} — signature "
-                        f"{'vérifiée' if ok else 'REJETÉE'}.")
+                return (f"Alert received at {d.get('to')}: signature "
+                        f"{'verified' if ok else 'REJECTED'}.")
             case "inbound_hold":
-                return (f"Réception mise en attente chez {cid} : note {d.get('score')}/100 "
-                        f"({d.get('band')}), en attente d'une décision humaine.")
+                return (f"Goods receipt put on hold at {cid}: score {d.get('score')}/100 "
+                        f"({d.get('band')}), awaiting a human decision.")
             case "inbound_accepted":
-                return f"Réception acceptée après contrôle ({cid}) : le lot devient fiable."
+                return f"Goods receipt accepted after check ({cid}): the lot becomes trusted."
             case "inbound_rejected":
-                return f"Réception refusée ({cid}) : le lot reste isolé."
+                return f"Goods receipt rejected ({cid}): the lot stays isolated."
             case "lot_suspect":
-                return (f"Lot {d.get('lot')} déclaré suspect chez {cid} : "
-                        f"{d.get('reason')} — le fournisseur n'est pas mis en cause.")
+                return (f"Lot {d.get('lot')} declared suspect at {cid}: "
+                        f"{d.get('reason')}. The supplier is not blamed.")
             case "lot_suspect_withdrawn":
-                return f"Suspicion levée sur le lot {d.get('lot')} ({cid})."
+                return f"Suspicion lifted on lot {d.get('lot')} ({cid})."
             case "report_sent":
-                return (f"Signalement qualité signé {d.get('id')} : {d.get('from')} → "
-                        f"{d.get('to')} ({len(d.get('tokens', []))} jeton(s)).")
+                return (f"Signed quality report {d.get('id')}: {d.get('from')} → "
+                        f"{d.get('to')} ({len(d.get('tokens', []))} token(s)).")
             case "report_received":
                 ok = d.get("verified")
-                return (f"Signalement {d.get('id')} reçu chez {d.get('to')} — signature "
-                        f"{'vérifiée' if ok else 'REJETÉE'}, en attente de décision.")
+                return (f"Report {d.get('id')} received at {d.get('to')}: signature "
+                        f"{'verified' if ok else 'REJECTED'}, awaiting decision.")
             case "report_decided":
-                verdict = "confirmé" if d.get("decision") == "confirm" else "rejeté"
-                return f"Signalement {d.get('id')} {verdict} par {cid}."
+                verdict = "confirmed" if d.get("decision") == "confirm" else "rejected"
+                return f"Report {d.get('id')} {verdict} by {cid}."
             case _:
                 return f"{stype} ({cid})."
 
-    # -- accès ------------------------------------------------------------
+    # -- access -----------------------------------------------------------
 
     def find_record(self, record_id: str) -> Record | None:
         for ledger in self.ledgers.values():
@@ -728,7 +728,7 @@ class Simulation:
             "journals": journals,
         }
 
-    # -- état sérialisable ------------------------------------------------
+    # -- serializable state -----------------------------------------------
 
     def state(self) -> dict:
         records = [

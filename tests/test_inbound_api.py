@@ -1,4 +1,4 @@
-"""API du contrôle des entrées en stock, et ancrage sur l'EVM en mémoire."""
+"""Inbound inspection API, and anchoring on the in-memory EVM."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -30,7 +30,7 @@ def test_screen_one_then_reject_reports_to_supplier():
     state = client.get("/api/state").json()
     assert state["counters"]["global"]["quarantined"] > 0
     r = client.post("/api/inbound/m-gr-X/decision",
-                    json={"company": "fabricant", "decision": "reject", "reason": "commande inconnue"})
+                    json={"company": "fabricant", "decision": "reject", "reason": "unknown purchase order"})
     assert r.status_code == 200
     out = r.json()
     assert out["status"] == "refuse" and out["reports"][0]["to"] == "fournisseur"
@@ -50,8 +50,8 @@ def test_screen_all_and_accept():
 
 
 def test_errors():
-    assert client.get("/api/inbound/inconnu/check", params={"company": "fabricant"}).status_code == 404
-    assert client.get("/api/inbound/m-gr-01/check", params={"company": "inconnue"}).status_code == 404
+    assert client.get("/api/inbound/unknown/check", params={"company": "fabricant"}).status_code == 404
+    assert client.get("/api/inbound/m-gr-01/check", params={"company": "unknown"}).status_code == 404
     assert client.get("/api/inbound/m-lot-01/check", params={"company": "fabricant"}).status_code == 400
     assert client.post("/api/inbound/m-gr-X/decision",
                        json={"company": "fabricant", "decision": "bof"}).status_code == 400
@@ -66,7 +66,7 @@ def test_anchoring_in_tester_mode(monkeypatch):
 
     chain = get_chain_client(ChainConfig(mode="tester", mnemonic=TEST_MNEMONIC))
     if not chain.status()["connected"]:
-        pytest.skip("mode tester indisponible")
+        pytest.skip("tester mode unavailable")
     anchorer = Anchorer(chain)
     monkeypatch.setattr(api_mod, "chain", chain)
     monkeypatch.setattr(api_mod, "anchorer", anchorer)

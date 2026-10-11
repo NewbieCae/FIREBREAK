@@ -1,75 +1,75 @@
-# Tâche 01 — Contrat `FirebreakRegistry` + compilation + tests
+# Task 01 — `FirebreakRegistry` contract + compilation + tests
 
-Lis d'abord `docs/avalanche/README.md` et `docs/avalanche/tasks/RULES.md`.
+First read `docs/avalanche/README.md` and `docs/avalanche/tasks/RULES.md`.
 
-## Objectif
+## Goal
 
-Un seul contrat Solidity, petit et lisible, qui sert de témoin horodaté pour Firebreak. Compilé depuis Python, testé sur une EVM en mémoire. Aucun accès réseau.
+A single Solidity contract, small and readable, that serves as a timestamped witness for Firebreak. Compiled from Python, tested on an in-memory EVM. No network access.
 
-## Dépendances à ajouter (groupe dev)
+## Dependencies to add (dev group)
 
-`uv add --dev py-solc-x "eth-tester[py-evm]"` et `uv add web3` — versions stables publiées depuis au moins 7 jours. `web3` sert aussi aux tâches 02 et 03.
+`uv add --dev py-solc-x "eth-tester[py-evm]"` and `uv add web3` — stable versions published at least 7 days ago. `web3` is also used by tasks 02 and 03.
 
-## Le contrat — `contracts/FirebreakRegistry.sol`
+## The contract — `contracts/FirebreakRegistry.sol`
 
-- `pragma solidity 0.8.24;`, compilé avec **`evmVersion: "paris"`** (pas de `PUSH0`, compatible avec toute L1 Subnet-EVM). Si le MCP `avalanche-docs` est disponible, vérifie la version d'EVM supportée par Subnet-EVM et note-la dans ton rapport.
-- Pas de dépendance OpenZeppelin : tout tient en ~150 lignes.
+- `pragma solidity 0.8.24;`, compiled with **`evmVersion: "paris"`** (no `PUSH0`, compatible with any Subnet-EVM L1). If the `avalanche-docs` MCP is available, check the EVM version supported by Subnet-EVM and note it in your report.
+- No OpenZeppelin dependency: everything fits in ~150 lines.
 
-### État
+### State
 
 ```solidity
 address public admin;
 struct Member { bytes32 companyId; bytes32 ed25519PubKey; bool active; }
-mapping(address => Member) public members;            // compte EVM → entreprise
-mapping(bytes32 => address) public accountOf;         // companyId → compte EVM
-mapping(bytes32 => bytes32) public pubKeyOf;          // companyId → clé publique Ed25519 (32 octets)
+mapping(address => Member) public members;            // EVM account → company
+mapping(bytes32 => address) public accountOf;         // companyId → EVM account
+mapping(bytes32 => bytes32) public pubKeyOf;          // companyId → Ed25519 public key (32 bytes)
 
 struct AlertRecord { bytes32 fromCompany; bytes32 toCompany; uint8 alertType; uint64 anchoredAt; uint64 ackAt; }
-mapping(bytes32 => AlertRecord) public alerts;        // alertHash → enregistrement
+mapping(bytes32 => AlertRecord) public alerts;        // alertHash → record
 
 struct AuditAnchor { bytes32 head; uint32 entries; uint64 anchoredAt; }
-mapping(bytes32 => mapping(bytes32 => AuditAnchor)) public latestAudit; // runId → companyId → dernier ancrage
+mapping(bytes32 => mapping(bytes32 => AuditAnchor)) public latestAudit; // runId → companyId → latest anchor
 ```
 
-### Fonctions
+### Functions
 
-| Fonction | Qui | Effet |
+| Function | Who | Effect |
 |---|---|---|
 | `constructor()` | — | `admin = msg.sender` |
-| `registerMember(address account, bytes32 companyId, bytes32 pubKey)` | admin | crée ou met à jour un membre actif ; refuse un `companyId` déjà lié à un autre compte |
+| `registerMember(address account, bytes32 companyId, bytes32 pubKey)` | admin | creates or updates an active member; rejects a `companyId` already linked to another account |
 | `deactivateMember(address account)` | admin | `active = false` |
-| `declareIncident(bytes32 runId, bytes32 sourceCompany, uint64 since, bytes32 declarationHash)` | membre actif | event `IncidentDeclared(runId, declarer, sourceCompany, since, declarationHash, block.timestamp)` |
-| `withdrawIncident(bytes32 runId, bytes32 sourceCompany, bytes32 declarationHash)` | membre actif | event `IncidentWithdrawn(...)` |
-| `anchorAlert(bytes32 runId, bytes32 alertHash, bytes32 toCompany, uint8 alertType)` | membre actif = émetteur | refuse un `alertHash` déjà ancré ; `alertType` 0 = taint, 1 = release ; stocke ; event `AlertAnchored(runId, alertHash, from, to, alertType, block.timestamp)` |
-| `acknowledgeAlert(bytes32 alertHash)` | membre actif = destinataire | refuse si inconnu ou déjà acquitté ; event `AlertAcknowledged(alertHash, to, block.timestamp)` |
-| `anchorAudit(bytes32 runId, bytes32 head, uint32 entries)` | membre actif | refuse si `entries` < dernier ancrage du même run (un journal ne raccourcit pas) ; stocke ; event `AuditAnchored(runId, company, head, entries, block.timestamp)` |
+| `declareIncident(bytes32 runId, bytes32 sourceCompany, uint64 since, bytes32 declarationHash)` | active member | event `IncidentDeclared(runId, declarer, sourceCompany, since, declarationHash, block.timestamp)` |
+| `withdrawIncident(bytes32 runId, bytes32 sourceCompany, bytes32 declarationHash)` | active member | event `IncidentWithdrawn(...)` |
+| `anchorAlert(bytes32 runId, bytes32 alertHash, bytes32 toCompany, uint8 alertType)` | active member = sender | rejects an already anchored `alertHash`; `alertType` 0 = taint, 1 = release; stores; event `AlertAnchored(runId, alertHash, from, to, alertType, block.timestamp)` |
+| `acknowledgeAlert(bytes32 alertHash)` | active member = recipient | rejects if unknown or already acknowledged; event `AlertAcknowledged(alertHash, to, block.timestamp)` |
+| `anchorAudit(bytes32 runId, bytes32 head, uint32 entries)` | active member | rejects if `entries` < last anchor of the same run (a log doesn't get shorter); stores; event `AuditAnchored(runId, company, head, entries, block.timestamp)` |
 | `transferAdmin(address)` | admin | — |
 
-- `runId` : identifiant d'une partie de démo (un `reset` = un nouveau run), pour que plusieurs démos ne se mélangent pas.
-- Erreurs Solidity personnalisées (`error NotAdmin(); error NotMember(); …`) plutôt que des chaînes.
-- Tous les events ont leurs champs clés `indexed` (runId, companyId, alertHash).
+- `runId`: identifier of a demo session (one `reset` = a new run), so that multiple demos don't get mixed up.
+- Custom Solidity errors (`error NotAdmin(); error NotMember(); …`) rather than strings.
+- All events have their key fields `indexed` (runId, companyId, alertHash).
 
 ## Compilation — `scripts/chain_compile.py`
 
-- Installe la version de solc demandée via `py-solc-x` si absente, compile avec optimiseur (200 runs) et `evmVersion: "paris"`.
-- Écrit `contracts/build/FirebreakRegistry.json` : `{"contractName", "abi", "bytecode", "solcVersion", "evmVersion", "sourceSha256"}`. Ce fichier est **versionné** (le serveur n'aura pas besoin de solc).
-- Idempotent : relancer sans changement de source ne modifie pas le fichier.
+- Installs the requested solc version via `py-solc-x` if missing, compiles with the optimizer (200 runs) and `evmVersion: "paris"`.
+- Writes `contracts/build/FirebreakRegistry.json`: `{"contractName", "abi", "bytecode", "solcVersion", "evmVersion", "sourceSha256"}`. This file is **committed** (the server won't need solc).
+- Idempotent: rerunning without a source change doesn't modify the file.
 
 ## Tests — `tests/test_chain_contract.py`
 
-Sur `EthereumTesterProvider` (web3 + eth-tester), en chargeant `contracts/build/FirebreakRegistry.json`. Au minimum :
+On `EthereumTesterProvider` (web3 + eth-tester), loading `contracts/build/FirebreakRegistry.json`. At minimum:
 
-- admin enregistre 4 membres ; un non-admin ne peut pas enregistrer ;
-- un non-membre ne peut ni déclarer, ni ancrer (c'est l'argument « personne d'extérieur ne déclare un faux incident ») ;
-- `anchorAlert` par l'émetteur → `alerts(hash)` rempli, event émis ; ré-ancrer le même hash → revert ;
-- `acknowledgeAlert` seulement par le destinataire ; double acquittement → revert ;
-- `anchorAudit` : stocke, refuse un nombre d'entrées en baisse, accepte un nouveau `runId` qui repart de zéro ;
-- membre désactivé → plus aucune écriture ;
-- un test qui vérifie que `contracts/build/…json` correspond bien à la source actuelle (`sourceSha256`), pour qu'on n'oublie pas de recompiler.
+- admin registers 4 members; a non-admin cannot register;
+- a non-member can neither declare nor anchor (that's the "no outsider declares a fake incident" argument);
+- `anchorAlert` by the sender → `alerts(hash)` filled, event emitted; re-anchoring the same hash → revert;
+- `acknowledgeAlert` only by the recipient; double acknowledgment → revert;
+- `anchorAudit`: stores, rejects a decreasing number of entries, accepts a new `runId` starting from zero;
+- deactivated member → no more writes;
+- a test that checks that `contracts/build/…json` does match the current source (`sourceSha256`), so we don't forget to recompile.
 
-## Fini quand
+## Done when
 
-- `uv run python scripts/chain_compile.py` produit le JSON.
-- `uv run pytest -q` vert (tous les tests du dépôt).
-- Commit `chain: contrat FirebreakRegistry, compilation et tests` sur `mika/avalanche-l1`.
-- Rapport : signatures exactes des fonctions et events (la tâche 03 en dépend), version de solc, taille du bytecode.
+- `uv run python scripts/chain_compile.py` produces the JSON.
+- `uv run pytest -q` green (all tests in the repo).
+- Commit `chain: contrat FirebreakRegistry, compilation et tests` on `mika/avalanche-l1`.
+- Report: exact signatures of the functions and events (task 03 depends on them), solc version, bytecode size.

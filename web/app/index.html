@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="darkreader-lock">
   <meta name="color-scheme" content="dark">
-  <title>FIREBREAK — Pare-feu des supply chains</title>
-  <meta name="description" content="Salle de contrôle d'incident : FIREBREAK bloque uniquement les opérations contaminées d'une chaîne d'approvisionnement.">
+  <title>FIREBREAK — Supply chain firewall</title>
+  <meta name="description" content="Incident control room: FIREBREAK blocks only the contaminated operations of a supply chain.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preload" href="fonts/geist-variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/geist-mono-variable.woff2" as="font" type="font/woff2" crossorigin>
@@ -21,24 +21,24 @@
       <div class="brand">
         <span id="logo"></span>
         <span class="name">firebreak</span>
-        <span class="tag">Pare-feu des supply chains</span>
+        <span class="tag">Supply chain firewall</span>
       </div>
       <div class="spacer"></div>
-      <nav class="top-actions" aria-label="Commandes">
+      <nav class="top-actions" aria-label="Controls">
         <div class="menu-wrap">
           <button class="btn menu-btn" id="viewBtn" aria-haspopup="listbox" aria-expanded="false"></button>
-          <div class="menu glass" id="viewMenu" role="listbox" aria-label="Voir comme"></div>
+          <div class="menu glass" id="viewMenu" role="listbox" aria-label="View as"></div>
         </div>
         <div class="menu-wrap">
           <button class="btn menu-btn" id="scenarioBtn" aria-haspopup="listbox" aria-expanded="false"></button>
-          <div class="menu glass" id="scenarioMenu" role="listbox" aria-label="Scénario"></div>
+          <div class="menu glass" id="scenarioMenu" role="listbox" aria-label="Scenario"></div>
         </div>
-        <span class="chip ai" id="aiChip" title="Source de l'explication : l'IA explique, le graphe décide">
-          <span class="led"></span><span id="aiLabel">IA : simulée</span>
+        <span class="chip ai" id="aiChip" title="Explanation source: the AI explains, the graph decides">
+          <span class="led"></span><span id="aiLabel">AI: simulated</span>
         </span>
-        <button class="chip chain" id="chainChip" hidden title="Preuves ancrées sur Avalanche"><span class="led"></span><span id="chainLabel">Avalanche</span></button>
-        <button class="btn" id="importBtn" title="Lire un document fournisseur">ICON:upload<span>Importer</span></button>
-        <button class="btn" id="resetBtn" title="Revenir au début du scénario">ICON:reset<span>Réinitialiser</span></button>
+        <button class="chip chain" id="chainChip" hidden title="Proofs anchored on Avalanche"><span class="led"></span><span id="chainLabel">Avalanche</span></button>
+        <button class="btn" id="importBtn" title="Read a supplier document">ICON:upload<span>Import</span></button>
+        <button class="btn" id="resetBtn" title="Back to the start of the scenario">ICON:reset<span>Reset</span></button>
       </nav>
       <div class="progress" id="progress" aria-hidden="true"><span></span></div>
     </header>
@@ -46,28 +46,28 @@
     <main class="stage">
       <section class="kpis glass" aria-label="Impact">
         <div class="kpi blocked" id="kpiBlocked">
-          <div class="k-label">ICON:quarantine<span>Opérations bloquées</span></div>
+          <div class="k-label">ICON:quarantine<span>Blocked operations</span></div>
           <div class="k-value"><span data-v>0</span></div>
-          <div class="k-sub"><span>sur <b data-total>0</b></span> · <span class="ok"><b data-flow>0</b> continuent</span></div>
+          <div class="k-sub"><span>of <b data-total>0</b></span> · <span class="ok"><b data-flow>0</b> still flowing</span></div>
         </div>
         <div class="kpi fraud" id="kpiFraud">
-          <div class="k-label">ICON:payment<span>Paiement frauduleux bloqué</span></div>
+          <div class="k-label">ICON:payment<span>Fraudulent payment blocked</span></div>
           <div class="k-value"><span data-v>0</span><span class="unit">€</span></div>
-          <div class="k-sub"><b data-gates>0</b> <span data-gates-l>action irréversible bloquée</span></div>
+          <div class="k-sub"><b data-gates>0</b> <span data-gates-l>irreversible action blocked</span></div>
         </div>
         <div class="kpi flowing" id="kpiFlowing">
-          <div class="k-label">ICON:release<span>Paiements qui continuent</span></div>
+          <div class="k-label">ICON:release<span>Payments still flowing</span></div>
           <div class="k-value"><span data-v>0</span><span class="unit">€</span></div>
-          <div class="k-sub" data-scope>sur toute la chaîne</div>
+          <div class="k-sub" data-scope>across the whole chain</div>
         </div>
         <div class="scenario">
-          <div class="s-state" id="sceneState"><span class="led"></span><span>La chaîne tourne</span></div>
-          <div class="s-title" id="scTitle">Chargement…</div>
+          <div class="s-state" id="sceneState"><span class="led"></span><span>The chain is running</span></div>
+          <div class="s-title" id="scTitle">Loading…</div>
           <div class="s-desc surface" id="scDesc"><span class="sk line"></span></div>
         </div>
       </section>
 
-      <section class="map" id="map" aria-label="Carte de la chaîne d'approvisionnement">
+      <section class="map" id="map" aria-label="Supply chain map">
         <canvas class="flows" id="flows"></canvas>
         <div class="companies" id="companies"><article class="company glass"><span class="sk line" style="width:60%;height:16px"></span><span class="sk line" style="width:40%"></span><span class="sk block" style="margin-top:12px"></span><span class="sk block" style="margin-top:10px"></span></article><article class="company glass"><span class="sk line" style="width:60%;height:16px"></span><span class="sk line" style="width:40%"></span><span class="sk block" style="margin-top:12px"></span><span class="sk block" style="margin-top:10px"></span></article><article class="company glass"><span class="sk line" style="width:60%;height:16px"></span><span class="sk line" style="width:40%"></span><span class="sk block" style="margin-top:12px"></span><span class="sk block" style="margin-top:10px"></span></article><article class="company glass"><span class="sk line" style="width:60%;height:16px"></span><span class="sk line" style="width:40%"></span><span class="sk block" style="margin-top:12px"></span><span class="sk block" style="margin-top:10px"></span></article></div>
         <svg class="fx" id="fx" aria-hidden="true"></svg>
@@ -75,25 +75,25 @@
 
       <div class="actionbar" id="actionbar"></div>
 
-      <aside class="feed glass" aria-label="Fil des événements">
+      <aside class="feed glass" aria-label="Event feed">
         <div class="feed-head">
-          <h2>Fil des événements</h2>
+          <h2>Event feed</h2>
           <span class="count" id="feedCount"></span>
-          <button class="btn ghost" id="replayBtn" disabled title="Rejouer la dernière séquence">ICON:replay<span>Rejouer</span></button>
+          <button class="btn ghost" id="replayBtn" disabled title="Replay the last sequence">ICON:replay<span>Replay</span></button>
         </div>
         <div class="feed-list" id="feed" role="log" aria-live="polite"></div>
         <div class="feed-foot">
-          <div class="audit-row">ICON:audit<span>Journaux d'audit chaînés par hash</span>
-            <button class="btn" id="verifyBtn">ICON:verified<span>Vérifier</span></button>
+          <div class="audit-row">ICON:audit<span>Hash-chained audit logs</span>
+            <button class="btn" id="verifyBtn">ICON:verified<span>Verify</span></button>
           </div>
         </div>
       </aside>
     </main>
   </div>
 
-  <div class="versus" id="versus" role="dialog" aria-modal="true" aria-label="Avec ou sans Firebreak"></div>
+  <div class="versus" id="versus" role="dialog" aria-modal="true" aria-label="With or without Firebreak"></div>
   <div class="scrim" id="scrim"></div>
-  <aside class="drawer glass" id="drawer" role="dialog" aria-modal="true" aria-label="Détail" tabindex="-1" inert></aside>
+  <aside class="drawer glass" id="drawer" role="dialog" aria-modal="true" aria-label="Details" tabindex="-1" inert></aside>
   <div class="toasts" id="toasts" aria-live="assertive"></div>
   <div class="tip" id="tip" role="tooltip"></div>
 </body>

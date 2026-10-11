@@ -1,8 +1,8 @@
-"""Déploie FirebreakRegistry sur la L1 et enregistre les 4 entreprises.
+"""Deploy FirebreakRegistry on the L1 and register the 4 companies.
 
-Lit `.env.local` (RPC, chainId, mnémonique, FIREBREAK_KEY_SEED). N'affiche ni
-le mnémonique ni aucune clé privée. Écrit contracts/deployments/l1.json
-(adresses publiques uniquement, fichier versionné).
+Reads `.env.local` (RPC, chainId, mnemonic, FIREBREAK_KEY_SEED). Never prints
+the mnemonic or any private key. Writes contracts/deployments/l1.json
+(public addresses only, committed file).
 
     uv run python scripts/chain_deploy.py [--reuse] [--skip-allowlist] [--min-balance 0.5]
 """
@@ -35,12 +35,12 @@ class DeployError(RuntimeError):
 
 
 def ed25519_public_keys(require_seed: bool = True) -> dict[str, bytes]:
-    """Clés publiques de la fédération, pour le même FIREBREAK_KEY_SEED que le serveur."""
+    """Federation public keys, for the same FIREBREAK_KEY_SEED as the server."""
     if require_seed and not os.environ.get("FIREBREAK_KEY_SEED"):
         raise DeployError(
-            "FIREBREAK_KEY_SEED n'est pas défini dans .env.local : sans lui, les clés Ed25519 "
-            "changent à chaque lancement du serveur et ne correspondraient plus à celles "
-            "enregistrées on-chain (voir docs/avalanche/tasks/00-setup.md)."
+            "FIREBREAK_KEY_SEED is not set in .env.local: without it, the Ed25519 keys "
+            "change on every server start and would no longer match the ones "
+            "registered on-chain (see docs/avalanche/tasks/00-setup.md)."
         )
     from firebreak.federation import Federation
 
@@ -58,19 +58,19 @@ def setup_allowlist(w3, admin, accounts, log) -> None:
 
     deployer_role = allowlist_role(w3, DEPLOYER_ALLOWLIST, admin.address)
     if deployer_role == 0:
-        raise DeployError("l'admin n'est pas autorisé à déployer (ContractDeployerAllowList)")
+        raise DeployError("the admin is not allowed to deploy (ContractDeployerAllowList)")
     role = allowlist_role(w3, TX_ALLOWLIST, admin.address)
     if role is None:
-        log("· TxAllowList non activé sur cette L1 : étape sautée")
+        log("· TxAllowList not enabled on this L1: step skipped")
         return
     if role < 2:
-        raise DeployError("TxAllowList activé mais l'admin n'en est pas admin/manager")
+        raise DeployError("TxAllowList enabled but the admin is not its admin/manager")
     allow = w3.eth.contract(address=w3.to_checksum_address(TX_ALLOWLIST), abi=ALLOWLIST_ABI)
     for cid in COMPANIES:
         addr = accounts[cid].address
         if allowlist_role(w3, TX_ALLOWLIST, addr) == 0:
             transact(w3, admin, allow.functions.setEnabled(addr))
-            log(f"✓ TxAllowList : {cid} activé")
+            log(f"✓ TxAllowList: {cid} enabled")
 
 
 def deploy(
@@ -95,18 +95,18 @@ def deploy(
 
     chain_id = w3.eth.chain_id
     if expected_chain_id is not None and chain_id != expected_chain_id:
-        raise DeployError(f"chainId attendu {expected_chain_id}, la L1 répond {chain_id}")
+        raise DeployError(f"expected chainId {expected_chain_id}, the L1 answers {chain_id}")
     if chain_id in MAINNET_CHAIN_IDS:
-        raise DeployError(f"chainId {chain_id} = réseau principal : refusé")
+        raise DeployError(f"chainId {chain_id} = mainnet: refused")
     admin = accounts["admin"]
     if w3.eth.get_balance(admin.address) == 0:
-        raise DeployError(f"le compte admin {admin.address} n'a aucun jeton")
+        raise DeployError(f"the admin account {admin.address} has no tokens")
 
     if not skip_allowlist:
         setup_allowlist(w3, admin, accounts, log)
     if min_balance_wei:
         for cid in fund_accounts(w3, admin, accounts, min_balance_wei):
-            log(f"✓ {cid} financé")
+            log(f"✓ {cid} funded")
 
     contract = None
     deploy_block = deploy_tx = None
@@ -115,16 +115,16 @@ def deploy(
         if previous.get("chainId") == chain_id and w3.eth.get_code(w3.to_checksum_address(previous["address"])):
             contract = registry_contract(w3, previous["address"])
             deploy_block, deploy_tx = previous.get("deployBlock"), previous.get("deployTx")
-            log(f"· contrat existant réutilisé : {contract.address}")
+            log(f"· reusing existing contract: {contract.address}")
     if contract is None:
         contract = deploy_registry(w3, admin)
         receipt = contract.deploy_receipt
         deploy_block = receipt["blockNumber"]
         deploy_tx = "0x" + bytes(receipt["transactionHash"]).hex().removeprefix("0x")
-        log(f"✓ FirebreakRegistry déployé : {contract.address} (bloc {deploy_block})")
+        log(f"✓ FirebreakRegistry deployed: {contract.address} (block {deploy_block})")
 
     register_members(w3, contract, admin, accounts, pubkeys)
-    log("✓ membres enregistrés : " + ", ".join(COMPANIES))
+    log("✓ members registered: " + ", ".join(COMPANIES))
 
     artifact = load_artifact()
     deployment = {
@@ -147,10 +147,10 @@ def deploy(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--reuse", action="store_true", help="réutiliser le contrat déjà déployé s'il est valide")
+    parser.add_argument("--reuse", action="store_true", help="reuse the already deployed contract if it is valid")
     parser.add_argument("--skip-allowlist", action="store_true")
     parser.add_argument("--min-balance", type=float, default=0.5,
-                        help="solde minimal (jeton natif) des comptes d'entreprise, complété depuis l'admin")
+                        help="minimum balance (native token) of the company accounts, topped up from the admin")
     args = parser.parse_args(argv)
 
     cfg = load_chain_config()
@@ -160,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
         ("FIREBREAK_CHAIN_MNEMONIC", cfg.mnemonic),
     ) if not value]
     if missing:
-        print("✗ variables manquantes dans .env.local : " + ", ".join(missing))
+        print("✗ missing variables in .env.local: " + ", ".join(missing))
         return 1
 
     from firebreak.chain.accounts import derive_accounts
@@ -183,11 +183,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"✗ {exc}")
         return 1
 
-    print(f"→ {cfg.deployment_path.relative_to(ROOT)} écrit")
-    for label, link in (("contrat", explorer_address_link(cfg, dep["address"])),
-                        ("déploiement", explorer_tx_link(cfg, dep["deployTx"] or ""))):
+    print(f"→ {cfg.deployment_path.relative_to(ROOT)} written")
+    for label, link in (("contract", explorer_address_link(cfg, dep["address"])),
+                        ("deployment", explorer_tx_link(cfg, dep["deployTx"] or ""))):
         if link:
-            print(f"  {label} : {link}")
+            print(f"  {label}: {link}")
     return 0
 
 

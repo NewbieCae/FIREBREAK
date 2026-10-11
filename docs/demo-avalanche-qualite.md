@@ -1,53 +1,53 @@
-# Feuille de démo — Avalanche, qualité, entrées en stock
+# Demo sheet — Avalanche, quality, goods receipts
 
-> Complète `docs/demo.md` (démo principale, interface `/app/`). Ces trois séquences se montrent depuis le **tableau de bord** (`http://localhost:8000/`), panneaux repliables à droite. Chiffres : ceux de l'écran.
+> Complements `docs/demo.md` (main demo, `/app/` interface). These three sequences are shown from the **dashboard** (`http://localhost:8000/`), collapsible panels on the right. Figures: the ones on screen.
 
-## Avant de monter sur scène (machine de Mika, `.env.local` en mode `l1`)
+## Before going on stage (Mika's machine, `.env.local` in `l1` mode)
 
 ```bash
-uv run python scripts/chain_smoke.py          # RPC joignable, chainId 569712, contrat 0xeA4BeAe1… présent
+uv run python scripts/chain_smoke.py          # RPC reachable, chainId 569712, contract 0xeA4BeAe1… present
 FIREBREAK_DEMO=1 uv run uvicorn firebreak.api:app --port 8000
 ```
-PowerShell : `$env:PYTHONUTF8='1'; $env:FIREBREAK_DEMO='1'; uv run uvicorn firebreak.api:app --port 8000`.
-Sans `.env.local` ou sans réseau : `FIREBREAK_CHAIN=tester` (EVM en mémoire) — dans ce cas, ne pas dire « notre L1 ».
+PowerShell: `$env:PYTHONUTF8='1'; $env:FIREBREAK_DEMO='1'; uv run uvicorn firebreak.api:app --port 8000`.
+Without `.env.local` or without network: `FIREBREAK_CHAIN=tester` (in-memory EVM) — in that case, do not say "our L1".
 
-**Lancer la démo principale 1 à 2 minutes avant d'ouvrir le panneau Avalanche** : la file d'ancrage doit être vide (~40 s pour la démo complète sur la vraie L1).
+**Run the main demo 1 to 2 minutes before opening the Avalanche panel**: the anchoring queue must be empty (~40 s for the full demo on the real L1).
 
-## Séquence 1 — Avalanche (30 s), après la démo principale
+## Sequence 1 — Avalanche (30 s), after the main demo
 
-1. Ouvrir **Avalanche** : pastille verte, liste des ancrages confirmés (liens vers l'explorer).
-   « Chaque alerte, chaque accusé, chaque journal est ancré sur notre L1 Avalanche : un témoin horodaté que personne ne peut réécrire. »
-2. **Vérifier sur Avalanche** → local ✓, Avalanche ✓.
-3. **Simuler une réécriture du journal** → local ✓, Avalanche ✗.
-   « Quelqu'un a effacé du journal du fabricant qu'il avait été prévenu, et recalculé tous les hash. La vérification locale ne voit rien. Avalanche, si. »
+1. Open **Avalanche**: green dot, list of confirmed anchors (links to the explorer).
+   "Every alert, every acknowledgment, every log is anchored on our Avalanche L1: a timestamped witness nobody can rewrite."
+2. **Verify on Avalanche** → local ✓, Avalanche ✓.
+3. **Simulate a log rewrite** → local ✓, Avalanche ✗.
+   "Someone erased from the manufacturer's log the fact that it had been warned, and recomputed every hash. The local check sees nothing. Avalanche does."
 
-## Séquence 2 — Entrées en stock (40 s), scénario `mixed`
+## Sequence 2 — Goods receipts (40 s), `mixed` scenario
 
-1. Réinitialiser sur **Attaque mixte**. Ouvrir **Entrées en stock**, entreprise **fabricant**, **Contrôler les réceptions**.
-2. Montrer la carte rouge : bobine de la commande BC-9999, **30/100, suspect, en attente** — commande inconnue, certificat hors séquence, RIB modifié.
-   « Avant même d'entrer en stock, le lot piégé est noté, expliqué, et mis en attente. »
-3. **Refuser** → « signalement qualité signé envoyé au fournisseur ». Le lot et tout ce qui en dépend restent isolés.
-4. Carte orange : livraison de 14 h 45, **65/100, doute, à surveiller** (pas de certificat, RIB changé le même jour), **pas mise en attente** : elle a déjà été contrôlée physiquement à réception.
-   « Un contrôle humain déjà fait compte : on signale le doute sans bloquer. Les règles proposent, l'humain décide, au cas par cas. »
-   (Pour montrer **Accepter** : scénario `cert`, la bobine pesée mais au faux certificat est en attente — 55/100 — ; ou refuser la bobine piégée du scénario `mixed` comme à l'étape 3.)
+1. Reset to **Mixed attack**. Open **Stock entries**, company **fabricant**, **Check receipts**.
+2. Show the red card: goods receipt BC-9999, **30/100 · suspect · ON HOLD** — unknown order, out-of-sequence certificate, changed bank details.
+   "Before it even enters stock, the rigged lot is scored, explained and put on hold."
+3. **Reject** → "signed quality report sent to the supplier". The lot and everything depending on it stay isolated.
+4. Orange card: 2:45 pm delivery, **65/100 · doubtful · physically checked · to watch** (no certificate, bank details changed the same day), **not put on hold**: it was already physically inspected on receipt.
+   "A human check already done counts: we flag the doubt without blocking. Rules propose, humans decide, case by case."
+   (To show **Accept**: `cert` scenario, the coil that was weighed but has the fake certificate is on hold — 55/100 —; or reject the rigged coil from the `mixed` scenario as in step 3.)
 
-## Séquence 3 — Rappel qualité (60 s), scénario `recall`
+## Sequence 3 — Quality recall (60 s), `recall` scenario
 
-Panneau **Qualité (debug)**, pré-rempli par le scénario.
-1. Entreprise **client**, référence `c-gr-03`, motif « casse sur chantier » → **Signaler en amont** (vers le distributeur). « Le client ne connaît pas la bobine : il signale ce qu'il a reçu. »
-2. Entreprise **distributeur** → **Confirmer** dans la boîte de réception ; puis référence `d-out-03` → **Signaler en amont** (vers le fabricant).
-3. Entreprise **fabricant**, référence `m-ship-03` → **Analyse rappel** : causes possibles, avec le périmètre de chacune. « C'est l'analyste qui choisit. »
-4. Référence `COIL-103` → **Lot suspect** : le lot frère LOT-A30, déjà expédié, est isolé aussi ; les autres lots continuent.
-5. `COIL-103` → **Signaler en amont** (vers le fournisseur) ; entreprise **fournisseur** → **Confirmer**.
-   « À aucun moment le fournisseur n'a été blacklisté. »
+**Quality (debug)** panel, pre-filled by the scenario.
+1. Company **client**, reference `c-gr-03`, reason "broke on site" → **Report upstream** (to the distributor). "The customer doesn't know the coil: it reports what it received."
+2. Company **distributeur** → **Confirm** in the inbox; then reference `d-out-03` → **Report upstream** (to the manufacturer).
+3. Company **fabricant**, reference `m-ship-03` → **Recall analysis**: possible causes, each with its scope. "The analyst chooses."
+4. Reference `COIL-103` → **Suspect lot**: the sibling lot LOT-A30, already shipped, is isolated too; the other lots keep going.
+5. `COIL-103` → **Report upstream** (to the supplier); company **fournisseur** → **Confirm**.
+   "At no point was the supplier blacklisted."
 
-## Chiffres mesurés sur la vraie L1 (à citer comme tels)
+## Figures measured on the real L1 (quote them as such)
 
-- Démo complète : 19 preuves, ~38 s, 0 échec. Rappel complet : 25 preuves, ~86 s. Entrées en stock (mixte) : 16 preuves, ~25 s.
-- L'interface ne dépend jamais de la chaîne : chaque geste répond en quelques dizaines de millisecondes.
-- Démo : un seul validateur (nœud hébergé par le Builder Hub). En production : les validateurs sont les membres du consortium.
+- Full demo: 19 proofs, ~38 s, 0 failures. Full recall: 25 proofs, ~86 s. Goods receipts (mixed): 16 proofs, ~25 s.
+- The interface never depends on the chain: every action responds in a few tens of milliseconds.
+- Demo: a single validator (node hosted by the Builder Hub). In production: the validators are the consortium members.
 
-## Si ça casse
+## If it breaks
 
-- Chaîne lente ou injoignable : la démo continue, les ancrages passent « en attente » ou « échec » ; ne pas ouvrir le panneau Avalanche, dire « l'ancrage rattrape ensuite ».
-- Plan B en ligne : https://firebreak-zeta.vercel.app (sans Avalanche).
+- Chain slow or unreachable: the demo keeps going, anchors go to "pending" or "failed"; don't open the Avalanche panel, say "anchoring catches up afterwards".
+- Online plan B: https://firebreak-zeta.vercel.app (without Avalanche).

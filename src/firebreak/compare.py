@@ -1,17 +1,17 @@
-"""« Avec vs sans Firebreak » — comparaison de politiques sur la simulation
-courante et ses déclarations actives.
+""""With vs without Firebreak": policy comparison on the current
+simulation and its active declarations.
 
-Politique B (sans Firebreak) : pour chaque déclaration (source, since), on
-coupe l'entreprise source et ses clients directs — tout record de leurs
-registres avec `ts >= since` est bloqué. Même définition que
-`policy_partner_block` dans synth.py.
+Policy B (without Firebreak): for each declaration (source, since), cut off
+the source company and its direct customers: every record in their
+ledgers with `ts >= since` is blocked. Same definition as
+`policy_partner_block` in synth.py.
 
-Politique C (avec Firebreak) : les records actuellement `quarantined`.
+Policy C (with Firebreak): the records currently `quarantined`.
 
-Vérité terrain : BFS depuis les records ÉMIS par la source dans son propre
-registre après `since`, le long des dépendances enregistrées (inputs +
-envois inter-entreprises) ; `verified` arrête la propagation. Indépendante
-des statuts — même définition que `_truth` dans synth.py.
+Ground truth: BFS from the records ISSUED by the source in its own ledger
+after `since`, along recorded dependencies (inputs + cross-company sends);
+`verified` stops propagation. Independent of statuses: same definition as
+`_truth` in synth.py.
 """
 
 from __future__ import annotations
@@ -30,26 +30,26 @@ BENCH_COMMAND = "uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3"
 REAL_WORLD = [
     {
         "name": "Jaguar Land Rover",
-        "date": "septembre 2025",
-        "text": "Après une cyberattaque, JLR coupe ses systèmes : ses usines "
-                "britanniques restent à l'arrêt environ six semaines. 196 M£ "
-                "de coûts liés à l'attaque sur le trimestre, et des "
-                "sous-traitants mettent leurs salariés au chômage.",
+        "date": "September 2025",
+        "text": "After a cyberattack, JLR shuts down its systems: its UK plants "
+                "stay idle for about six weeks. £196M in attack-related "
+                "costs for the quarter, and subcontractors lay off "
+                "their workers.",
         "source": "https://www.reuters.com/business/retail-consumer/jaguar-land-rovers-uk-production-returns-normal-after-weeks-long-cyber-shutdown-2025-11-14/",
     },
     {
         "name": "CDK Global",
-        "date": "juin 2024",
-        "text": "Après deux cyberattaques, l'éditeur coupe ses systèmes : "
-                "près de 15 000 concessions automobiles en Amérique du Nord "
-                "reviennent au papier pendant près de deux semaines.",
+        "date": "June 2024",
+        "text": "After two cyberattacks, the software vendor shuts down its "
+                "systems: nearly 15,000 car dealerships in North America "
+                "go back to paper for almost two weeks.",
         "source": "https://www.cnn.com/2024/07/02/business/cdk-global-dealers-online",
     },
 ]
 
 
 def _declarations(sim: Simulation) -> dict[str, datetime]:
-    """source -> since la plus ancienne, union de tous les registres."""
+    """source -> earliest since, union of all ledgers."""
     decls: dict[str, datetime] = {}
     for ledger in sim.ledgers.values():
         for d in ledger.declarations:
@@ -59,10 +59,10 @@ def _declarations(sim: Simulation) -> dict[str, datetime]:
 
 
 def _truth(sim: Simulation, source: str, since: datetime) -> set[str]:
-    """Records réellement contaminés, indépendamment des statuts :
-    semences = records émis par la source dans SON registre (origin ==
-    company, pas une copie reçue) avec ts >= since ; propagation le long
-    des inputs et des envois inter-entreprises ; `verified` arrête."""
+    """Truly tainted records, regardless of statuses:
+    seeds = records issued by the source in ITS ledger (origin ==
+    company, not a received copy) with ts >= since; propagation along
+    inputs and cross-company sends; `verified` stops it."""
     children: dict[str, list[str]] = {}
     for ledger in sim.ledgers.values():
         for rid, r in ledger.records.items():
@@ -127,8 +127,8 @@ def _metrics(blocked: set[str], truth: set[str],
 
 
 def bench_block(path: Path | None = None) -> dict | None:
-    """Agrégat du bench de Céline (bench/results.csv), lu à la demande :
-    moyenne par graine pour politique B et C, à p=0 et au p max présent."""
+    """Aggregate of Céline's bench (bench/results.csv), read on demand:
+    per-seed mean for policies B and C, at p=0 and at the highest p present."""
     path = path or BENCH_CSV
     if not path.exists():
         return None
@@ -171,7 +171,7 @@ def bench_block(path: Path | None = None) -> dict | None:
 def compare(sim: Simulation) -> dict:
     decls = _declarations(sim)
     if not decls:
-        raise LookupError("aucune déclaration active")
+        raise LookupError("no active declaration")
 
     records = {
         rid: r for led in sim.ledgers.values() for rid, r in led.records.items()
@@ -194,16 +194,16 @@ def compare(sim: Simulation) -> dict:
     }
 
     without = {
-        "title": "Sans Firebreak",
+        "title": "Without Firebreak",
         "policy": "B",
-        "subtitle": "On coupe le fournisseur et ses clients directs depuis 14 h",
+        "subtitle": "Cut off the supplier and its direct customers since 2 pm",
         "scope": scopes,
         **_metrics(without_blocked, truth, records),
     }
     with_fb = {
-        "title": "Avec Firebreak",
+        "title": "With Firebreak",
         "policy": "C",
-        "subtitle": "On gèle seulement les opérations contaminées",
+        "subtitle": "Freeze only the tainted operations",
         **_metrics(with_blocked, truth, records),
     }
     return {
@@ -214,10 +214,10 @@ def compare(sim: Simulation) -> dict:
         "truth": {
             "contaminated": len(truth),
             "ids": sorted(truth),
-            "definition": "Records réellement contaminés : tout ce qui dépend, "
-                          "même indirectement, d'une donnée émise par la source "
-                          "compromise depuis l'heure déclarée (sauf preuve "
-                          "vérifiée qui arrête la propagation).",
+            "definition": "Truly tainted records: everything that depends, "
+                          "even indirectly, on data issued by the compromised "
+                          "source since the declared time (unless verified "
+                          "evidence stops the propagation).",
         },
         "without": without,
         "with": with_fb,

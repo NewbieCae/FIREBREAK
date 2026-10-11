@@ -1,8 +1,8 @@
-"""Ancrage des preuves Firebreak sur une L1 Avalanche.
+"""Anchoring Firebreak evidence on an Avalanche L1.
 
-La chaîne ne décide rien et ne bloque rien : elle sert de témoin horodaté
-pour les journaux d'audit, les alertes signées et les déclarations
-d'incident. Désactivée par défaut (`FIREBREAK_CHAIN=off`) ; dans ce mode,
-aucun module réseau (`web3`, `eth_account`) n'est importé.
-Voir docs/avalanche/README.md.
+The chain decides nothing and blocks nothing: it serves as a timestamped
+witness for audit journals, signed alerts and incident declarations.
+Disabled by default (`FIREBREAK_CHAIN=off`); in that mode, no network
+module (`web3`, `eth_account`) is imported.
+See docs/avalanche/README.md.
 """

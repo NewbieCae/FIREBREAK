@@ -1,73 +1,74 @@
-# Maria : lancer le build de l'interface (UI/UX)
+# Maria: kicking off the interface build (UI/UX)
 
-> Écrit par l'agent de Mika (pc2) pour Maria. Rendu dimanche 12 h, **gel du code à 10 h**, pitchs jusqu'à 17 h.
-> Ce fichier ne remplace pas `sessions/maria.md` (à tenir à jour par ton agent).
+> Written by Mika's agent (pc2) for Maria. Submission Sunday 12:00, **code freeze at 10:00**, pitches until 17:00.
+> This file does not replace `sessions/maria.md` (to be kept up to date by your agent).
 
-## En deux mots
+## In a nutshell
 
-Le moteur et l'API sont livrés. Il manque **l'interface finale** : une « salle de contrôle d'incident » sombre, en verre, où un juré clique et comprend seul. Tout est décrit dans [`docs/brief-ui.md`](brief-ui.md) : lis-le en entier, c'est la commande. Le dashboard `web/index.html` est un outil de debug, à ne pas imiter, mais il montre chaque appel API qui marche.
+The engine and the API are delivered. What's missing is **the final interface**: a dark, glassy "incident control room" where a juror clicks and understands on their own. Everything is described in [`docs/brief-ui.md`](brief-ui.md): read it in full, it's the spec. The `web/index.html` dashboard is a debug tool, not to be imitated, but it shows every API call that works.
 
-## Mise en route (5 min)
+## Getting started (5 min)
 
 ```powershell
-git clone git@github.com:Sc4rville/finswag.git   # ou git pull si déjà cloné
+git clone git@github.com:Sc4rville/finswag.git   # or git pull if already cloned
 cd finswag
-uv sync            # ou : python -m venv .venv ; .venv\Scripts\pip install -e . pytest httpx tzdata
+uv sync            # or: python -m venv .venv ; .venv\Scripts\pip install -e . pytest httpx tzdata
 $env:FIREBREAK_DEMO='1'; $env:PYTHONUTF8='1'
-uv run uvicorn firebreak.api:app --port 8000   # puis http://localhost:8000
+uv run uvicorn firebreak.api:app --port 8000   # then http://localhost:8000
 ```
 
-Sous Windows, `PYTHONUTF8=1` évite des échecs de tests (encodage cp1252).
+On Windows, `PYTHONUTF8=1` avoids test failures (cp1252 encoding).
 
-## Ce que tu dis à ton agent (à coller tel quel)
+## What you tell your agent (paste as is)
 
 ```
-Tu travailles sur FIREBREAK, hackathon Secure Horizons, équipe de 4. Je suis Maria.
-Rendu dimanche 12 h, gel du code à 10 h. Ma mission : construire l'interface finale (UI/UX).
+You're working on FIREBREAK, Secure Horizons hackathon, team of 4. I'm Maria.
+Submission Sunday 12:00, code freeze at 10:00. My mission: build the final interface (UI/UX).
 
-1. Lis dans cet ordre : AGENTS.md, goal.md, docs/firebreak.md, docs/brief-ui.md (c'est mon cahier
-   des charges, à suivre à la lettre), docs/api.md (contrat de l'API, on ne le casse pas),
-   docs/agents-canal.md (fin du fichier), web/index.html (exemples d'appels qui marchent).
-2. Inscris-toi dans sessions/maria.md et goal.md : tâche « Interface finale (UI/UX) ».
-   Ne touche pas au moteur (engine, federation, simulation, audit) ni à api.py : si tu as besoin
-   d'un champ ou d'un endpoint, écris-le dans docs/agents-canal.md et demande à Yann.
-3. Fichiers à moi : un dossier web/app/ (ou web/ui/) et design.md. Ne remplace pas
-   web/index.html tant que la nouvelle UI n'est pas prête : garde-le comme secours.
-4. Livre en 4 étapes, une démo qui marche à la fin de chacune, un commit à chaque étape :
-   a) Squelette : fond sombre + dégradé lent, en-tête (sélecteur de scénario, Réinitialiser,
-      indicateur IA), 3 gros chiffres (/api/state counters.global), carte des 4 entreprises.
-   b) Propagation : bouton de compromission, flux SSE /api/events, particules sur les arêtes
-      cross, rouge corail précis, compteurs animés (tabular-nums).
-   c) Preuve et guérison : clic sur une opération bloquée -> chemin exact + explication
-      (/explain), remédiation, cascade de levée en ambre puis vert, fausse alerte.
-   d) Avec/sans Firebreak (côte à côte), logo animé (une fois), jeu d'icônes cohérent,
-      skeletons, toasts d'erreur en français, prefers-reduced-motion.
-5. Règles de design non négociables : 4 couleurs sémantiques (sain vert menthe, bloqué rouge
-   corail < 15 % de l'écran, reprise ambre, accent cyan), verre = une seule recette, jamais de
-   texte long sur le verre, contraste >= 4,5:1, tout en français, mono pour hash/jetons.
-   Consigne les choix finaux dans design.md.
-6. Teste en vrai : lance le serveur, ouvre la page dans le navigateur, déroule la démo de
-   3 minutes (section 6 du brief), vérifie qu'aucune erreur n'apparaît en console.
-7. Pas de dépendance lourde : choisis ce qui est le plus rapide (HTML/CSS/JS natif ou Vite).
-   Si un build est nécessaire, committe le résultat pour que le serveur le serve sans Node.
-8. Tiens sessions/maria.md à jour à chaque étape. Pas de force-push. Commits courts en français.
+1. Read in this order: AGENTS.md, goal.md, docs/firebreak.md, docs/brief-ui.md (my spec,
+   to follow to the letter), docs/api.md (API contract, we don't break it),
+   docs/agents-canal.md (end of file), web/index.html (examples of calls that work).
+2. Register in sessions/maria.md and goal.md: task "Final interface (UI/UX)".
+   Don't touch the engine (engine, federation, simulation, audit) or api.py: if you need
+   a field or an endpoint, write it in docs/agents-canal.md and ask Yann.
+3. My files: a web/app/ (or web/ui/) folder and design.md. Don't replace
+   web/index.html until the new UI is ready: keep it as a fallback.
+4. Deliver in 4 stages, a working demo at the end of each, one commit per stage:
+   a) Skeleton: dark background + slow gradient, header (scenario selector, Reset,
+      AI indicator), 3 big figures (/api/state counters.global), map of the 4 companies.
+   b) Propagation: compromise button, SSE stream /api/events, particles on cross
+      edges, precise coral red, animated counters (tabular-nums).
+   c) Proof and healing: click on a blocked operation -> exact path + explanation
+      (/explain), remediation, release cascade in amber then green, false alarm.
+   d) With/without Firebreak (side by side), animated logo (once), consistent icon set,
+      skeletons, error toasts in English, prefers-reduced-motion.
+5. Non-negotiable design rules: 4 semantic colors (healthy mint green, blocked coral red
+   < 15% of the screen, recovery amber, cyan accent), glass = a single recipe, never
+   long text on glass, contrast >= 4.5:1, all user-visible text and docs in English
+   (decision of Mika on 11/10, whole repo translated), mono for hashes/tokens.
+   Record the final choices in design.md.
+6. Test for real: start the server, open the page in the browser, run through the
+   3-minute demo (section 6 of the brief), check that no error shows up in the console.
+7. No heavy dependency: pick whatever is fastest (native HTML/CSS/JS or Vite).
+   If a build is needed, commit the output so the server serves it without Node.
+8. Keep sessions/maria.md up to date at each stage. No force-push. Short commits in French.
 ```
 
-## Prévoir dès maintenant : le panneau Avalanche
+## Plan for it now: the Avalanche panel
 
-Mika intègre une blockchain Avalanche L1 (ancrage des journaux d'audit et des alertes). Elle ajoute des endpoints **optionnels** à l'API, jamais bloquants :
+Mika is integrating an Avalanche L1 blockchain (anchoring of audit logs and alerts) and is adding **optional** endpoints to the API, never blocking:
 
-| Endpoint | Pour l'UI |
+| Endpoint | For the UI |
 |---|---|
-| `GET /api/chain/status` | `mode` (off/tester/l1), `connected`, `chain_id`, `queue` : badge « Avalanche » dans l'en-tête |
-| `GET /api/chain/anchors` | liste d'ancrages (type, entreprise, hash, statut, `explorer_link`) : panneau « Preuves sur Avalanche » |
-| `GET /api/audit/verify` | champ `onchain` par journal + `onchain_ok` : coche « ancré sur Avalanche » dans la vue preuve |
-| `POST /api/demo/rewrite` | démo : réécriture d'un journal ; local = intègre, on-chain = **ne correspond pas** |
+| `GET /api/chain/status` | `mode` (off/tester/l1), `connected`, `chain_id`, `queue`: "Avalanche" badge in the header |
+| `GET /api/chain/anchors` | list of anchors (type, company, hash, status, `explorer_link`): "Proofs on Avalanche" panel |
+| `GET /api/audit/verify` | `onchain` field per log + `onchain_ok`: "anchored on Avalanche" check in the proof view |
+| `POST /api/demo/rewrite` | demo: rewrite of a log; local = intact, on-chain = **does not match** |
 
-Règles côté UI : si `mode` vaut `off` ou si `onchain` est `null`, **n'affiche rien** (pas de panneau vide). Un statut `pending` ou `failed` est un état normal, pas une erreur. Le contrat détaillé est dans `docs/avalanche/` (branche `mika/avalanche-l1`) ; Mika branche le panneau lui-même dans `web/index.html`, ton design reprendra les mêmes données quand la chaîne sera fusionnée.
+UI rules: if `mode` is `off` or if `onchain` is `null`, **display nothing** (no empty panel). A `pending` or `failed` status is a normal state, not an error. The detailed contract is in `docs/avalanche/` (branch `mika/avalanche-l1`); Mika wires the panel into `web/index.html` directly, and your design will reuse the same data once the chain is merged.
 
 ## Coordination
 
-- Questions, besoins d'API : `docs/agents-canal.md` (ajout seul en bas, signe `maria/…`).
-- Conflit de décision : voir `AGENTS.md` et le canal.
-- Calendrier : démo jouable à **9 h** dimanche, polish jusqu'au gel de **10 h**, plus rien après.
+- Questions, API needs: `docs/agents-canal.md` (append only at the bottom, sign `maria/…`).
+- Decision conflict: see `AGENTS.md` and the channel.
+- Schedule: playable demo at **9:00** Sunday, polish until the **10:00** freeze, nothing after that.
