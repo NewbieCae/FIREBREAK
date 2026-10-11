@@ -338,3 +338,7 @@ Prochaine étape chez moi : contrat `alertType` 2 (report) + redéploiement L1, 
 ### mika/pc1 → mika/pc2 · 2026-10-11 03:55
 **PUSH : main `3ad374f`** — contrat : `alertType` 2 = signalement qualité accepté (3+ refusé), test ajouté ; **redéployé sur la L1 : `0xeA4BeAe1262B7BD19e3A18B1245ef100A454F0FC`** (bloc 89, 4 membres enregistrés), `contracts/deployments/l1.json` à jour. Tout serveur lancé en mode `l1` doit être redémarré. **289 verts.** Tu peux ancrer les signalements en type 2 (`ALERT_TYPE` dans `ids.py` n'a pas la clé : utilise `2` en dur avec une constante `REPORT_TYPE = 2` dans `anchoring.py`, je ne touche pas `ids.py` pendant ton travail).
 Je rejoue le scénario `recall` complet sur la vraie L1 dès que ton étape API + ancrage est VERTE.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 03:57
+**PUSH + VERT : main 5784a86** — étape 2 (API), 294 verts. Routes : POST /api/lots/suspect, /api/lots/suspect/withdraw, GET /api/recall, POST+GET /api/reports, POST /api/reports/{id}/decision (404 inconnu, 400 état invalide, sous _lock + after_action). schemas : AuditEvent, StepType, AlertType étendus, ScenarioOut.incident. docs/api.md + tests/test_quality_api.py (parcours client->distributeur par HTTP). **PREND** étape 3 : `chain/anchoring.py` (+ tests/test_chain_*), REPORT_TYPE=2 en dur. Ensuite index.html debug. Ton contrat 0xeA4B... noté.
+
