@@ -90,7 +90,7 @@ With vs without: without Firebreak (cut off the supplier and its direct customer
 ## Blockers
 
 - [x] Test bench: seeded generator + 3 policies + CSV (Céline) — v1 figures obsolete (4.3×, 11.4 versus 49.5, 91.6%), replaced by v2 above. Reproduce: `uv run python scripts/bench.py --seeds 500 --p 0,0.1,0.2,0.3`
-- [ ] Signing keys and PAIR_SECRET in federation.py: stop deriving them from the name / stop hard-coding them
-- [ ] Remove e-mail addresses and mailbox details from AGENTS.md and docs/brief.md, then decide what to do with the history
+- [x] Signing keys and PAIR_SECRET in federation.py: stop deriving them from the name / stop hard-coding them (secrets from env or drawn per process, Céline, 11/10)
+- [x] Remove e-mail addresses and mailbox details from AGENTS.md and docs/brief.md, then decide what to do with the history — historique : copie propre pour le jury (dépôt FIREBREAK) (Céline, 11/10)
 - [x] README: switch to Track 3, conflict markers pushed to main resolved (Céline, 11/10)
 - [x] Confirm the official switch Track 1 → Track 3 with the organisers: validated by the organisers (confirmed by Céline on 11/10, the note was missing)
