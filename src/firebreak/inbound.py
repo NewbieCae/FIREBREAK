@@ -7,7 +7,8 @@ alertes en cours). Chaque contrôle est déterministe, pondéré et expliqué ;
 la note part de 100 et chaque contrôle en échec retire sa pénalité.
 
 Les règles proposent, l'humain décide : sous le seuil, la réception est mise
-en attente (elle et tout ce qui en dépend), et un humain l'accepte ou la
+en attente (si le lot a déjà été contrôlé physiquement, seulement s'il est
+suspect) (elle et tout ce qui en dépend), et un humain l'accepte ou la
 refuse. L'explication en français est générée à partir des contrôles ; une
 IA peut la reformuler, jamais changer la note ni la décision.
 
@@ -276,6 +277,10 @@ def evaluate_receipt(ledger: Ledger, receipt_id: str, ref: Referentiel | None) -
     score = max(0, 100 - sum(c.penalty for c in checks if not c.ok))
     band = band_of(score)
     failed = [c for c in checks if not c.ok]
+    # Un contrôle physique déjà fait à réception compte : en zone de doute, on
+    # signale sans bloquer ; on ne met en attente que si le lot est suspect.
+    physically_checked = bool(receipt.verified)
+    hold = score < SUSPECT_THRESHOLD if physically_checked else score < TRUST_THRESHOLD
     return {
         "receipt": receipt_id,
         "label": receipt.label,
@@ -284,17 +289,26 @@ def evaluate_receipt(ledger: Ledger, receipt_id: str, ref: Referentiel | None) -
         "order": bc,
         "score": score,
         "band": band,
-        "hold": score < TRUST_THRESHOLD,
+        "hold": hold,
+        "physically_checked": physically_checked,
         "checks": [c.as_dict() for c in checks],
-        "explanation": explain(receipt.label, supplier_id, score, band, failed),
+        "explanation": explain(receipt.label, supplier_id, score, band, failed, hold,
+                               physically_checked),
     }
 
 
-def explain(label: str, supplier: str, score: int, band: str, failed: list[Check]) -> str:
+def explain(label: str, supplier: str, score: int, band: str, failed: list[Check],
+            hold: bool | None = None, physically_checked: bool = False) -> str:
     """Explication déterministe en français (une IA peut la reformuler)."""
+    if hold is None:
+        hold = score < TRUST_THRESHOLD
     if not failed:
         return f"« {label} » : {score}/100, aucun écart avec ce que l'on sait du fournisseur {supplier}."
     reasons = " ; ".join(c.detail for c in sorted(failed, key=lambda c: -c.penalty))
-    action = ("mise en attente : un humain doit accepter ou refuser le lot avant toute utilisation"
-              if score < TRUST_THRESHOLD else "à surveiller")
+    if hold:
+        action = "mise en attente : un humain doit accepter ou refuser le lot avant toute utilisation"
+    elif physically_checked:
+        action = "à surveiller (lot déjà contrôlé physiquement à réception, pas de mise en attente)"
+    else:
+        action = "à surveiller"
     return f"« {label} » : {score}/100 ({band}). {reasons}. Proposition : {action}."

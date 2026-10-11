@@ -27,8 +27,9 @@ Sans `.env.local` ou sans réseau : `FIREBREAK_CHAIN=tester` (EVM en mémoire) �
 2. Montrer la carte rouge : bobine de la commande BC-9999, **30/100, suspect, en attente** — commande inconnue, certificat hors séquence, RIB modifié.
    « Avant même d'entrer en stock, le lot piégé est noté, expliqué, et mis en attente. »
 3. **Refuser** → « signalement qualité signé envoyé au fournisseur ». Le lot et tout ce qui en dépend restent isolés.
-4. Carte orange : livraison de 14 h 45, **65/100, doute** (pas de certificat, RIB changé le même jour) → **Accepter** (« certificat reçu par mail »).
-   « Les règles proposent, l'humain décide, au cas par cas. »
+4. Carte orange : livraison de 14 h 45, **65/100, doute, à surveiller** (pas de certificat, RIB changé le même jour), **pas mise en attente** : elle a déjà été contrôlée physiquement à réception.
+   « Un contrôle humain déjà fait compte : on signale le doute sans bloquer. Les règles proposent, l'humain décide, au cas par cas. »
+   (Pour montrer **Accepter** : scénario `cert`, la bobine pesée mais au faux certificat est en attente — 55/100 — ; ou refuser la bobine piégée du scénario `mixed` comme à l'étape 3.)
 
 ## Séquence 3 — Rappel qualité (60 s), scénario `recall`
 

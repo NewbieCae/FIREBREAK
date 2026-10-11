@@ -607,7 +607,9 @@ function inRender() {
       (canReject
         ? `<button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="reject">Refuser</button>` : '');
     return `<div class="alert" style="border-left:4px solid ${col}">` +
-      `<b style="color:${col}">${r.score}/100</b> · ${esc(r.band)} · <b>${esc(IN_STATUS[r.status] || r.status)}</b><br>` +
+      `<b style="color:${col}">${r.score}/100</b> · ${esc(r.band)} · <b>${esc(IN_STATUS[r.status] || r.status)}</b>` +
+      (r.physically_checked ? ' · <span class="muted">contrôlée physiquement</span>' : '') +
+      (!r.hold && r.band !== 'confiance' ? ' · <b>à surveiller</b>' : '') + `<br>` +
       `${esc(r.label)} <span class="muted">(${esc(r.receipt)}, ${esc(r.supplier)}${r.lot ? ', ' + esc(r.lot) : ''})</span><br>` +
       (failed.length ? failed.map(c => `− ${c.penalty} · ${esc(c.detail)}`).join('<br>') : 'Aucun écart.') +
       `<details><summary class="muted">les ${r.checks.length} contrôles</summary>` +
@@ -642,6 +644,11 @@ document.getElementById('in-screen').onclick = () => inRun(async () => {
   render(await api('/api/state'));
 });
 document.getElementById('in-company').onchange = () => { inResults = []; inRender(); };
+// Réinitialisation, changement de scénario ou démo pas à pas : les résultats affichés ne valent plus.
+function inClear() { inResults = []; document.getElementById('in-out').textContent = ''; inRender(); }
+document.getElementById('btn-reset').addEventListener('click', inClear);
+document.getElementById('sel-scenario').addEventListener('change', inClear);
+document.getElementById('btn-demo').addEventListener('click', inClear);
 document.getElementById('inbound-box').addEventListener('toggle', () => { inFillCompanies(); inRender(); });
 </script>
 </body>

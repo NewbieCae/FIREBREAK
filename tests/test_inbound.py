@@ -79,7 +79,8 @@ def test_screen_all_only_holds_doubtful_receipts():
     assert all(not results[rid]["hold"] for rid in MORNING)
     assert results["m-gr-X"]["status"] == "en_attente"
     for rid, res in results.items():
-        assert res["hold"] == (res["score"] < TRUST_THRESHOLD)
+        threshold = 60 if res["physically_checked"] else TRUST_THRESHOLD
+        assert res["hold"] == (res["score"] < threshold)
 
 
 def test_accept_makes_receipt_trusted_and_releases():
@@ -150,3 +151,19 @@ def test_screen_does_not_overwrite_an_existing_suspicion():
     assert sim.ledgers["fabricant"].suspects["m-gr-X"] == "alerte qualité préalable"
     with pytest.raises(ValueError):
         sim.inbound_decide("fabricant", "m-gr-X", "accept")
+
+
+def test_physically_checked_receipt_in_doubt_is_flagged_not_held():
+    """Arbitrage pc1 (relecture pc2) : la livraison de 14 h 45 a été contrôlée
+    physiquement ; en zone de doute, on signale sans bloquer."""
+    sim = build_simulation("mixed")
+    r = sim.inbound_check("fabricant", "m-gr-08")
+    assert r["physically_checked"] and r["band"] == "doute" and not r["hold"]
+    assert "contrôlé physiquement" in r["explanation"]
+    sim.inbound_screen("fabricant", "m-gr-08")
+    assert sim.find_record("m-gr-08").status == "ok"
+
+
+def test_physically_checked_but_suspect_is_still_held():
+    r = build_simulation("cert").inbound_check("fabricant", "m-gr-X")
+    assert r["physically_checked"] and r["band"] == "suspect" and r["hold"]
