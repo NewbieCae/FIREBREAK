@@ -69,6 +69,11 @@ https://2hxmvtcr.firn.gg), mesurés par pc1 le 11/10 entre 01 h 50 et 03 h 40 :
   conformes. L'API répond en 0,1 s pour les 5 gestes ; la file a mis ~127 s
   à se vider (envoi séquentiel, ~5 s par preuve) — envoi parallèle par
   entreprise en cours pour réduire ce délai.
+- **Après optimisation (04 h 25, moins de requêtes par transaction : nonce
+  local, gaz fixe, prix en cache)** : démo complète **19/19 en ~38 s** (au lieu
+  de ~70 s), scénario `recall` **25/25 en ~86 s** (au lieu de ~130 s), 0 échec,
+  vérification conforme, réécriture détectée. La limite restante est le débit
+  du nœud hébergé (un bloc toutes les ~2 s, refus si trop de requêtes).
 - Pour le pitch : dire « une preuve est sur la chaîne en quelques secondes,
   et la démo n'attend jamais la chaîne ». Lancer la démo **une minute avant**
   de montrer le panneau Avalanche, pour que la file soit vidée.

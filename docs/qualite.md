@@ -50,7 +50,7 @@ Chiffres affichés par la démo (scénario `recall`, à relire à l'écran) : 20
 
 ## Mesures sur la vraie L1 (scénario `recall`, 11/10 vers 04 h)
 
-Parcours complet (client → distributeur → fabricant → fournisseur) : 25 preuves ancrées, 0 échec au premier passage, vérification locale et Avalanche conformes ; l'API répond en 0,1 s pour les gestes, la file d'ancrage met environ 2 minutes à se vider (limite de débit du nœud hébergé). Détails : `docs/avalanche/pitch.md`.
+Parcours complet (client → distributeur → fabricant → fournisseur) : 25 preuves ancrées, 0 échec au premier passage, vérification locale et Avalanche conformes ; l'API répond en 0,1 s pour les gestes, la file d'ancrage se vide en ~86 s après optimisation (~130 s avant), 25/25 confirmées (limite restante : débit du nœud hébergé). Détails : `docs/avalanche/pitch.md`.
 
 ## Limites à dire
 
