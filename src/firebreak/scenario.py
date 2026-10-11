@@ -12,7 +12,9 @@ Tous les scénarios partagent la même matinée propre (7 livraisons avant
 - "cert" : faux certificat qualité sur une bobine réelle → lot de
   production non conforme, sous-ensemble fabriqué avec, expéditions ;
 - "asn" : faux avis d'expédition → réception fantôme, production lancée
-  sur un stock inexistant, livraison promise au client.
+  sur un stock inexistant, livraison promise au client ;
+- "lot" et "recall" : aucun compromis ; incident qualité sur un lot
+  (`meta()["incident"]`), traité lot par lot sur décision humaine.
 """
 
 from __future__ import annotations
@@ -359,21 +361,31 @@ def _attack_asn(b: _Builder) -> None:
                 ["m-gr-08"], "LOT-908")
 
 
+def _attack_none(b: _Builder) -> None:
+    """Scénarios qualité : personne n'est compromis, la matinée et l'après-midi
+    de base suffisent (COIL-104 -> LOT-504 + LOT-A40, COIL-103 -> LOT-503 + LOT-A30).
+    Le paiement m-pay-04 dépend de la facture, pas de la bobine : il reste ok."""
+
+
 @dataclass(frozen=True)
 class ScenarioDef:
     id: str
     label: str
     description: str
     attack: Callable[[_Builder], None]
+    incident: dict | None = None
 
     def meta(self) -> dict:
-        return {
+        meta = {
             "id": self.id,
             "label": self.label,
             "description": self.description,
             "compromise": {"company": "fournisseur",
                            "since": COMPROMISED_SINCE.isoformat()},
         }
+        if self.incident is not None:
+            meta["incident"] = dict(self.incident)
+        return meta
 
 
 SCENARIOS: dict[str, ScenarioDef] = {s.id: s for s in [
@@ -397,6 +409,21 @@ SCENARIOS: dict[str, ScenarioDef] = {s.id: s for s in [
         "Une livraison inexistante est annoncée : réception fantôme, production "
         "lancée sur un stock qui n'existe pas, livraison promise au client.",
         _attack_asn),
+    ScenarioDef(
+        "lot", "Lot défectueux",
+        "Le contrôle réception détecte un défaut de coulée sur la bobine COIL-104 : "
+        "on isole ce lot et ce qui en dérive, sans blacklister le fournisseur.",
+        _attack_none,
+        {"type": "lot", "company": "fabricant", "lot": "COIL-104",
+         "reason": "Défaut de coulée signalé par le contrôle réception"}),
+    ScenarioDef(
+        "recall", "Rappel depuis un produit fini",
+        "Casse sur chantier sur LOT-503 : l'analyse remonte à la bobine COIL-103 "
+        "et mesure ce qu'un rappel toucherait.",
+        _attack_none,
+        {"type": "recall", "company": "fabricant", "target": "LOT-503",
+         "suspect_lot": "COIL-103",
+         "reason": "Casse sur chantier, analyse qualité : bobine en cause"}),
 ]}
 
 

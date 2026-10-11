@@ -203,7 +203,7 @@ def test_reset_clears_audit():
 
 def test_scenarios_endpoint():
     items = client.get("/api/scenarios").json()
-    assert [s["id"] for s in items] == ["mixed", "rib", "cert", "asn"]
+    assert [s["id"] for s in items] == ["mixed", "rib", "cert", "asn", "lot", "recall"]
     assert all(s["compromise"]["company"] == "fournisseur" for s in items)
 
 

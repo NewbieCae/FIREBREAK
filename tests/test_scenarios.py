@@ -80,7 +80,7 @@ def _records(sim):
 
 
 def test_all_scenarios_covered():
-    assert set(SCENARIOS) == set(EXPECTED)
+    assert set(SCENARIOS) == set(EXPECTED) | {"lot", "recall"}
 
 
 def test_default_is_mixed():
@@ -154,3 +154,21 @@ def test_withdraw_returns_to_zero(name):
     sim = _declared(name)
     sim.withdraw_compromise("fournisseur")
     assert sim.state()["counters"]["global"]["quarantined"] == 0
+
+
+@pytest.mark.parametrize("name", ["lot", "recall"])
+def test_quality_scenarios_have_incident_and_no_taint(name):
+    sim = build_simulation(name)
+    meta = sim.scenario
+    assert meta["incident"]["type"] == name
+    assert "compromise" in meta
+    assert {r.status for r in _records(sim).values()} == {"ok"}
+
+
+def test_quality_thread_coil_104():
+    """COIL-104 nourrit LOT-504 et LOT-A40 ; le paiement fournisseur reste ok."""
+    records = _records(build_simulation("lot"))
+    assert records["m-gr-04"].payload["lot"] == "COIL-104"
+    assert "m-gr-04" in records["m-lot-04"].inputs
+    assert "m-gr-04" in records["m-lot-a4"].inputs
+    assert records["m-pay-04"].status == "ok"

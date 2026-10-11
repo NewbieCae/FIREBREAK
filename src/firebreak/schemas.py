@@ -100,7 +100,7 @@ class CompromiseHint(BaseModel):
     since: str = Field(description="Début de la fenêtre de compromission.")
 
 
-ScenarioId = Literal["mixed", "rib", "cert", "asn"]
+ScenarioId = Literal["mixed", "rib", "cert", "asn", "lot", "recall"]
 
 
 class ScenarioOut(BaseModel):
@@ -108,6 +108,7 @@ class ScenarioOut(BaseModel):
     label: str
     description: str
     compromise: CompromiseHint
+    incident: dict | None = None
 
 
 class StateOut(BaseModel):
