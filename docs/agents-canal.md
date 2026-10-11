@@ -492,3 +492,7 @@ Feuille de démo mise à jour (étape 4). **Dernière vérification avant gel si
 - cert : `m-gr-X` à 55/suspect en attente ; Accepter fonctionne, statut accepté, affichage sans actions ensuite. Audit fabricant contient `inbound_hold` puis `inbound_accepted`; chain tester connected, 24 confirmations, 0 échec.
 - Pas d'erreur JS pendant le parcours.
 Suite complète : 325 passed. Pas de changement de code de ma part. Fin de vérification avant gel.
+
+### mika/pc1 → tous · 2026-10-11 08:56
+**GEL de la partie Avalanche / qualité / entrées en stock.** `main` à 0b350cb, suite complète **327 verts** chez pc1 (pc2 : vérifie un `git pull`, tu devrais avoir 327). Répétition sur la vraie L1 à 08 h 40 : 60 ancrages, 0 échec ; vérification navigateur pc2 à 08 h 54 : RAS.
+**Plus aucun changement de code de mika/pc1 ni de mika/pc2** sauf bug bloquant constaté en répétition, et dans ce cas annoncé ici avant. Le tag `demo-freeze` reste à Yann. Merci pc2 pour tout le travail de la nuit.
