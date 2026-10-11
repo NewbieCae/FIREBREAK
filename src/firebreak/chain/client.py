@@ -22,7 +22,16 @@ ATTEMPTS = 4
 RETRY_BACKOFF = 1.0
 READ_RETRIES = 3
 READ_RETRY_DELAY = 1.0
-MAX_PARALLEL = 4  # envois simultanés max (nœud géré : 429)
+MAX_PARALLEL = 2  # envois simultanés max (nœud géré : 429)
+RECEIPT_POLL = 2.0  # = temps de bloc de la L1
+GAS_PRICE_TTL = 30.0
+ACK_RETRY_DELAY = 2.0
+NONCE_ERRORS = ("nonce too low", "already known", "replacement transaction")
+# Gaz fixe par fonction : évite un eth_estimateGas (et ses 429) à chaque envoi.
+GAS_LIMITS = {"anchorAudit": 120_000, "declareIncident": 120_000,
+              "withdrawIncident": 120_000, "anchorAlert": 150_000,
+              "acknowledgeAlert": 80_000}
+DEFAULT_GAS = 200_000
 ACK_WAIT = 60.0  # attente max de l'ancrage de l'alerte avant un accusé
 ACK_POLL = 1.0
 
@@ -115,6 +124,8 @@ class Web3Chain:
         # Une file et un thread par compte : nonces ordonnés par compte.
         self._queues: dict[str, queue.Queue] = {}
         self._slots = threading.Semaphore(max(1, max_parallel))
+        self._nonces: dict[str, int] = {}
+        self._gas_cache: tuple[float, int] | None = None
 
     def submit(self, op: ChainOp) -> AnchorRecord:
         rec = AnchorRecord(next(self._ids), op.kind, op.company, op.hash)
@@ -208,12 +219,24 @@ class Web3Chain:
                 if op.fn == "acknowledgeAlert" and not self._wait_alert(op.args[0]):
                     self._fail(rec, "alerte non ancrée : accusé impossible")
                 else:
-                    with self._slots:
-                        self._send(op, rec)
+                    self._send_with_ack_retry(op, rec)
             except Exception as exc:  # le worker ne doit jamais mourir
                 self._fail(rec, f"{type(exc).__name__}: {exc}")
             finally:
                 q.task_done()
+
+    def _send_with_ack_retry(self, op: ChainOp, rec: AnchorRecord) -> None:
+        # Un accusé peut être miné sur un nœud qui ne voit pas encore l'alerte : on retente.
+        deadline = time.monotonic() + ACK_WAIT
+        while True:
+            with self._slots:
+                reverted = self._send(op, rec)
+            if not (reverted and op.fn == "acknowledgeAlert"
+                    and time.monotonic() + ACK_RETRY_DELAY < deadline):
+                return
+            time.sleep(ACK_RETRY_DELAY)
+            with self._lock:
+                rec.status, rec.error, rec.tx_hash = "pending", None, None
 
     def _wait_alert(self, alert_hash: bytes) -> bool:
         """Attend (sans occuper d'envoi) que l'alerte soit ancrée par l'émetteur."""
@@ -225,9 +248,27 @@ class Web3Chain:
                 return False
             time.sleep(ACK_POLL)
 
-    def _send(self, op: ChainOp, rec: AnchorRecord) -> None:
-        from .deployer import RECEIPT_POLL_SECONDS
+    def _gas_price(self) -> int:
+        with self._lock:
+            now = time.monotonic()
+            if self._gas_cache and now - self._gas_cache[0] < GAS_PRICE_TTL:
+                return self._gas_cache[1]
+        price = self.w3.eth.gas_price
+        with self._lock:
+            self._gas_cache = (time.monotonic(), price)
+        return price
 
+    def _next_nonce(self, company: str, address: str) -> int:
+        with self._lock:
+            nonce = self._nonces.get(company)
+        if nonce is None:
+            nonce = int(self.w3.eth.get_transaction_count(address, "pending"))
+            with self._lock:
+                self._nonces[company] = nonce
+        return nonce
+
+    def _send(self, op: ChainOp, rec: AnchorRecord) -> bool:
+        """Envoie et attend le reçu. Renvoie True si le contrat a rejeté la transaction minée."""
         acct = self.accounts.get(op.company)
         if acct is None:
             raise ValueError(f"compte inconnu : {op.company}")
@@ -239,15 +280,25 @@ class Web3Chain:
                 time.sleep(RETRY_BACKOFF * 2 ** (attempt - 1))
             try:
                 if tx_hash is None:
+                    nonce = self._next_nonce(op.company, acct.address)
                     tx = getattr(self.contract.functions, op.fn)(*op.args).build_transaction({
                         "from": acct.address,
-                        "nonce": self.w3.eth.get_transaction_count(acct.address, "pending"),
+                        "nonce": nonce,
                         "chainId": self.chain_id,
-                        "gasPrice": self.w3.eth.gas_price,
+                        "gasPrice": self._gas_price(),
+                        "gas": GAS_LIMITS.get(op.fn, DEFAULT_GAS),
                     })
                     signed = acct.sign_transaction(tx)
                     raw = getattr(signed, "raw_transaction", None) or signed.rawTransaction
-                    tx_hash = self.w3.eth.send_raw_transaction(raw)
+                    try:
+                        tx_hash = self.w3.eth.send_raw_transaction(raw)
+                    except Exception as exc:
+                        if any(m in str(exc).lower() for m in NONCE_ERRORS):
+                            with self._lock:
+                                self._nonces.pop(op.company, None)
+                        raise
+                    with self._lock:
+                        self._nonces[op.company] = nonce + 1
                     hex_hash = tx_hash.hex()
                     if not hex_hash.startswith("0x"):
                         hex_hash = "0x" + hex_hash
@@ -257,18 +308,19 @@ class Web3Chain:
                 # Une transaction déjà envoyée n'est jamais renvoyée : on réinterroge son reçu.
                 receipt = self.w3.eth.wait_for_transaction_receipt(
                     tx_hash, timeout=RECEIPT_TIMEOUT,
-                    poll_latency=RECEIPT_POLL_SECONDS)
+                    poll_latency=RECEIPT_POLL)
                 with self._lock:
                     if receipt["status"] == 1:
                         rec.status = "confirmed"
                         rec.block = int(receipt["blockNumber"])
                         rec.explorer_link = explorer_tx_link(self.config, hex_hash)
-                        return
-                last_error = "transaction rejetée par le contrat"
-                break
+                        return False
+                self._fail(rec, "transaction rejetée par le contrat")
+                return True
             except Exception as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
         self._fail(rec, last_error)
+        return False
 
     def _alert_anchored(self, alert_hash: bytes) -> bool:
         try:

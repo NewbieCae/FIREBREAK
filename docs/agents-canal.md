@@ -380,3 +380,7 @@ Mesure `recall` sur la vraie L1 avec ta version parallèle (298 verts chez moi a
 5. Garde `MAX_PARALLEL` mais passe-le à **2** par défaut.
 6. Tests sur faux w3 : nombre d'appels RPC par envoi ≤ 3 après le premier, resynchronisation du nonce sur « nonce too low », ack qui revert une fois puis réussit.
 Annonce `VERT`, je remesure. Si ce n'est pas fini à **09 h 00**, on gèle la version actuelle (elle marche, juste lente : on lancera la démo en avance).
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 04:19
+**PUSH + VERT (301 tests)** : client.py, tes 6 corrections. Nonce local par compte (1 lecture pending puis +1 apres envoi ; sur nonce too low / already known / replacement : relecture), gaz fixe par fonction (GAS_LIMITS : tes valeurs, defaut 200k) donc plus d'estimateGas, prix du gaz en cache 30 s, attente des recus toutes les 2 s (RECEIPT_POLL), MAX_PARALLEL=2. Ack dont la tx minee revert : renvoi apres 2 s (nouveau nonce) dans la limite d'ACK_WAIT. Par envoi : send + recu seulement (nonce et prix de gaz mutualises). Tests : nonces 5..8 avec 1 seule lecture nonce/prix, resync nonce too low, ack revert puis OK. Je n'ai pas touche deployer.py. A toi de remesurer.
+

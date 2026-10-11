@@ -315,6 +315,102 @@ def test_ack_soumis_avant_son_alerte_finit_apres_elle(monkeypatch):
     assert alert.status == "confirmed" and ack.status == "confirmed"
 
 
+def _rpc_chain(monkeypatch, send_errors=(), receipts=None):
+    import firebreak.chain.client as mod
+    monkeypatch.setattr(mod, "RETRY_BACKOFF", 0)
+    monkeypatch.setattr(mod, "ACK_RETRY_DELAY", 0)
+    calls = {"nonce": 0, "gas_price": 0, "send": 0, "receipt": 0, "nonces": []}
+    errors = list(send_errors)
+    statuses = list(receipts or [])
+
+    class Tx:
+        def __init__(self, fn):
+            self.fn = fn
+
+        def build_transaction(self, params):
+            assert params["gas"] > 0
+            calls["nonces"].append(params["nonce"])
+            return params
+
+    class Fns:
+        def __getattr__(self, fn):
+            return lambda *a: Tx(fn)
+
+        def alerts(self, h):
+            class C:
+                def call(_):
+                    return (b"", b"", 0, 1, 0)
+            return C()
+
+    class Contract:
+        functions = Fns()
+
+    class Acct:
+        address = "0xabc"
+
+        def sign_transaction(self, tx):
+            class S:
+                raw_transaction = b"raw"
+            return S()
+
+    class Eth:
+        chain_id = 1
+
+        @property
+        def gas_price(self):
+            calls["gas_price"] += 1
+            return 1
+
+        def get_transaction_count(self, *a):
+            calls["nonce"] += 1
+            return 5
+
+        def send_raw_transaction(self, raw):
+            calls["send"] += 1
+            if errors:
+                raise errors.pop(0)
+            return bytes.fromhex("11" * 32)
+
+        def wait_for_transaction_receipt(self, h, timeout, poll_latency):
+            calls["receipt"] += 1
+            ok = statuses.pop(0) if statuses else 1
+            return {"status": ok, "blockNumber": 9}
+
+    class W3:
+        eth = Eth()
+
+    chain = mod.Web3Chain(ChainConfig(mode="tester"), W3(), Contract(),
+                          {"a": Acct()})
+    return chain, calls
+
+
+def test_nonce_local_gaz_fixe_et_prix_en_cache(monkeypatch):
+    chain, calls = _rpc_chain(monkeypatch)
+    recs = [chain.submit(ChainOp("audit", "a", "anchorAudit", (b"\0" * 32,), "0x01"))
+            for _ in range(4)]
+    chain.flush(5)
+    assert all(r.status == "confirmed" for r in recs)
+    assert calls["nonces"] == [5, 6, 7, 8]
+    assert calls["nonce"] == 1 and calls["gas_price"] == 1
+    assert calls["send"] == 4 and calls["receipt"] == 4
+
+
+def test_nonce_too_low_resynchronise(monkeypatch):
+    chain, calls = _rpc_chain(monkeypatch, send_errors=[ValueError("nonce too low")])
+    rec = chain.submit(ChainOp("audit", "a", "anchorAudit", (b"\0" * 32,), "0x01"))
+    chain.flush(5)
+    assert rec.status == "confirmed"
+    assert calls["nonce"] == 2 and calls["send"] == 2
+
+
+def test_ack_reverte_une_fois_puis_reussit(monkeypatch):
+    chain, calls = _rpc_chain(monkeypatch, receipts=[0, 1])
+    rec = chain.submit(ChainOp("ack", "a", "acknowledgeAlert", (b"\1" * 32,), "0x01"))
+    chain.flush(5)
+    assert rec.status == "confirmed" and calls["send"] == 2
+    assert calls["nonces"] == [5, 6]
+
+
 
 def test_l1_injoignable_ne_leve_pas():
     cfg = ChainConfig(mode="l1", rpc_url="http://127.0.0.1:1", chain_id=1,
