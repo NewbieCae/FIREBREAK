@@ -366,6 +366,120 @@ class Simulation:
             "status": report.status, "issued_at": report.issued_at.isoformat(),
         }
 
+    # -- contrôle des entrées en stock ------------------------------------
+
+    def _referentiel(self, company: str):
+        from .inbound import default_referentiels
+
+        if not hasattr(self, "referentiels"):
+            self.referentiels = default_referentiels()
+        return self.referentiels.get(company)
+
+    def inbound_check(self, company: str, receipt_id: str) -> dict:
+        """Note de confiance d'une réception (lecture seule)."""
+        from .inbound import evaluate_receipt
+
+        ledger = self.ledgers.get(company)
+        if ledger is None:
+            raise KeyError(company)
+        if receipt_id not in ledger.records:
+            raise KeyError(receipt_id)
+        result = evaluate_receipt(ledger, receipt_id, self._referentiel(company))
+        result["status"] = self._inbound_status(company, receipt_id)
+        return result
+
+    def _inbound_status(self, company: str, receipt_id: str) -> str:
+        ledger = self.ledgers[company]
+        decided = {e["details"].get("receipt"): e["event"]
+                   for e in ledger.audit.entries()
+                   if e["event"] in ("inbound_hold", "inbound_accepted", "inbound_rejected")}
+        return {"inbound_hold": "en_attente", "inbound_accepted": "accepte",
+                "inbound_rejected": "refuse"}.get(decided.get(receipt_id), "non_controle")
+
+    def inbound_screen(self, company: str, receipt_id: str, actor: Actor = "règle") -> dict:
+        """Contrôle une réception ; sous le seuil, la met en attente (elle et
+        tout ce qui en dépend) jusqu'à la décision d'un humain."""
+        marks = self.audit_marks()
+        result = self._screen_one(company, receipt_id, actor)
+        if result["hold"]:
+            self.run()
+        self.timeline = self.collect_timeline(marks)
+        result["status"] = self._inbound_status(company, receipt_id)
+        return result
+
+    def _screen_one(self, company: str, receipt_id: str, actor: Actor) -> dict:
+        result = self.inbound_check(company, receipt_id)
+        if result["hold"] and result["status"] == "non_controle":
+            ledger = self.ledgers[company]
+            ledger.mark_suspect([receipt_id],
+                                f"en attente de validation à réception ({result['score']}/100)")
+            ledger.audit.append(self.clock, "inbound_hold", actor, {
+                "receipt": receipt_id, "score": result["score"], "band": result["band"],
+                "supplier": result["supplier"], "lot": result["lot"],
+                "failed": [c["id"] for c in result["checks"] if not c["ok"]],
+            })
+        return result
+
+    def inbound_screen_all(self, company: str, actor: Actor = "règle") -> list[dict]:
+        """Passe au crible toutes les réceptions de marchandise de `company`
+        qui proviennent d'un partenaire, dans l'ordre chronologique."""
+        from .inbound import RECEIPT_KINDS
+
+        ledger = self.ledgers.get(company)
+        if ledger is None:
+            raise KeyError(company)
+        receipts = sorted(
+            (r for r in ledger.records.values()
+             if r.kind in RECEIPT_KINDS and any(
+                 ledger.records[i].token is not None for i in r.inputs if i in ledger.records)),
+            key=lambda r: (r.ts, r.id))
+        marks = self.audit_marks()
+        results = [self._screen_one(company, r.id, actor) for r in receipts]
+        if any(r["hold"] for r in results):
+            self.run()
+        self.timeline = self.collect_timeline(marks)
+        for r in results:
+            r["status"] = self._inbound_status(company, r["receipt"])
+        return results
+
+    def inbound_decide(self, company: str, receipt_id: str, decision: str,
+                       reason: str = "", actor: Actor = "humain") -> dict:
+        """Décision humaine sur une réception mise en attente.
+        `accept` : l'attente est levée et la réception devient fiable
+        (`verified`) ; `reject` : elle reste isolée et un signalement qualité
+        signé part vers le fournisseur."""
+        if decision not in ("accept", "reject"):
+            raise ValueError(f"décision inconnue: {decision}")
+        status = self.inbound_check(company, receipt_id)["status"]
+        if status in ("accepte", "refuse"):
+            raise ValueError(f"réception {receipt_id} déjà traitée ({status})")
+        ledger = self.ledgers[company]
+        record = ledger.records[receipt_id]
+        marks = self.audit_marks()
+        out: dict = {"receipt": receipt_id, "decision": decision, "reports": []}
+        if decision == "accept":
+            ledger.clear_suspect([receipt_id])
+            record.verified = True
+            ledger.audit.append(self.clock, "inbound_accepted", actor, {
+                "receipt": receipt_id, "reason": reason or "contrôle humain concluant",
+            })
+            self.run()
+        else:
+            if receipt_id not in ledger.suspects:
+                ledger.mark_suspect([receipt_id], "réception refusée")
+            ledger.audit.append(self.clock, "inbound_rejected", actor, {
+                "receipt": receipt_id, "reason": reason or "réception refusée",
+            })
+            self.run()
+            try:
+                out["reports"] = self.report_upstream(
+                    company, receipt_id, reason or "réception refusée au contrôle d'entrée", actor)
+            except ValueError:
+                out["reports"] = []
+        self.timeline = self.collect_timeline(marks)
+        out["status"] = self._inbound_status(company, receipt_id)
+        return out
+
     # -- timeline (rejeu pas à pas) ----------------------------------------
 
     def audit_marks(self) -> dict[str, int]:
@@ -494,6 +608,9 @@ class Simulation:
                 "quality_report_sent": "report_sent",
                 "quality_report_received": "report_received",
                 "quality_report_decided": "report_decided",
+                "inbound_hold": "inbound_hold",
+                "inbound_accepted": "inbound_accepted",
+                "inbound_rejected": "inbound_rejected",
             }.get(ev, ev)
         return {
             "n": n, "ts": ts, "type": stype, "company": cid,
@@ -536,6 +653,13 @@ class Simulation:
                 ok = d.get("verified")
                 return (f"Alerte reçue chez {d.get('to')} — signature "
                         f"{'vérifiée' if ok else 'REJETÉE'}.")
+            case "inbound_hold":
+                return (f"Réception mise en attente chez {cid} : note {d.get('score')}/100 "
+                        f"({d.get('band')}), en attente d'une décision humaine.")
+            case "inbound_accepted":
+                return f"Réception acceptée après contrôle ({cid}) : le lot devient fiable."
+            case "inbound_rejected":
+                return f"Réception refusée ({cid}) : le lot reste isolé."
             case "lot_suspect":
                 return (f"Lot {d.get('lot')} déclaré suspect chez {cid} : "
                         f"{d.get('reason')} — le fournisseur n'est pas mis en cause.")
