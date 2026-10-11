@@ -94,6 +94,19 @@
       <div id="chain-verify"></div>
       <div id="chain-anchors" class="muted"></div>
     </details>
+    <details id="quality-box" style="margin-top:18px">
+      <summary><h2 style="display:inline">Qualité (debug)</h2></summary>
+      <div class="muted">Incident qualité : on isole un lot, pas le fournisseur.</div>
+      <select id="q-company"></select>
+      <input id="q-ref" placeholder="lot ou record (COIL-104, c-gr-03)" style="width:95%">
+      <input id="q-reason" placeholder="motif" style="width:95%">
+      <button id="q-suspect" class="secondary rem-btn">Lot suspect</button>
+      <button id="q-withdraw" class="secondary rem-btn">Lever la suspicion</button>
+      <button id="q-recall" class="secondary rem-btn">Analyse rappel</button>
+      <button id="q-report" class="secondary rem-btn">Signaler en amont</button>
+      <div id="q-out" class="muted"></div>
+      <div id="q-inbox"></div>
+    </details>
   </div>
 </div>
 <div id="compare">
@@ -495,6 +508,69 @@ document.getElementById('btn-rewrite').onclick = async () => {
 document.getElementById('chain-box').addEventListener('toggle', refreshChain);
 refreshChain().then(() => { if (chainOn) document.getElementById('btn-rewrite').style.display = ''; });
 setInterval(refreshChain, 2000);
+
+// --- Panneau Qualité (debug) : lot suspect, rappel, signalements amont ---
+const qv = id => document.getElementById(id).value.trim();
+function qFillCompanies() {
+  const sel = document.getElementById('q-company');
+  if (!state || !state.scenario || !state.companies || sel.dataset.sc === state.scenario.id) return;
+  sel.dataset.sc = state.scenario.id;
+  sel.innerHTML = state.companies.map(c => `<option value="${esc(c.id)}">${esc(c.id)}</option>`).join('');
+  const inc = state.scenario && state.scenario.incident;
+  if (inc) {
+    sel.value = inc.company;
+    document.getElementById('q-ref').value = inc.lot || inc.target || '';
+    document.getElementById('q-reason').value = inc.reason || '';
+  }
+}
+async function qRun(fn) {
+  try { await fn(); } catch (e) { document.getElementById('q-out').textContent = e.message; }
+}
+async function qInbox() {
+  const box = document.getElementById('quality-box');
+  if (!box.open) return;
+  const company = qv('q-company');
+  const list = await api('/api/reports?company=' + encodeURIComponent(company));
+  document.getElementById('q-inbox').innerHTML = list.map(r =>
+    `<div class="alert">${esc(r.id)} · ${esc(r.from)} → ${esc(r.to)} · ${esc(r.status)} · ` +
+    `${r.verified ? 'signature ✓' : 'signature ✗'}<br>${esc(r.reason)}` +
+    (r.status === 'pending' && r.to === company
+      ? ` <button class="secondary q-dec" data-id="${esc(r.id)}" data-d="confirm">Confirmer</button>` +
+        `<button class="secondary q-dec" data-id="${esc(r.id)}" data-d="reject">Rejeter</button>` : '') +
+    `</div>`).join('') || 'Aucun signalement.';
+  document.querySelectorAll('.q-dec').forEach(b => b.onclick = () => qRun(async () => {
+    render(await api(`/api/reports/${b.dataset.id}/decision`, 'POST',
+      { company, decision: b.dataset.d }));
+    await qInbox();
+  }));
+}
+const qBody = () => ({ company: qv('q-company'), lot: qv('q-ref'), reason: qv('q-reason') });
+document.getElementById('q-suspect').onclick = () => qRun(async () => {
+  render(await api('/api/lots/suspect', 'POST', qBody()));
+  document.getElementById('q-out').textContent = 'Lot déclaré suspect.';
+});
+document.getElementById('q-withdraw').onclick = () => qRun(async () => {
+  const b = qBody();
+  render(await api('/api/lots/suspect/withdraw', 'POST', { company: b.company, lot: b.lot }));
+  document.getElementById('q-out').textContent = 'Suspicion levée.';
+});
+document.getElementById('q-recall').onclick = () => qRun(async () => {
+  const r = await api(`/api/recall?company=${encodeURIComponent(qv('q-company'))}&ref=${encodeURIComponent(qv('q-ref'))}`);
+  document.getElementById('q-out').innerHTML = r.candidates.map(c =>
+    `<div class="alert">${esc(c.record)} · ${esc(c.label)}${c.lot ? ' · ' + esc(c.lot) : ''}<br>` +
+    `isolerait ${c.impact_records} opérations, ${c.impact_gates} irréversibles` +
+    (c.impact_partners.length ? ', alerte : ' + esc(c.impact_partners.join(', ')) : '') + `</div>`).join('')
+    || 'Aucune cause candidate.';
+});
+document.getElementById('q-report').onclick = () => qRun(async () => {
+  const b = qBody();
+  const r = await api('/api/reports', 'POST', { company: b.company, ref: b.lot, reason: b.reason });
+  document.getElementById('q-out').textContent = `Signalement envoyé à ${r.map(x => x.to).join(', ')}.`;
+  await qInbox();
+});
+document.getElementById('q-company').onchange = () => qRun(qInbox);
+document.getElementById('quality-box').addEventListener('toggle', () => { qFillCompanies(); qRun(qInbox); });
+setInterval(() => { qFillCompanies(); qRun(qInbox); }, 3000);
 </script>
 </body>
 </html>
