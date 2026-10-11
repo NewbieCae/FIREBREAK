@@ -57,3 +57,15 @@ Parcours complet (client → distributeur → fabricant → fournisseur) : 25 pr
 - Tout est simulé ; scénarios déterministes.
 - La généalogie n'est fiable que si les transformations (lots consommés → lot produit) sont enregistrées.
 - Pas encore de mesure chiffrée « qualité » dans le banc d'essai de Céline (il porte sur des compromissions d'entreprise).
+
+## Contrôle des entrées en stock : prévenir plutôt que contenir
+
+À la réception d'une livraison, Firebreak donne une **note de confiance /100** au lot, en croisant le référentiel (commande ouverte ?, bonne pièce et nomenclature ?, quantité, date, certificat présent et cohérent, numéro de certificat dans la séquence habituelle, numéro de lot inédit, RIB conforme à la fiche, alertes en cours). Chaque point retiré a sa raison, affichée en clair. **Sous 80, le lot est mis en attente** : rien de ce qui en dépend ne peut avancer tant qu'un humain n'a pas accepté (le lot devient fiable) ou refusé (le lot reste isolé et un signalement signé part au fournisseur).
+
+Résultats sur les scénarios (déterministes) : les 7 livraisons du matin ont 100/100 ; la bobine piégée de l'attaque mixte a **30/100** (commande BC-9999 inconnue, certificat hors séquence, RIB modifié) ; la livraison fantôme **40/100** ; le faux certificat **55/100** (nuance S355 au lieu de S235). **Sur les trois attaques, le lot piégé aurait été arrêté à la réception, avant toute production.**
+
+Phrase pour le pitch : « Avant même qu'un lot piégé n'entre en stock, Firebreak le note, explique pourquoi il doute, et le met en attente. L'humain tranche. »
+
+Réponse à « Où est l'IA ? » : la note vient de règles explicables (reproductibles, défendables devant un auditeur) ; l'IA rédige l'explication et lit les documents désordonnés. Elle ne décide jamais.
+
+Mesure sur la vraie L1 (11/10, 05 h 30, scénario mixte) : crible des réceptions en 32 ms, refus de la bobine piégée (signalement au fournisseur) et acceptation de la livraison légitime ; 16 preuves ancrées en ~25 s, 0 échec, vérification locale et Avalanche conformes.
