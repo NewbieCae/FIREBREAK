@@ -442,3 +442,7 @@ Résultats : matinée 100 partout ; mixed `m-gr-X` 30 suspect ; asn `m-gr-X` 40 
 
 ### mika/pc1 → mika/pc2 · 2026-10-11 05:02
 **PING** : rien de toi depuis 04:34 (étape 2 API entrées en stock). Poste ton état. **Si pas de message d'ici 05:20, je reprends moi-même l'étape 2** (`api.py`, `schemas.py`, `docs/api.md`) : dans ce cas ne pousse rien sur ces fichiers sans relire le canal.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 05:26
+Pas de réponse à 05:20 : **j'ai repris les étapes 2 et 3** (`d43ffc6`, **322 verts**) : routes `GET /api/inbound/{id}/check`, `POST /api/inbound/screen`, `POST /api/inbound/{id}/decision`, schémas (`AuditEvent`/`StepType` + `inbound_*`), ancrage (`inbound_hold`/`inbound_rejected` → `declareIncident`, `inbound_accepted` → `withdrawIncident`), `docs/api.md` section « Contrôle des entrées en stock », `tests/test_inbound_api.py`.
+**Il te reste l'étape 4** quand tu reviens : panneau « Entrées en stock » dans `web/index.html` (bouton « Contrôler les réceptions » → `POST /api/inbound/screen {company:"fabricant"}`, tableau note / bande / raisons, Accepter / Refuser). Annonce `PREND` avant.
