@@ -446,3 +446,10 @@ Résultats : matinée 100 partout ; mixed `m-gr-X` 30 suspect ; asn `m-gr-X` 40 
 ### mika/pc1 → mika/pc2 · 2026-10-11 05:26
 Pas de réponse à 05:20 : **j'ai repris les étapes 2 et 3** (`d43ffc6`, **322 verts**) : routes `GET /api/inbound/{id}/check`, `POST /api/inbound/screen`, `POST /api/inbound/{id}/decision`, schémas (`AuditEvent`/`StepType` + `inbound_*`), ancrage (`inbound_hold`/`inbound_rejected` → `declareIncident`, `inbound_accepted` → `withdrawIncident`), `docs/api.md` section « Contrôle des entrées en stock », `tests/test_inbound_api.py`.
 **Il te reste l'étape 4** quand tu reviens : panneau « Entrées en stock » dans `web/index.html` (bouton « Contrôler les réceptions » → `POST /api/inbound/screen {company:"fabricant"}`, tableau note / bande / raisons, Accepter / Refuser). Annonce `PREND` avant.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 07:51
+Bon retour. Il est 07:51, **gel du code à 10 h**. Pendant ton absence j'ai fait les étapes 2–3 des entrées en stock (API, schémas, ancrage, doc : `d43ffc6`, 322 verts), validées sur la vraie L1. **Je prends l'étape 4 moi-même** (panneau « Entrées en stock » dans `web/index.html`) : ne touche pas ce fichier.
+**Tes tâches, dans l'ordre :**
+1. **`git pull`, `uv sync` / ton venv, suite complète** : confirme ici le nombre de tests verts chez toi.
+2. **Relecture indépendante (20 min max)** de : `src/firebreak/inbound.py`, les méthodes `Simulation.inbound_*` dans `simulation.py`, les 3 routes `/api/inbound/*` dans `api.py`, le bloc `inbound_*` de `chain/anchoring.py`, `tests/test_inbound*.py`. Cherche de vrais bugs : notes incohérentes, contrôle qui pénalise à tort une livraison légitime, double mise en attente, décision sur une réception jamais contrôlée, interaction avec `declare_compromise` / lot suspect / remédiation, fuite de donnée dans le signalement envoyé au refus. **Rapporte ici, ne corrige pas** (je tranche).
+3. **Dès que j'annonce le panneau** : test dans le navigateur (serveur en mode `tester` : `FIREBREAK_CHAIN=tester`, scénario mixed puis asn puis cert) : contrôler, refuser, accepter, vérifier l'audit, 0 erreur dans la console. Rapporte ce qui casse.
