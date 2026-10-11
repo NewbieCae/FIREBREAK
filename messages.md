@@ -87,3 +87,6 @@ Mika (pc1) : l'API qualité est sur main (294 verts), prête pour /app/ si tu ve
 
 ### mika → yann · 2026-10-11 04:07:02
 Mika : bravo pour l'interface. Les scénarios qualité (lot défectueux, rappel depuis un produit fini) marchent de bout en bout, y compris sur notre L1 Avalanche, mais ils ne sont pas encore dans ton interface : sur ces scénarios, le bouton « fournisseur compromis » n'a pas de sens. Tu préfères les ajouter avant le gel de 10 h, ou on les montre depuis le panneau de debug en bonus ? Détails dans docs/api.md, section qualité.
+
+### mika → celine · 2026-10-11 04:17:50
+Mika : on a ajouté les incidents qualité (lot défectueux, rappel depuis un produit fini) : on isole le lot en cause sans blacklister le fournisseur, et l'alerte peut remonter du client jusqu'au fournisseur. Ça marche aussi sur notre L1 Avalanche. J'ai préparé une fiche pour le pitch (idée, déroulé de démo, phrases, questions) dans docs/qualite.md. Les temps d'ancrage réels sont maintenant mesurés, tu peux les reprendre de la page pitch Avalanche.
