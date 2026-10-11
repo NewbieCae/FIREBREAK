@@ -12,7 +12,8 @@ refuse. L'explication en français est générée à partir des contrôles ; une
 IA peut la reformuler, jamais changer la note ni la décision.
 
 Les données de réception sont lues dans les payloads (`bc`, `part`, `qty`,
-`lot`, `cert_no`, `grade`, `rib`) et, à défaut, dans les libellés
+`lot` de la réception, `lot_no` des avis d'expédition et certificats — `lot`
+y est réservé aux porteurs de lot de la généalogie —, `cert_no`, `grade`, `rib`) et, à défaut, dans les libellés
 (« BC-1008 », « CQ-2003 »), pour fonctionner sur des données incomplètes.
 """
 
@@ -145,17 +146,17 @@ def evaluate_receipt(ledger: Ledger, receipt_id: str, ref: Referentiel | None) -
     profile = ref.suppliers.get(supplier_id)
 
     bc = _value("bc", receipt, asn) or _from_label(asn, _BC_RE) or _from_label(receipt, _BC_RE)
-    lot = _value("lot", receipt, asn)
+    lot = _value("lot", receipt) or _value("lot_no", asn) or _value("lot", asn)
     if cert is None and lot is not None:
         # Certificat non rattaché à la réception : on cherche celui que le
         # même fournisseur a envoyé pour ce lot.
         cert = next((r for r in ledger.records.values()
                      if r.kind == "quality_cert" and r.origin == supplier_id
-                     and r.payload.get("lot") == lot), None)
+                     and lot in (r.payload.get("lot_no"), r.payload.get("lot"))), None)
     part = _value("part", receipt, asn, cert)
     qty = _value("qty", receipt, asn)
     cert_no = _value("cert_no", cert) or _from_label(cert, _CERT_RE)
-    cert_lot = _value("lot", cert)
+    cert_lot = _value("lot_no", cert) or _value("lot", cert)
     grade = _value("grade", cert)
     po = ref.orders.get(bc) if bc else None
 
