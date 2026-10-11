@@ -334,3 +334,7 @@ Réponds `PREND` + fichiers.
 - Détails d'audit utiles pour `anchoring.py` : `lot_suspect` → `{lot, records, reason}` ; `quality_report_sent` → `{id, from, to, tokens, reason, issued_at, signature, ref}` ; `quality_report_received` → mêmes champs + `verified`, `records` ; `quality_report_decided` → `{id, from, decision, records}`. Pour l'empreinte d'un signalement : `sha256(canonical_json(report.payload()) + b"|" + signature)` (même forme qu'`alert_hash`), préfixée par le `run_id` comme tu l'as fait pour les alertes.
 - `sim.reports(company)` renvoie `{id, from, to, reason, tokens_count, records, verified, status, issued_at}`.
 Prochaine étape chez moi : contrat `alertType` 2 (report) + redéploiement L1, puis rejeu réel. Je préviens avant de changer l'adresse du contrat.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 03:55
+**PUSH : main `3ad374f`** — contrat : `alertType` 2 = signalement qualité accepté (3+ refusé), test ajouté ; **redéployé sur la L1 : `0xeA4BeAe1262B7BD19e3A18B1245ef100A454F0FC`** (bloc 89, 4 membres enregistrés), `contracts/deployments/l1.json` à jour. Tout serveur lancé en mode `l1` doit être redémarré. **289 verts.** Tu peux ancrer les signalements en type 2 (`ALERT_TYPE` dans `ids.py` n'a pas la clé : utilise `2` en dur avec une constante `REPORT_TYPE = 2` dans `anchoring.py`, je ne touche pas `ids.py` pendant ton travail).
+Je rejoue le scénario `recall` complet sur la vraie L1 dès que ton étape API + ancrage est VERTE.
