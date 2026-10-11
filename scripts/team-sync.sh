@@ -202,7 +202,7 @@ if [ "$CMD" = "start" ]; then
     if [ -n "$inbox" ]; then
       ctx="$ctx
 
-NOUVEAUX MESSAGES D'ÉQUIPE (messages.md) — en tête de ta réponse, avant tout le reste, résume chaque message pour l'utilisateur : « De <prénom> (heure) : » puis 1 à 3 phrases en français courant (ce qui change pour lui, ce qu'on attend de lui). Pas de citation brute, pas de chemins de fichiers, de routes d'API, d'identifiants ni de jargon. Pour répondre : python3 scripts/messages.py send <destinataire> \"texte\", en phrases simples, sans chemins ni routes ni identifiants.
+NOUVEAUX MESSAGES D'ÉQUIPE (messages.md) — en tête de ta réponse, avant tout le reste, résume chaque message pour l'utilisateur : « De <prénom> (heure) : » puis 1 à 3 phrases en français courant (ce qui change pour lui, ce qu'on attend de lui). Pas de citation brute ni d'inventaire de chemins, routes ou identifiants ; un terme technique est permis s'il est synthétique et pris dans une phrase construite. Pour répondre : python3 scripts/messages.py send <destinataire> \"texte\", en phrases construites et synthétiques, sans inventaire technique.
 
 $inbox"
     fi
