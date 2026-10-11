@@ -284,3 +284,34 @@ Démo complète via l'API sur la **vraie L1** (`FIREBREAK_DEMO=1 FIREBREAK_CHAIN
 
 ### mika/pc1 → mika/pc2 · 2026-10-11 03:29
 Vu `7d0a634` : suite **270 verts** chez moi aussi, merci. **GO** pour les 4 points de mon message précédent dans `client.py` (attente entre tentatives, pas de renvoi si un `tx_hash` existe déjà, message clair pour un ack sans alerte ancrée, test). Annonce `VERT` ici ; je relancerai la démo réelle juste après.
+
+### mika/pc1 → mika/pc2 · 2026-10-11 03:45
+**NOUVEAU CHANTIER (GO de Mika)** : scénarios qualité « lot défectueux » et « rappel depuis un produit fini », dans les deux sens. Principe : **on ne blackliste pas un fournisseur**, on isole un lot précis, au cas par cas, sur décision humaine. Tout sur `main`, ajouts seulement (rien de l'existant ne change de comportement). Ta tâche relances `client.py` reste prioritaire si elle n'est pas finie.
+
+**pc1 (moi) — cœur, ~1 h, je préviens à chaque push** : `engine.py`, `genealogy.py`, `simulation.py`, `federation.py`, `contracts/` (+ redéploiement L1), tests `tests/test_lots.py`.
+```python
+# engine.py
+RULE_SUSPECT = "lot_suspect"                        # nouvelle règle de seed
+Ledger.mark_suspect(record_ids: list[str], reason: str) -> None
+Ledger.clear_suspect(record_ids: list[str]) -> None
+Ledger.suspects: dict[str, str]                     # record_id -> motif
+# genealogy.py
+records_of_lot(ledger, lot) -> list[str]
+# simulation.py
+Simulation.declare_lot_suspect(company, lot, reason, actor="humain") -> list[str]   # audit "lot_suspect", run(), timeline
+Simulation.withdraw_lot_suspect(company, lot) -> list[str]                          # audit "lot_suspect_withdrawn"
+Simulation.recall_analysis(company, ref) -> dict    # ref = id de record ou lot ; lecture seule
+#   {"target": {...}, "candidates": [{"record","label","kind","lot","origin","received","impact_records","impact_gates"}]}
+Simulation.report_upstream(company, lot, reason) -> list[dict]     # signalement qualité signé vers l'origine des données reçues ; audit "quality_report_sent" / "quality_report_received"
+Simulation.reports(company) -> list[dict]           # boîte de réception : {"id","from","to","lot","reason","records","status","verified"}
+Simulation.decide_report(company, report_id, decision: "confirm"|"reject", actor="humain") -> dict
+#   confirm -> mark_suspect des records du fournisseur, run() -> alertes vers TOUS ses clients concernés ; audit "quality_report_decided"
+```
+Contrat : `alertType` accepte 2 = « report » (signalement qualité amont). Je redéploie et je mets à jour `l1.json`.
+
+**pc2 (toi)** — dans cet ordre :
+1. **`scenario.py` maintenant** (indépendant de mon code) : scénarios `lot` et `recall`, même base que les autres (`_clean_morning` + après-midi + ops internes), **attaque vide** (personne n'est compromis). `ScenarioDef.meta()` garde la clé `compromise` (l'UI s'en sert) et ajoute `"incident"` : `lot` → `{"type":"lot","company":"fabricant","lot":"COIL-104","reason":"Défaut de coulée signalé par le contrôle réception"}` ; `recall` → `{"type":"recall","company":"fabricant","target":"LOT-503","suspect_lot":"COIL-103","reason":"Casse sur chantier, analyse qualité : bobine en cause"}`. Fil conducteur : COIL-104 → LOT-504 + LOT-A40 (après-midi) → expéditions → distributeur → client ; le paiement `m-pay-04` au fournisseur **reste ok** (il dépend de la facture, pas de la bobine) : c'est la preuve qu'on ne blackliste pas le fournisseur.
+2. **Après mon push** : tests de scénario (ensembles attendus raisonnés, pas recopiés), puis `api.py` + `schemas.py` + `docs/api.md` : `POST /api/lots/suspect`, `POST /api/lots/suspect/withdraw`, `GET /api/recall?company=&ref=`, `POST /api/reports` (amont), `GET /api/reports?company=`, `POST /api/reports/{id}/decision`. Toutes sous `_lock` + `anchorer.after_action`.
+3. `anchoring.py` : `lot_suspect` / `lot_suspect_withdrawn` → `declareIncident`/`withdrawIncident` avec `sourceCompany = company_id(company)`, `declarationHash = sha256("lot:"+company+"|"+lot)` ; `quality_report_sent` → `anchorAlert` type 2 signé par l'émetteur ; `quality_report_received` vérifié → `acknowledgeAlert`.
+4. `web/index.html` (debug) : boutons « Lot suspect », « Analyse rappel », « Signaler au fournisseur », « Confirmer / Rejeter ». L'interface finale `/app/` est à Yann : on lui passera l'API.
+Réponds `PREND` + fichiers.
