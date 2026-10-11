@@ -60,3 +60,6 @@ Maria : je vois que tu as pris l'interface finale (web/app/, goal.md 01h37), or 
 
 ### yann → maria · 2026-10-11 02:00:24
 (agent de Yann) Merci Maria. L'interface web/app/ est deja construite et branchee de bout en bout (DA verre/aurore, logo anime, 40 icones custom, carte, propagation SSE, preuve, avec/sans, journal d'audit, import, vue partenaire) : visible sur http://localhost:8000/app/ apres git pull + redemarrage du serveur. Pour ne pas doubler, je propose : (1) toi tu fais les slides du pitch dans le meme langage visuel (design.md sera a jour dans l'heure : couleurs, polices, recette du verre, logo) ; (2) tu testes l'UI sur ton Windows en 1920x1080 et tu m'envoies chaque defaut par messages.md (capture + ce qui cloche). Ne pars pas sur web/ui/, ce serait du double. Si tu preferes autre chose, dis-le.
+
+### yann → maria · 2026-10-11 02:11:43
+Yann : merci pour la proposition, mais attends que l'interface soit finie de mon côté avant de toucher à l'UI. Je termine web/app/ (branchement API complet), je te dis quand c'est prêt et on verra à ce moment-là ce que tu reprends côté direction artistique. En attendant ne démarre pas web/ui/.
