@@ -136,6 +136,12 @@ sync_pull() {
   [ -n "$upstream" ] || { SYNC_OUT="pas d'amont"; return 3; }
   if rebase_in_progress; then SYNC_OUT="rebase déjà en cours"; return 3; fi
   SYNC_OUT=$(git fetch --quiet 2>&1) || { SYNC_OUT="réseau/remote injoignable"; return 2; }
+  # Déjà à jour (l'amont est contenu dans HEAD) : pas de rebase. Un rebase
+  # aplatirait une fusion locale (ex. branche d'un coéquipier) en conflits.
+  if git merge-base --is-ancestor "$upstream" HEAD 2>/dev/null; then
+    SYNC_OUT=""
+    return 0
+  fi
   if ! SYNC_OUT=$(git rebase --autostash "$upstream" 2>&1); then
     if rebase_in_progress; then
       CONFLICT_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' ')
