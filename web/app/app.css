@@ -601,6 +601,22 @@ svg.i.s20 { width: 20px; height: 20px; }
   .brand .tag { display: none; }
 }
 
+/* ---------- Fenêtre étroite (< 1180 px) : la page défile verticalement ---------- */
+@media (max-width: 1180px) {
+  body { overflow-y: auto; }
+  .app { height: auto; min-height: 100vh; }
+  .topbar { flex-wrap: wrap; padding: 8px 10px; height: auto; position: sticky; top: 10px; }
+  .top-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .menu-btn .lbl, .top-actions .btn > span:not(.kbd) { display: none; }
+  .top-actions .menu-btn > span:not(.lbl) { display: inline; }
+  .stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; }
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 14px; }
+  .scenario { grid-column: 1 / -1; padding: 0 20px; }
+  .map { height: 720px; }
+  .companies { column-gap: 24px; }
+  .feed { grid-column: 1; grid-row: 4; height: 460px; }
+}
+
 /* ---------- Mouvement réduit ---------- */
 @media (prefers-reduced-motion: reduce) {
   .aurora i, .dot, .btn.declare, .scenario .s-state .led, .vd.leak { animation: none !important; }
