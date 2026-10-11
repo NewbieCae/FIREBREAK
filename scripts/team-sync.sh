@@ -31,10 +31,10 @@ whoami_member() {
   id="$(git config user.email 2>/dev/null) $(git config user.name 2>/dev/null)"
   id=$(printf '%s' "$id" | tr 'A-Z' 'a-z')
   case "$id" in
-    *yann*|*scarville*|*sc4rville*|*makzume*) printf 'yann'; return 0 ;;
-    *celine*|*fofana*|*newbiecae*)           printf 'celine'; return 0 ;;
-    *maria*|*magraku*|*gracia*)             printf 'maria'; return 0 ;;
-    *mika*|*codol*)                         printf 'mika'; return 0 ;;
+    *yann*)  printf 'yann'; return 0 ;;
+    *celine*) printf 'celine'; return 0 ;;
+    *maria*) printf 'maria'; return 0 ;;
+    *mika*)  printf 'mika'; return 0 ;;
   esac
   return 1
 }

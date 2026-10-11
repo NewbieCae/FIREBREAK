@@ -44,7 +44,7 @@ Le moteur FIREBREAK est livré (6 étapes du plan) et **l'interface finale aussi
 - **10/10 19 h** — Étapes 1, 2 et 5 livrées (API figée + `docs/api.md`, levée de quarantaine signée et journal d'audit, Bedrock + lecture de documents).
 - **10/10 18 h 40** — Premier socle FIREBREAK + plan en 6 étapes (`docs/plan.md`).
 - **10/10 après-midi** — Idée FIREBREAK (`docs/firebreak.md`), benchmark des concurrents (`docs/benchmark-firebreak.md`).
-- **10/10 matin** — Dépôt GitHub privé, invitations GitHub (NewbieCae, mncodol, magraku), page Notion, brief (`docs/brief.md`).
+- **10/10 matin** — Dépôt GitHub privé, invitations GitHub, page Notion, brief (`docs/brief.md`).
 
 ## À faire hors code
 

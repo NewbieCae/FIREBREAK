@@ -5,7 +5,7 @@ Notion page: https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e
 **Finswag — Secure Horizons, Team 14, Track 1 "Guardians of Value".** The team's scoping and coordination space. Track 1 is confirmed in the brief; the product to build and the role split are still to be validated.
 
 # Project and sources
-- **Private GitHub repo:** [Sc4rville/finswag](https://github.com/Sc4rville/finswag)
+- **Private GitHub repo:** [NewbieCae/FIREBREAK](https://github.com/NewbieCae/FIREBREAK)
 - **Main source:** email "\[CODEX\] brief hackathon Secure Horizons - Track 1 Guardians of Value (Avalanche + AWS)", received 2026-10-10 at 12:26 (Europe/Paris).
 - **Project name:** the email mentioned "secureswag"; the repo and this page use "finswag", as currently requested by Yann.
 - The event and technical information below is taken from the email. The [Candidate Guide](https://app.notion.com/p/Candidate-Guide-Track-Guidance-EN-3f400920c77e81beb3b4fad01fc5eeda) is not accessible with the current Notion connection; its guidance is reported from the brief.

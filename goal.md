@@ -14,12 +14,12 @@ a 3-minute demo showing that when a partner is compromised, we block **only the 
 
 ## Team
 
-| Member | GitHub | Session | Role |
-|---|---|---|---|
-| Yann | Sc4rville | `sessions/yann.md` | Product: engine, API, AI |
-| Céline | NewbieCae | `sessions/celine.md` | Test bench: quantified proof of effectiveness (`synth.py`, `scripts/bench.py`) |
-| Maria | magraku | `sessions/maria.md` | to be defined (proposed: pitch slides following `design.md` + testing the interface at 1920×1080) |
-| Mika | mncodol | `sessions/mika.md` | Avalanche L1 (on-chain proofs) and quality scenarios (suspect lot, recall), with two agents (pc1, pc2) |
+| Member | Session | Role |
+|---|---|---|
+| Yann | `sessions/yann.md` | Product: engine, API, AI |
+| Céline | `sessions/celine.md` | Test bench: quantified proof of effectiveness (`synth.py`, `scripts/bench.py`) |
+| Maria | `sessions/maria.md` | to be defined (proposed: pitch slides following `design.md` + testing the interface at 1920×1080) |
+| Mika | `sessions/mika.md` | Avalanche L1 (on-chain proofs) and quality scenarios (suspect lot, recall), with two agents (pc1, pc2) |
 
 The final interface (`web/app/`, at `/app/`) is built by Yann, from `docs/api.md` and the `docs/brief-ui.md` brief; design in `design.md`.
 

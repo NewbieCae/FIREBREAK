@@ -10,8 +10,8 @@ The engine and the API are delivered. What's missing is **the final interface**:
 ## Getting started (5 min)
 
 ```powershell
-git clone git@github.com:Sc4rville/finswag.git   # or git pull if already cloned
-cd finswag
+git clone git@github.com:NewbieCae/FIREBREAK.git   # or git pull if already cloned
+cd FIREBREAK
 uv sync            # or: python -m venv .venv ; .venv\Scripts\pip install -e . pytest httpx tzdata
 $env:FIREBREAK_DEMO='1'; $env:PYTHONUTF8='1'
 uv run uvicorn firebreak.api:app --port 8000   # then http://localhost:8000
