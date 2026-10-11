@@ -26,7 +26,7 @@ des horodatages. Les données restent chez chaque entreprise.
 
 ## La leçon TradeLens
 
-TradeLens (Maersk / IBM) a fermé en 2022 : les concurrents refusaient de
+TradeLens (Maersk / IBM) a annoncé son arrêt fin 2022 et fermé début 2023 : les concurrents refusaient de
 confier leur flux à une plateforme contrôlée par un seul acteur. FIREBREAK
 évite ce piège : aucun acteur ne détient la chaîne seul, et on n'y met que des
 preuves, pas les données.

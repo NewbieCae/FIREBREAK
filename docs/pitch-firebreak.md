@@ -24,20 +24,24 @@ Finale (3 min + 3 min de questions) : garder accroche, démo en 60 s, une seule 
 1. **Titre** : Firebreak, le pare-feu des supply chains. Une phrase : « Isoler ce qui est contaminé, pas toute l'activité. »
 2. **Le problème** : schéma de quatre entreprises, un fournisseur piraté envoie de fausses confirmations ; deux mauvaises options (tout couper / continuer).
 3. **Pourquoi maintenant** : NIS2 impose des mesures de sécurité sur la chaîne d'approvisionnement et la gestion d'incident. Statistiques à citer comme issues de sources secondaires : 41,4 % des attaques de rançongiciel viendraient de tiers (SecurityScorecard, relayé par un rapport de marché) ; 54 % des brèches de tiers atteindraient aussi les fournisseurs de leurs fournisseurs (Verizon 2024, relayé par un guide d'achat).
-4. **La solution** : graphe de provenance → déclaration (source + date) → propagation → quarantaine sélective → alertes signées aux partenaires → un humain libère. Encadré : « Les règles décident, l'IA explique. »
+4. **La solution** : graphe de provenance → déclaration (source + date) → propagation → quarantaine sélective → alertes signées aux partenaires → un humain libère → les preuves (alertes, accusés, déclarations, têtes de journaux) sont ancrées sur une L1 Avalanche. Encadré : « Les règles décident, l'IA explique, la blockchain prouve. »
 5. **Démo** : capture de l'interface, avec les compteurs en grand.
 6. **La preuve** : tableau p=0 / p=0,3 (voir plus bas), une phrase de compromis.
-7. **Limites** : tout est simulé ; dépendances manquantes ; règle d'origine prudente ; pas de client validé ; on ne détecte pas la compromission, on la contient.
+7. **Limites** : tout est simulé ; dépendances manquantes ; règle d'origine prudente ; pas de client validé ; on ne détecte pas la compromission, on la contient ; l'ancrage Avalanche prouve qu'un journal n'a pas été réécrit après coup, pas que ce qui y a été écrit était vrai.
 8. **Et après** : pilotes, intégrations, 6 mois, ce qu'il nous faut (voir plus bas) + équipe.
 
 ## Déroulé de la démo (90 secondes, à répéter 3 fois)
-1. État de départ : « 0 opération bloquée / 145 continuent ». Dire : « Quatre entreprises, une chaîne qui tourne. »
-2. Clic sur **Déclarer fournisseur compromis (depuis 14:00)**. Les compteurs basculent : lire le nombre bloqué, les actions irréversibles bloquées, les euros bloqués, les euros qui continuent. (Chiffres de l'écran, pas de mémoire.)
-3. Clic sur une opération rouge : montrer le **chemin exact** dans le graphe jusqu'à la source. « On peut montrer à un auditeur pourquoi. »
-4. Panneau **Alertes signées** : les partenaires ont reçu des jetons, aucune donnée commerciale.
-5. **Avec vs sans** : même attaque, sans Firebreak les opérations dépendantes continuent.
-6. **Retirer la déclaration (fausse alerte)** : tout est libéré, signature vérifiée. Dire : « Un humain garde la main. »
-7. Filet de sécurité : si l'écran plante, lancer la **vidéo de démo** enregistrée. Garder aussi **Rejouer** prêt.
+Mêmes gestes que l'interface finale (`/app/`, flèche droite) : le détail écran par écran est dans `docs/demo.md`. Chiffres : ceux de l'écran (scénario `mixed`, reproductibles par `uv run python -m firebreak.demo_figures`).
+
+Lancement avec la blockchain : `FIREBREAK_CHAIN=l1 bash scripts/demo.sh` (vraie L1, configuration dans `.env.local`, `scripts/chain_smoke.py` au vert avant). Sans cette variable, `scripts/demo.sh` démarre **chaîne éteinte** et rien d'Avalanche n'apparaît. `FIREBREAK_CHAIN=tester` fonctionne sans réseau, mais c'est une EVM en mémoire : dans ce mode, ne pas dire « notre L1 ».
+
+1. **Repos** : « 0 opération bloquée / 193 continuent ». Dire : « Quatre entreprises, une chaîne qui tourne. »
+2. **Déclarer** (fournisseur compromis depuis 14 h) : la contamination se propage, les compteurs montent. Lire le nombre bloqué, les actions irréversibles bloquées, les euros bloqués, les euros qui continuent.
+3. **Avec vs sans** : même attaque, sans Firebreak on bloque large et des opérations contaminées fuient quand même.
+4. **Prouver** : clic sur le paiement bloqué, **chemin exact** jusqu'à la source, alerte signée à jetons opaques (aucune donnée commerciale). « Le graphe décide, l'IA explique. »
+5. **Guérir** : un humain valide la remédiation, la levée part en cascade vers les partenaires par alertes signées.
+6. **Vérifier** : journaux d'audit intègres. Si la chaîne est active : « Ancré sur Avalanche, bloc N », puis **Simuler une réécriture du journal** → local ✓, Avalanche ✗. « La vérification locale ne voit rien. Avalanche, si. »
+7. Filet de sécurité : si l'écran plante, lancer la **vidéo de démo** enregistrée, ou le plan B en ligne (https://firebreak-zeta.vercel.app, IA simulée). Garder aussi **Rejouer** prêt. Bonus si on a le temps : **Fausse alerte** (retrait de la déclaration, tout repasse au vert : « un humain garde la main »).
 
 ## La preuve (à reproduire telle quelle)
 Source : `docs/bench-results.md`, 500 mondes, 5 entreprises, 300 opérations par monde. A alerte seule, B blocage du fournisseur et de ses clients directs, C Firebreak.
@@ -70,10 +74,13 @@ D (« Firebreak + prudence ») : option, borne haute. Elle rattrape des fuites, 
 4. **« Qui est responsable si vous bloquez à tort ? »** La décision vient de règles déterministes, avec le chemin dans le graphe : elle se conteste et se rejoue. La libération reste une validation humaine ; l'IA ne décide jamais.
 5. **« Où est l'IA ? »** Elle lit des documents désordonnés, explique l'impact et propose un plan de reprise. Elle n'isole ni ne libère. (Ne pas annoncer de mesure de l'effet de l'IA tant que l'extracteur n'est pas évalué sur des documents de test.)
 6. **« Comment savez-vous qu'un partenaire est compromis ? »** Nous ne le détectons pas : la déclaration vient d'un incident connu, d'un outil de notation ou d'un partenaire. Notre apport est ce qui se passe ensuite.
-7. **« Une fausse alerte peut-elle geler mon activité ? »** Une alerte ne porte que des jetons des données de l'émetteur : elle ne peut mettre en quarantaine que ce qui en dépend, et un humain peut la lever. Les signatures sont vérifiées ; les clés ne sont ni écrites dans le code ni devinables.
-8. **« Pourquoi pas une blockchain ? »** Un registre commun imposé à toute la filière est difficile à faire adopter (TradeLens a été arrêté en 2023 faute de collaboration de toute l'industrie). Chaque entreprise garde ses données ; seules des alertes signées circulent.
+7. **« Une fausse alerte peut-elle geler mon activité ? »** Une alerte ne porte que des jetons des données de l'émetteur : elle ne peut mettre en quarantaine que ce qui en dépend, et un humain peut la lever. Les signatures sont vérifiées ; les clés ne sont ni écrites dans le code ni devinables. Sur Avalanche, le contrat n'accepte que les membres de la fédération : une entreprise extérieure ne peut pas déclarer un faux incident.
+8. **« Pourquoi une blockchain ? »** Notre journal d'audit est chaîné par hash, mais celui qui le détient peut le réécrire en recalculant tous les hash. Nous ancrons donc sur une L1 Avalanche de consortium les empreintes des journaux, des alertes, des accusés de réception et des déclarations d'incident : personne, nous compris, ne peut réécrire après coup qui a été prévenu, et quand (litige, assurance, NIS2). Aucune donnée commerciale sur la chaîne, uniquement des empreintes. La chaîne ne décide et ne bloque rien : si elle tombe, Firebreak continue et l'ancrage rattrape ensuite. Détails : `docs/avalanche/pitch.md`.
+   - **« Et TradeLens ? »** TradeLens (Maersk × IBM, arrêt annoncé fin 2022, fermeture début 2023) demandait à toute la filière de confier ses données à une plateforme contrôlée par un seul acteur. Nous faisons l'inverse : les données restent chez chaque entreprise, seules des preuves vont sur une chaîne gouvernée par ses membres.
+   - **« Pourquoi pas une base de données partagée ? »** Celui qui contrôle la base peut la réécrire : la preuve ne vaut que si elle est hors de portée de chacun.
 9. **« Qui paierait ? »** Hypothèse à tester : PME industrielles sous pression de leurs donneurs d'ordre (NIS2), et éditeurs qui l'intégreraient. Nous n'avons pas de client validé.
 10. **« Vos chiffres sont-ils réels ? »** Non : ils viennent de notre simulateur, reproductible (`scripts/bench.py`, 500 mondes). Ils décrivent notre modèle, pas une entreprise réelle.
 
 ## À ne jamais dire
 - « Personne ne l'a fait » · « en entreprise réelle » · « conforme à NIS2 » (dire « aide à démontrer ») · « détection parfaite » · un chiffre qui n'est pas dans `docs/bench-results.md` ou à l'écran.
+- « La blockchain bloque » ou « détecte l'attaque » (elle prouve, elle ne décide rien) · « nos données sont sur la blockchain » (seulement des empreintes) · « sur notre L1 » si la démo tourne en mode `tester` · les temps d'ancrage de `docs/avalanche/pitch.md`, mesurés sur l'EVM en mémoire et pas encore sur la vraie L1.

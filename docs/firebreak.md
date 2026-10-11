@@ -40,6 +40,7 @@ Ces outils répondent à la question **« quel fournisseur est dangereux ? »**.
 
 - **Le cœur technique est un graphe de dépendances**, pas un chatbot qui attribue des scores de risque.
 - **La décision de blocage repose sur des règles vérifiables** : une opération est mise en quarantaine parce qu'elle dépend d'une source compromise, et on peut montrer le chemin exact dans le graphe.
+- **La blockchain prouve** : les empreintes des alertes, des accusés de réception, des déclarations et des journaux d'audit sont ancrées sur une L1 Avalanche. On peut ainsi prouver qui a prévenu qui, et quand, et qu'aucun journal n'a été réécrit après coup. Aucune donnée commerciale n'y est écrite, et la chaîne ne décide rien.
 - **L'IA intervient en soutien** : elle interprète les documents (bons de commande, avis d'expédition, mails fournisseurs), explique l'impact de l'incident et propose les actions de reprise.
 
 Résultat : un confinement auditable, explicable, et qui préserve la continuité d'activité.

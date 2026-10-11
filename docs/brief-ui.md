@@ -6,7 +6,7 @@
 
 ## 1. L'intention en une phrase
 
-Une **salle de contrôle d'incident** pour une chaîne d'approvisionnement : belle comme un produit de 2026, lisible comme un cockpit, et si simple qu'un juré prend la souris et comprend seul. On concentre une vraie complexité (4 entreprises, 145 opérations, un graphe, des signatures) dans une interface qui respire.
+Une **salle de contrôle d'incident** pour une chaîne d'approvisionnement : belle comme un produit de 2026, lisible comme un cockpit, et si simple qu'un juré prend la souris et comprend seul. On concentre une vraie complexité (4 entreprises, 193 opérations, un graphe, des signatures) dans une interface qui respire.
 
 Trois adjectifs à vérifier sur chaque écran : **tech, calme, prouvable.**
 
@@ -104,7 +104,7 @@ Logo, nom, puis à droite : le sélecteur de scénario (`GET /api/scenarios`, 4 
 ### 4.2 Le tableau de bord vivant (état de repos)
 
 - **Trois chiffres**, énormes, en haut à gauche sur un panneau de verre : opérations bloquées, paiement frauduleux bloqué (€), paiements qui continuent (€). Source : `counters.global` de `/api/state` (`quarantined`, `amount_blocked`, `amount_flowing`). Ils **s'incrémentent** avec un compteur animé pendant une propagation ; les tabular-nums évitent les sauts.
-- **La carte de la chaîne**, au centre, 70 % de l'écran : quatre colonnes, fournisseur → fabricant → distributeur → client. Chaque entreprise est un panneau de verre avec son icône et ses compteurs (`counters.per_company`). Entre elles, des **particules** qui coulent le long des arêtes `cross: true` de `edges`. À l'intérieur de chaque entreprise, les records sont des points regroupés par `kind` ; on n'affiche pas 145 étiquettes, on affiche 145 points qui respirent.
+- **La carte de la chaîne**, au centre, 70 % de l'écran : quatre colonnes, fournisseur → fabricant → distributeur → client. Chaque entreprise est un panneau de verre avec son icône et ses compteurs (`counters.per_company`). Entre elles, des **particules** qui coulent le long des arêtes `cross: true` de `edges`. À l'intérieur de chaque entreprise, les records sont des points regroupés par `kind` ; on n’affiche pas 193 étiquettes, on affiche 193 points qui respirent.
 - **Le bouton d'action**, unique, en bas au centre, en verre avec bordure rouge corail : « Déclarer le fournisseur compromis depuis 14 h ». Le libellé vient de `scenarios[].compromise`. C'est le seul bouton rouge de l'interface au repos.
 
 ### 4.3 La propagation (état d'incident)
@@ -171,8 +171,8 @@ Si quelque chose manque dans l'API, **le dire dans `messages.md`** (`python3 scr
 
 ## 6. Démo de 3 minutes : les cinq gestes
 
-1. **Repos** (20 s) : la chaîne vit. « Quatre entreprises, 145 opérations, tout tourne. »
-2. **Déclarer** (40 s) : clic, propagation animée, les trois chiffres montent. « 17 bloquées sur 145. Pas 145. »
+1. **Repos** (20 s) : la chaîne vit. « Quatre entreprises, 193 opérations, tout tourne. »
+2. **Déclarer** (40 s) : clic, propagation animée, les trois chiffres montent. « 17 bloquées sur 193. Pas 193. »
 3. **Avec vs sans** (40 s) : split screen. « Sans nous : 54 bloquées, 42 pour rien, et 5 fuites. Avec : 17, 0, 0. »
 4. **Prouver** (40 s) : clic sur le paiement de 5 210 €. Chemin, explication, RIB modifié. « Le graphe décide, l'IA explique. »
 5. **Guérir** (30 s) : remédier la réception de lot, cascade verte jusqu'au client, alertes de levée signées. « Et les partenaires sont prévenus, sans voir nos données. »

@@ -34,7 +34,7 @@ L'interface finale (`web/app/`, sur `/app/`) est faite par Yann, à partir de `d
 | 5 | IA : Bedrock et lecture de documents | Fait | `434abde` |
 | 6 | Prêt pour la démo | Fait | `9307ad8` — `bash scripts/demo.sh`, script `docs/demo.md`, chiffres `uv run python -m firebreak.demo_figures` |
 
-Tests : 218 verts (`uv run pytest -q`), état au 11 octobre à 01 h 30.
+Tests : 267 verts (`uv run pytest -q`), état au 11 octobre à 02 h 50.
 
 Chiffres démo (scénario mixed, fournisseur compromis depuis 14 h ; source : `uv run python -m firebreak.demo_figures`) : 17 opérations bloquées sur 193, 4 actions irréversibles bloquées, 5 210 € de paiement frauduleux bloqué, 92 102 € de paiements qui continuent.
 Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 54 opérations bloquées dont 42 saines, et 5 contaminées passent quand même jusqu'au client ; avec Firebreak, 17 bloquées, 0 saine, 0 fuite.
@@ -54,6 +54,8 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 - [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
 
 ## Décisions
+
+- 11/10 02 h 50 (Céline) : le pitch assume la blockchain. `docs/pitch-firebreak.md` (question 8, diapos 4 et 7, déroulé de la démo aligné sur les 5 gestes de `/app/` et sur 193 opérations), `docs/firebreak.md`, `docs/benchmark-firebreak.md`, `docs/api.md` (limite du journal → ancrage Avalanche), README : « les règles décident, l'IA explique, la blockchain prouve ». TradeLens : arrêt annoncé fin 2022, fermeture début 2023.
 
 - 11/10 02 h 50 (Yann) : interface + API déployées sur Vercel : **https://firebreak-zeta.vercel.app** (fonction Python unique `api/index.py`, IA simulée, chaîne off). Plan de secours de la démo si le portable lâche. État en mémoire par instance : faire « Réinitialiser » avant la démo.
 - 11/10 02 h 30 (Yann) : la partie Avalanche de Mika (`mika/avalanche-l1`) est **fusionnée dans `main`** (267 tests verts). Désactivée par défaut (`FIREBREAK_CHAIN=off`), contrat déployé sur la L1 de test (`contracts/deployments/l1.json`). Contrat API 1.4.0. Les branches `mika/*` sont intégrées : on repart tous de `main`.

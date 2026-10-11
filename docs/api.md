@@ -348,7 +348,7 @@ Recalcule toutes les chaînes de hash (ou une seule avec `?company=<id>`) et dit
 
 - `ok` : toutes les chaînes vérifiées sont intactes. `first_broken` : `null` dans ce cas.
 - `first_broken_index` : première entrée dont `index`, `prev_hash` ou `hash` ne correspond plus. Une entrée modifiée, supprimée ou déplacée est détectée.
-- Limite : la chaîne prouve qu'aucune entrée n'a été modifiée **sans recalculer tous les hash suivants**. Pour se protéger aussi contre ce cas, il faut publier `head` ailleurs (chez un partenaire ou sur une blockchain) ; ce n'est pas encore fait.
+- Limite : la chaîne prouve qu'aucune entrée n'a été modifiée **sans recalculer tous les hash suivants**. Pour se protéger aussi contre ce cas, il faut publier `head` ailleurs : c'est le rôle de l'ancrage Avalanche (section [Avalanche L1](#avalanche-l1-ancrage-de-preuves), champ `onchain`), actif seulement si `FIREBREAK_CHAIN` vaut `tester` ou `l1`.
 
 Erreur : 404 si l'entreprise est inconnue.
 

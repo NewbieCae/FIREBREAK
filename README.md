@@ -19,7 +19,12 @@ les règles — elle ne bloque rien.
   (point fixe + timeline), `audit.py` (journaux chaînés par hash),
   `scenario.py` (4 scénarios : mixed / rib / cert / asn),
   `ingest/` (documents fournisseurs + EPCIS 2.0), `ai.py`
-  (mock déterministe, Bedrock en option avec repli mock), `api.py` (FastAPI).
+  (mock déterministe, Bedrock en option avec repli mock), `api.py` (FastAPI),
+  `chain/` (ancrage des preuves sur une L1 Avalanche, optionnel et non
+  bloquant, `FIREBREAK_CHAIN=off|tester|l1`).
+- `contracts/` — contrat `FirebreakRegistry.sol` (empreintes d'alertes,
+  d'accusés, de déclarations et de journaux ; écriture réservée aux membres) ;
+  plan et pitch dans [docs/avalanche/](docs/avalanche/README.md).
 - `web/app/` — **interface finale** (salle de contrôle, HTML/CSS/JS sans build), servie sur `/app/` ; design dans [design.md](design.md).
 - `web/index.html` — dashboard de debug (Cytoscape, rejeu pas à pas,
   pilotage démo au clic ou flèche droite).
@@ -51,4 +56,4 @@ Bedrock ([détails](docs/api.md#ia--bedrock-et-repli-mock)).
   [AGENTS.md](AGENTS.md).
 - [Page Notion — brief et coordination](https://app.notion.com/p/3f58c3ea1f5e81e88164e25c35e8475e)
 
-Le brief prévoit AWS Bedrock et Avalanche Fuji. Le produit retenu est FIREBREAK (voir `goal.md`).
+Le brief prévoit AWS Bedrock et Avalanche Fuji. Le produit retenu est FIREBREAK (voir `goal.md`) : Bedrock pour l'explainer, et une L1 Avalanche dédiée (et non Fuji) pour ancrer les preuves.

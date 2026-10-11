@@ -80,7 +80,7 @@ Personne ne dit **quelles opérations métier précises** (commandes, livraisons
 
 1. **La granularité : l'opération, pas le fournisseur.** 3 commandes touchées sur 100, on bloque 3, pas 100. C'est notre seule promesse, il faut la démontrer en démo.
 2. **Une décision prouvable.** Le blocage vient d'un chemin dans le graphe de dépendances, que l'on peut montrer à un auditeur. L'IA explique et prépare la reprise ; elle ne décide pas.
-3. **Une alerte entre partenaires sans fuite de données.** Chaque entreprise garde ses données ; seules des alertes signées circulent. Pas de registre commun à imposer (la leçon TradeLens).
+3. **Une alerte entre partenaires sans fuite de données.** Chaque entreprise garde ses données ; seules des alertes signées circulent. Pas de registre commun de données à imposer (la leçon TradeLens) : la L1 Avalanche ne reçoit que des empreintes, pour prouver qui a prévenu qui et que les journaux n'ont pas été réécrits.
 
 **À ne pas faire :** se battre sur la notation des fournisseurs (marché saturé) ou présenter un chatbot de score de risque.
 

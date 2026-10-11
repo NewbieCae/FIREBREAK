@@ -14,6 +14,7 @@ Banc d'essai v2 livré : 4 politiques (A alerte seule, B blocage fournisseur + p
 
 ## Prochaine étape
 
+- Slides : ajouter « la blockchain prouve » (diapo 4) et la démo de réécriture du journal (diapo 5).
 - Slide « preuve chiffrée » pour le pitch à partir de `docs/bench-results.md` (v2 + sensibilité).
 - Les chiffres du banc peuvent être figés : la sensibilité ne change aucune conclusion de `docs/fiche-defense.md`.
 
@@ -24,6 +25,7 @@ Banc d'essai v2 livré : 4 politiques (A alerte seule, B blocage fournisseur + p
 
 ## Journal
 
+- 11/10 02 h 50 : pitch remis en cohérence avec la fusion Avalanche (question 8 « Pourquoi une blockchain ? », diapos 4 et 7, déroulé de démo sur les 5 gestes, 145 → 193 opérations dans le pitch et le brief UI, dates TradeLens unifiées, ligne « pas encore fait » de `docs/api.md` corrigée, README et `docs/firebreak.md`). 267 tests verts.
 - 11/10 01 h 30 : balayages de sensibilité livrés (taille 5/8/12 à 60 op./entreprise, bruit hors fédération 0/10/30 % pour D, p = 0 et 0,3, 500 graines). Section « Sensibilité » + limites et vérification des conclusions écrites par le script ; `bench/sensitivity.csv` séparé (ne pollue pas `/api/compare`) ; `results.csv` inchangé. Fiche de défense non modifiée (aucune conclusion ne change). 218 tests verts.
 - 11/10 01 h 10 : plan des balayages de sensibilité rédigé, en attente de validation.
 - 11/10 01 h : banc d'essai v2 livré et chiffres régénérés (500 graines × 4 p × 4 politiques) ; fiche de défense, exemple API et test_compare mis à jour ; 213 tests verts.
