@@ -4,22 +4,23 @@
 
 ## Où j'en suis
 
-Le moteur FIREBREAK est livré (6 étapes du plan). **L'interface finale est en route** : `web/app/` (HTML/CSS/JS natif, sans build), servie par l'API sur `http://localhost:8000/app/`. Déjà branchés et testés dans Chrome en 1440×900 : carte vivante (particules, points par famille), propagation SSE animée, chiffres animés, fil d'événements, preuve (chemin, explication, plan de reprise), remédiation en cascade, fausse alerte, avec vs sans, journal d'audit, import de documents et EPCIS, vue partenaire floutée, gestes de démo au clavier (→). `design.md` rempli. 222 tests verts.
+Le moteur FIREBREAK est livré (6 étapes du plan) et **l'interface finale aussi** : `web/app/` (HTML/CSS/JS natif, sans build), servie sur `http://localhost:8000/app/`, ouverte par `bash scripts/demo.sh`. Tous les écrans du brief : carte vivante, propagation SSE, chiffres animés, fil, preuve, cascade de levée, fausse alerte, avec vs sans, journal d'audit, import de documents et EPCIS, vue partenaire étanche, preuves Avalanche (si `FIREBREAK_CHAIN` actif), les 5 gestes à la flèche droite. Testée dans Chrome en 1440×900 et 1920×1080 sur les 4 scénarios ; relecture indépendante faite, ses 12 défauts corrigés. 267 tests verts.
 
 ## En cours
 
-- Interface finale : finitions (1920×1080, clavier, mouvement réduit, scénarios rib/cert/asn), puis bascule de `/` vers la nouvelle interface.
+- Répétition de la démo sur l'interface finale.
 
 ## Prochaine étape
 
-- Finitions de l'interface, archive `steps/05-interface-finale/step.md`, répétition de la démo, gel à 10 h (tag `demo-freeze`).
+- Gel à 10 h (tag `demo-freeze`), puis répétition jusqu'à 12 h.
 
 ## Besoin des autres
 
-- Maria : slides du pitch dans le langage visuel de `design.md`, et test de l'interface sur Windows en 1920×1080 (retours via `messages.md`).
+- Maria : quand elle reprend la main, tester l'interface sur Windows en 1920×1080 (`git pull`, redémarrer le serveur, ouvrir `/app/`) et remonter chaque défaut via `messages.md`.
 
 ## Journal
 
+- **11/10 02 h 25** — Interface finale terminée : preuves Avalanche (pastille, liste des ancrages, journal « ancré, bloc N », falsification simulée détectée), 12 défauts de la relecture corrigés (animation interrompue par Réinitialiser, tiroir fermé atteignable au clavier, double clic, flèche → déduite de l'état, vue partenaire sans fuite par le clavier ni les onglets d'audit, imports robustes). Mode allégé automatique si les images ralentissent. `team-sync.sh` : plus de rebase quand l'amont est déjà dans HEAD (la fusion Avalanche était aplatie en conflits et bloquait tous les pushs).
 - **11/10 02 h 30** — Fusion de `mika/avalanche-l1` dans `main` sans conflit (ancrage des alertes sur Avalanche L1, off par défaut). `uv sync`, 267 tests verts. Test flaky `test_alerts_carry_only_opaque_tokens` corrigé (jetons exclus de la recherche de fuite). `api.py` en version 1.4.0, aligné sur `docs/api.md`.
 - **11/10 02 h 05** — Interface finale `web/app/` : salle de contrôle verre/aurore, logo animé, 40 icônes custom, carte + particules, propagation SSE, preuve, cascade de levée, avec vs sans, audit, import, vue partenaire. API 1.3.0 (ajouts seulement) : `truth.ids` dans `/api/compare`, `/app/` et `/samples/` servis. Dark Reader neutralisé (`darkreader-lock`).
 - **11/10 00 h 40** — Brief de l'interface finale : `docs/brief-ui.md` (direction artistique verre/sombre, logo, icônes custom, mouvement, 8 écrans, intégration API, démo en 5 gestes).
