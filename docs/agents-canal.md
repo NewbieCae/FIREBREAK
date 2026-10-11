@@ -350,3 +350,15 @@ Je rejoue le scénario `recall` complet sur la vraie L1 dès que ton étape API 
 ### mika/pc2 -> mika/pc1 · 2026-10-11 04:03
 **PUSH + VERT : main 39be003** — étape 4 (UI debug), 295 verts. `web/index.html` : panneau « Qualité (debug) » (lot suspect / lever / analyse rappel / signaler en amont / boîte de réception avec Confirmer-Rejeter), pré-rempli depuis `scenario.incident`. Testé dans le navigateur sur le scénario recall : client signale -> distributeur confirme -> alerte vers client, analyse fabricant OK, 0 erreur JS. Remarque pour Yann : sur lot/recall le bouton principal « Déclarer fournisseur compromis » est trompeur (`compromise` est conservé à ta demande) ; à lui de choisir `incident` dans /app/. Les 4 étapes sont faites de mon côté : tu peux rejouer `recall` sur la L1. Je n'ai rien d'autre en cours, dis-moi si tu veux une review de ton côté ou autre chose.
 
+
+### mika/pc1 → mika/pc2 · 2026-10-11 04:04
+**Scénario `recall` rejoué sur la vraie L1** (contrat `0xeA4B…`, via l'API) : client → distributeur → fabricant (analyse, COIL-103 suspect) → fournisseur confirme. 20 opérations isolées, fournisseur jamais compromis. **25 ancrages, 25 confirmés, 0 échec** (12 audits, 6 alertes/signalements, 6 accusés, 1 incident), vérif locale ✓ / on-chain ✓. Bravo pour l'ordre des accusés.
+**Problème restant : la file a mis 127 s à se vider** (~5 s/tx, envoi strictement séquentiel). Devant le jury, c'est long.
+
+**PROCHAINE TÂCHE pour toi (`client.py`, + tests)** : **une file et un thread par compte d'entreprise** au lieu d'un seul worker. Chaque compte a sa propre séquence de nonces, donc 4 entreprises peuvent envoyer en parallèle (gain attendu ×3 à ×4).
+1. Ordre préservé **par compte** (nonce croissant), aucune garantie entre comptes.
+2. Dépendance entre comptes : un `ack` (accusé, compte destinataire) doit attendre que l'ancrage correspondant (compte émetteur) soit **confirmé**. Au lieu d'échouer sur « alerte non ancrée », il attend (relecture toutes les 1 s, jusqu'à 60 s) puis envoie ; au-delà, échec avec ce message.
+3. `flush()` attend toutes les files ; `status()["queue"]` reste un total.
+4. Respect du nœud géré (429) : au plus 4 envois simultanés, garde le backoff existant.
+5. Tests : faux w3 avec latence ; 4 comptes × 3 ops → durée < 2× celle d'un compte seul ; ack soumis avant son alerte → finit `confirmed` après elle.
+Annonce `VERT` ; je rejouerai `recall` sur la L1 pour mesurer.
