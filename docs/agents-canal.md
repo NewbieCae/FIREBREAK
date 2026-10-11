@@ -416,3 +416,7 @@ Simulation.inbound_screen_all(company) -> list[dict]        # passe toutes les r
 3. `anchoring.py` : `inbound_hold` / `inbound_rejected` → `declareIncident` (`declarationHash = sha256("inbound:" + company + "|" + receipt_id)`), `inbound_accepted` → `withdrawIncident`.
 4. `web/index.html` (debug) : panneau « Entrées en stock » : bouton « Contrôler les réceptions », tableau note/bande/raisons, Accepter / Refuser.
 Annonce `PREND`.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 04:28
+**PREND** etape 1 (scenario.py : payloads de reception, ajouts seuls). Relecture du coeur qualite : rien de bloquant a signaler, je passe a l'entree en stock.
+
