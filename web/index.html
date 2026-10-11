@@ -107,6 +107,15 @@
       <div id="q-out" class="muted"></div>
       <div id="q-inbox"></div>
     </details>
+    <details id="inbound-box" style="margin-top:18px">
+      <summary><h2 style="display:inline">Entrées en stock</h2></summary>
+      <div class="muted">Note de confiance de chaque réception (commande, pièce, quantité, date, certificat, lot, RIB, alertes). Sous 80 : mise en attente, un humain décide.</div>
+      <select id="in-company"></select>
+      <button id="in-screen" class="secondary rem-btn">Contrôler les réceptions</button>
+      <input id="in-reason" placeholder="motif de la décision (facultatif)" style="width:95%">
+      <div id="in-out" class="muted"></div>
+      <div id="in-list"></div>
+    </details>
   </div>
 </div>
 <div id="compare">
@@ -571,6 +580,66 @@ document.getElementById('q-report').onclick = () => qRun(async () => {
 document.getElementById('q-company').onchange = () => qRun(qInbox);
 document.getElementById('quality-box').addEventListener('toggle', () => { qFillCompanies(); qRun(qInbox); });
 setInterval(() => { qFillCompanies(); qRun(qInbox); }, 3000);
+
+// --- Panneau Entrées en stock : note de confiance, mise en attente, décision humaine ---
+const IN_BAND = { confiance: '#43a047', doute: '#fb8c00', suspect: '#e53935' };
+const IN_STATUS = { non_controle: 'non contrôlée', en_attente: 'EN ATTENTE', accepte: 'acceptée', refuse: 'refusée' };
+let inResults = [];
+function inFillCompanies() {
+  const sel = document.getElementById('in-company');
+  if (!state || !state.companies || sel.options.length) return;
+  sel.innerHTML = state.companies.map(c => `<option value="${esc(c.id)}">${esc(c.id)}</option>`).join('');
+  sel.value = state.companies.some(c => c.id === 'fabricant') ? 'fabricant' : state.companies[0].id;
+}
+async function inRun(fn) {
+  try { await fn(); } catch (e) { document.getElementById('in-out').textContent = e.message; }
+}
+function inRender() {
+  const box = document.getElementById('in-list');
+  if (!inResults.length) { box.innerHTML = 'Aucune réception contrôlée.'; return; }
+  box.innerHTML = inResults.map(r => {
+    const failed = r.checks.filter(c => !c.ok);
+    const col = IN_BAND[r.band] || '#888';
+    const actions = r.status === 'en_attente' || (r.hold && r.status === 'non_controle')
+      ? ` <button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="accept">Accepter</button>` +
+        `<button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="reject">Refuser</button>` : '';
+    return `<div class="alert" style="border-left:4px solid ${col}">` +
+      `<b style="color:${col}">${r.score}/100</b> · ${esc(r.band)} · <b>${esc(IN_STATUS[r.status] || r.status)}</b><br>` +
+      `${esc(r.label)} <span class="muted">(${esc(r.receipt)}, ${esc(r.supplier)}${r.lot ? ', ' + esc(r.lot) : ''})</span><br>` +
+      (failed.length ? failed.map(c => `− ${c.penalty} · ${esc(c.detail)}`).join('<br>') : 'Aucun écart.') +
+      `<details><summary class="muted">les ${r.checks.length} contrôles</summary>` +
+      r.checks.map(c => `${c.ok ? '✓' : '✗'} ${esc(c.label)} : ${esc(c.detail)}`).join('<br>') +
+      `</details>${actions}</div>`;
+  }).join('');
+  document.querySelectorAll('.in-dec').forEach(b => b.onclick = () => inRun(async () => {
+    const company = document.getElementById('in-company').value;
+    const out = await api(`/api/inbound/${encodeURIComponent(b.dataset.id)}/decision`, 'POST',
+      { company, decision: b.dataset.d, reason: document.getElementById('in-reason').value.trim() });
+    const sent = (out.reports || []).map(x => x.to);
+    document.getElementById('in-out').textContent =
+      `${b.dataset.id} : ${IN_STATUS[out.status] || out.status}` +
+      (sent.length ? ` — signalement qualité signé envoyé à ${sent.join(', ')}.` : '.');
+    await inRefresh();
+  }));
+}
+async function inRefresh() {
+  const company = document.getElementById('in-company').value;
+  inResults = await Promise.all(inResults.map(r =>
+    api(`/api/inbound/${encodeURIComponent(r.receipt)}/check?company=${encodeURIComponent(company)}`)));
+  inRender();
+  render(await api('/api/state'));
+}
+document.getElementById('in-screen').onclick = () => inRun(async () => {
+  const company = document.getElementById('in-company').value;
+  inResults = await api('/api/inbound/screen', 'POST', { company });
+  const held = inResults.filter(r => r.status === 'en_attente').length;
+  document.getElementById('in-out').textContent =
+    `${inResults.length} réception(s) contrôlée(s), ${held} mise(s) en attente.`;
+  inRender();
+  render(await api('/api/state'));
+});
+document.getElementById('in-company').onchange = () => { inResults = []; inRender(); };
+document.getElementById('inbound-box').addEventListener('toggle', () => { inFillCompanies(); inRender(); });
 </script>
 </body>
 </html>
