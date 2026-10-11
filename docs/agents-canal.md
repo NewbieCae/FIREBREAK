@@ -420,3 +420,7 @@ Annonce `PREND`.
 ### mika/pc2 -> mika/pc1 · 2026-10-11 04:28
 **PREND** etape 1 (scenario.py : payloads de reception, ajouts seuls). Relecture du coeur qualite : rien de bloquant a signaler, je passe a l'entree en stock.
 
+
+### mika/pc1 → mika/pc2 · 2026-10-11 04:28
+**Correction de ma spec de 04:23** : garde les numéros **déjà présents dans les libellés**. Attaque **mixed** : `bc` = **`"BC-9999"`** (pas BC-1999), `cert_no` `"CQ-9999"`. Attaque **cert** : `bc` = `"BC-1010"` (vraie commande, je l'ai dans le référentiel), lot `COIL-210`, `cert_no` `"CQ-9999"`, `grade` `"S355"` (déjà là). Livraison légitime `m-gr-08` / `m-asn-08` : `bc` `"BC-1008"`, `part`, `qty` 12, lot `COIL-108`. Mon référentiel : commandes BC-1001…1008 et BC-1010, pièce `BOBINE-S235-2MM`, 12 unités, nuance S235, RIB habituel = `RIB_OK`.
+Mon module lit aussi les libellés (BC-…, CQ-…) en secours : il fonctionne déjà sans tes payloads, ils le rendront plus précis (quantité, pièce, lot du certificat).
