@@ -49,7 +49,7 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --feed-w: clamp(320px, 22vw, 400px);
   --topbar-h: 64px;
-  --dot: clamp(10px, 1.45vh, 15px);
+  --dot: clamp(10px, calc(2.6vh - 10px), 19px);
 }
 
 * { box-sizing: border-box; }
@@ -223,7 +223,7 @@ svg.i.s20 { width: 20px; height: 20px; }
 .map svg.fx { z-index: 5; overflow: visible; }
 .companies {
   position: relative; z-index: 1; height: 100%;
-  display: grid; grid-template-columns: 1fr 1.3fr 1fr 1fr; column-gap: clamp(32px, 3vw, 64px);
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); column-gap: clamp(32px, 3vw, 64px);
 }
 .company {
   display: flex; flex-direction: column; min-height: 0; min-width: 0; padding: 14px 14px 12px;
@@ -255,7 +255,8 @@ svg.i.s20 { width: 20px; height: 20px; }
 .company .c-foot button:hover { background: var(--glass-hover); color: var(--text); }
 .company .c-foot svg { color: var(--accent); }
 .company .c-foot .mono { margin-left: auto; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.company .c-foot .okmark { color: var(--ok); display: inline-flex; }
+.company .c-foot .okmark { color: var(--ok); display: inline-flex; flex: none; }
+.company .c-foot .badmark { color: var(--q); display: inline-flex; flex: none; }
 .company .c-tag {
   position: absolute; top: -10px; right: 14px; display: none; height: 20px; padding: 0 8px; align-items: center; border-radius: 999px;
   font-size: 10.5px; font-weight: 600; color: var(--q); letter-spacing: 0.06em; text-transform: uppercase;
@@ -388,6 +389,7 @@ svg.i.s20 { width: 20px; height: 20px; }
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 30%), rgba(16, 24, 42, 0.72);
 }
 .drawer.on { transform: none; }
+.drawer:focus-visible { outline: none; }
 .drawer-head { display: flex; align-items: flex-start; gap: 12px; padding: 18px 16px 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
 .drawer-head .d-ico { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--glass-border); flex: none; }
 .drawer-head .d-ico.q { color: var(--q); border-color: rgba(var(--q-rgb), 0.45); }
@@ -524,7 +526,7 @@ svg.i.s20 { width: 20px; height: 20px; }
 .vs-stat.ok .v { color: var(--ok); }
 .vs-stat.alarm { border-color: rgba(var(--q-rgb), 0.55); box-shadow: 0 0 24px -8px rgba(var(--q-rgb), 0.55); }
 .vs-stat.alarm .v { color: var(--q); }
-.vs-map { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1.45fr 1fr 1fr; gap: 10px; }
+.vs-map { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .vs-co { min-width: 0; padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.07); background: rgba(255, 255, 255, 0.025); display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 .vs-co.cut { border-color: rgba(var(--q-rgb), 0.45); background: repeating-linear-gradient(135deg, rgba(var(--q-rgb), 0.07) 0 6px, transparent 6px 12px); }
 .vs-co .vc-h { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); white-space: nowrap; }

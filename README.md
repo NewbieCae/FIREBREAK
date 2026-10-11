@@ -20,6 +20,7 @@ les règles — elle ne bloque rien.
   `scenario.py` (4 scénarios : mixed / rib / cert / asn),
   `ingest/` (documents fournisseurs + EPCIS 2.0), `ai.py`
   (mock déterministe, Bedrock en option avec repli mock), `api.py` (FastAPI).
+- `web/app/` — **interface finale** (salle de contrôle, HTML/CSS/JS sans build), servie sur `/app/` ; design dans [design.md](design.md).
 - `web/index.html` — dashboard de debug (Cytoscape, rejeu pas à pas,
   pilotage démo au clic ou flèche droite).
 - `tests/` — suite pytest (moteur, fédération, scénarios, timeline, démo).
@@ -35,7 +36,7 @@ uv run pytest -q            # tests
 uv run python -m firebreak.demo_figures   # les chiffres du pitch (reproductible)
 ```
 
-Dashboard : http://localhost:8000 — API interactive : http://localhost:8000/docs.
+Interface : http://localhost:8000/app/ — dashboard de debug : http://localhost:8000 — API interactive : http://localhost:8000/docs.
 
 Secrets : voir `.env.example` (jamais de vraie clé dans le dépôt). Sans configuration, les clés de signature et les jetons de la fédération sont aléatoires à chaque lancement.
 

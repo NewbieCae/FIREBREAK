@@ -155,9 +155,12 @@ async function refreshHeads(loud = false) {
     const v = await api('GET', '/api/audit/verify');
     for (const j of v.journals) {
       const h = document.querySelector(`.company[data-company="${j.company}"] [data-head]`);
-      if (h) h.innerHTML = j.entries
-        ? `${F.n(j.entries)} · ${F.tok(j.head, 4, 4)} <span class="${j.ok ? 'okmark' : 'badmark'}">${icon(j.ok ? 'check' : 'close', 's16')}</span>`
-        : 'vide';
+      if (!h) continue;
+      h.textContent = j.entries ? `${F.n(j.entries)} · ${F.tok(j.head, 4, 4)}` : 'vide';
+      const mark = h.nextElementSibling;
+      mark.className = j.entries ? (j.ok ? 'okmark' : 'badmark') : '';
+      mark.innerHTML = j.entries ? icon(j.ok ? 'check' : 'close', 's16') : '';
+      mark.title = j.ok ? 'Chaîne de hash intacte' : 'Chaîne de hash cassée';
     }
     if (loud) {
       const n = v.journals.reduce((a, j) => a + j.entries, 0);
@@ -211,7 +214,10 @@ on('settled', () => { renderActionbar(); renderMenus(); refreshHeads(); applyVie
 // =====================================================================
 
 async function run(title, call, { healing = false, source = null } = {}) {
-  if (S.playing) return;
+  if (S.playing) {
+    toast('Une séquence est en cours : attendez sa fin.', { tone: 'info', ttl: 2500 });
+    return;
+  }
   const snapshot = takeSnapshot();
   try {
     const final = await call();

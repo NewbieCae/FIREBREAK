@@ -93,7 +93,7 @@ function renderMap() {
         <span class="r"><i></i><b data-r>0</b> <span data-rl>libérée</span></span>
       </div>
       <div class="fams"></div>
-      <div class="c-foot"><button data-audit="${c.id}" title="Journal d'audit · ${F.esc(c.name)}">${icon('audit', 's16')}<span>Journal</span><span class="mono" data-head>—</span></button></div>
+      <div class="c-foot"><button data-audit="${c.id}" title="Journal d'audit · ${F.esc(c.name)}">${icon('audit', 's16')}<span>Journal</span><span class="mono" data-head>—</span><span></span></button></div>
       <div class="privacy"></div>`;
     const fams = p.querySelector('.fams');
     for (const f of F.FAMILIES) {

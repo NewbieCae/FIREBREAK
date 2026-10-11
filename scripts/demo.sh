@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Démo Firebreak en une commande : installe les dépendances, lance le
 # serveur en mode démo (scénario figé, IA mock, zéro réseau) et ouvre
-# le dashboard dans le navigateur.
+# l'interface finale dans le navigateur.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -22,9 +22,9 @@ else
   done
 fi
 
-echo "→ dashboard : $URL/   ·   API : $URL/docs"
+echo "→ interface : $URL/app/   ·   debug : $URL/   ·   API : $URL/docs"
 if command -v xdg-open >/dev/null 2>&1; then
-  xdg-open "$URL/" >/dev/null 2>&1 || true
+  xdg-open "$URL/app/" >/dev/null 2>&1 || true
 fi
 
 # Si on a lancé le serveur, attendre dessus ; sinon sortir.

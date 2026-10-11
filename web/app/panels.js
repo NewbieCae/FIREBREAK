@@ -427,7 +427,7 @@ function vsSide(side, cmp, sideKey, truth) {
     const cut = sideKey === 'without' && scopeCut.has(c.id);
     const leaks = recs.filter((r) => truth.has(r.id) && !blocked.has(r.id)).length;
     const tag = cut ? '<span class="cut-tag">coupé</span>'
-      : leaks ? `<span class="leak-tag">${icon('leak', 's16')}${leaks} fuite${leaks > 1 ? 's' : ''}</span>` : '';
+      : leaks ? `<span class="leak-tag" title="${leaks} contaminée(s) non bloquée(s)">${icon('leak', 's16')}${leaks}</span>` : '';
     return `<div class="vs-co ${cut ? 'cut' : ''}"><div class="vc-h">${icon(COMPANY_ICON[c.id] || 'dot', 's16')}<b>${F.esc(F.ROLE_SHORT[c.id] || c.name)}</b>${tag}</div><div class="vc-dots">${dots}</div></div>`;
   }).join('');
   const leak = side.leaked > 0;
