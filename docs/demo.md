@@ -48,6 +48,10 @@ Une seule page. La flèche droite enchaîne les gestes ; tout reste cliquable à
 | 4 | **Guérir** | Remédiation de la réception BC-9999 (validation humaine) : point ambre, levée en cascade jusqu'au client, alertes de levée signées. Le paiement frauduleux reste bloqué. | « Et les partenaires sont prévenus, sans voir nos données. » |
 | 5 | **Vérifier** | Toast « journaux d'audit intacts » ; chaque panneau montre la tête de sa chaîne de hash. | « Tout est journalisé et vérifiable. » |
 
+Si on recommence la démo : la flèche droite repart d'une scène propre toute seule (réinitialisation automatique si une remédiation ou un retrait a laissé des records « libérés »). À la souris : **Réinitialiser** avant chaque répétition.
+
+Avec Avalanche (`FIREBREAK_CHAIN=tester` ou `l1`) : une pastille « Avalanche · N ancré(s) » apparaît dans l'en-tête (clic → liste des ancrages) ; le journal d'audit de chaque entreprise montre « Ancré sur Avalanche, bloc N : le journal correspond » ; en mode démo, **Simuler une réécriture du journal** montre une chaîne locale encore cohérente mais qui ne correspond plus à l'ancrage. Chaîne éteinte : rien de tout cela n'apparaît.
+
 Bonus si on a le temps : **Voir comme** (en haut) → Distributeur : les autres registres deviennent du verre dépoli, seules les alertes signées passent. **Importer** → « Facture au RIB modifié » : l'IA lit le PDF, un humain confirme, la facture arrive en rouge. **Fausse alerte** : tout repasse au vert en cascade.
 
 ## Dashboard de debug — un clic = une étape
