@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import os
 import threading
 import time
@@ -24,7 +25,7 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .ai import MockExplainer, get_explainer
+from .ai import BedrockExplainer, MockExplainer, ai_mode, get_explainer
 from .chain.anchoring import Anchorer
 from .chain.client import get_chain_client
 from .chain.config import load_chain_config
@@ -80,10 +81,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Demo mode: fixed scenario, AI forced to mock (no network dependency),
-# paced SSE replay for the stage. FIREBREAK_DEMO=1.
+# Demo mode: fixed scenario, AI on mock (no network dependency) unless
+# FIREBREAK_AI=bedrock is set explicitly, paced SSE replay for the stage.
+# FIREBREAK_DEMO=1.
 sim = build_simulation(DEMO_SCENARIO if DEMO_MODE else DEFAULT_SCENARIO)
-explainer = MockExplainer() if DEMO_MODE else get_explainer()
+explainer = get_explainer() if (not DEMO_MODE or ai_mode() == "bedrock") else MockExplainer()
+logging.getLogger("uvicorn.error").info(
+    "AI: %s (demo=%s, FIREBREAK_AI=%s)",
+    "bedrock (mock fallback on error)" if isinstance(explainer, BedrockExplainer) else "mock",
+    DEMO_MODE, ai_mode(),
+)
 demo_index = 0
 chain = get_chain_client(load_chain_config())
 anchorer = Anchorer(chain)

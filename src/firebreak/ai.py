@@ -27,7 +27,7 @@ Source = Literal["mock", "bedrock"]
 
 REMEDIATION_ACTIONS = ("revalidate", "human_approval", "trusted_source")
 DEFAULT_BEDROCK_MODEL = "anthropic.claude-3-haiku-20240307-v1:0"
-BEDROCK_TIMEOUT_S = 8.0
+BEDROCK_TIMEOUT_S = float(os.environ.get("FIREBREAK_BEDROCK_TIMEOUT") or 8.0)
 
 GATE_LABELS = {
     "payment": "a payment",
