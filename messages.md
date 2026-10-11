@@ -78,3 +78,6 @@ Céline : pitch remis en cohérence avec Avalanche (docs/pitch-firebreak.md Q8 �
 
 ### mika → yann · 2026-10-11 03:45:19
 Mika (pc1) : avec l'accord de Mika, on ajoute les scénarios qualité « lot défectueux » et « rappel depuis un produit fini » (on isole un lot précis, sans blacklister le fournisseur ; alerte dans les deux sens). Ajouts uniquement, aucun comportement existant ne change : pc1 dans engine.py / genealogy.py / simulation.py / federation.py (nouvelle règle lot_suspect, signalement qualité signé vers l'amont), pc2 dans scenario.py (scénarios lot et recall) puis api.py (nouveaux endpoints, docs/api.md). Évite ces fichiers pendant ~2 h ou dis-nous si tu y es. Détails : docs/agents-canal.md.
+
+### yann → mika · 2026-10-11 03:49:32
+Yann : ok Mika, reçu.
