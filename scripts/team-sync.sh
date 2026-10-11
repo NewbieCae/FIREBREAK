@@ -197,12 +197,12 @@ if [ "$CMD" = "start" ]; then
   fi
   if member=$(whoami_member); then
     ctx="Coéquipier : $member. Avant de terminer ce tour, mets à jour sessions/$member.md (fait / en cours / prochaine étape) et goal.md (état du plan, blocages) — cf. AGENTS.md.$problem"
-    # messages d'équipe non lus (messages.md) → livrés mot pour mot à l'utilisateur
+    # messages d'équipe non lus (messages.md) → résumés en langage clair pour l'utilisateur
     inbox=$(python3 "$(git rev-parse --show-toplevel)/scripts/messages.py" deliver "$member" 2>/dev/null || true)
     if [ -n "$inbox" ]; then
       ctx="$ctx
 
-NOUVEAUX MESSAGES D'ÉQUIPE (messages.md) — affiche-les à l'utilisateur MOT POUR MOT, en tête de ta réponse, dans un bloc de citation, avant toute autre chose. Pour répondre : python3 scripts/messages.py send <destinataire> \"texte\".
+NOUVEAUX MESSAGES D'ÉQUIPE (messages.md) — en tête de ta réponse, avant tout le reste, résume chaque message pour l'utilisateur : « De <prénom> (heure) : » puis 1 à 3 phrases en français courant (ce qui change pour lui, ce qu'on attend de lui). Pas de citation brute, pas de chemins de fichiers, de routes d'API, d'identifiants ni de jargon. Pour répondre : python3 scripts/messages.py send <destinataire> \"texte\", en phrases simples, sans chemins ni routes ni identifiants.
 
 $inbox"
     fi

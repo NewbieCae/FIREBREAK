@@ -55,6 +55,7 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 
 ## Décisions
 
+- 11/10 04 h 00 (Yann) : messagerie lisible. À l'affichage, l'agent résume chaque message en 1 à 3 phrases simples. À l'envoi, message court et humain : pas de chemins de fichiers, de routes d'API ni d'identifiants (les détails vont dans docs/). Voir AGENTS.md, section Messagerie.
 - 11/10 03 h 50 (Céline) : Track 3 validé par l'organisation. Calendrier : premier pitch à 12 h, finale plus tard dans la journée pour les finalistes.
 
 - 11/10 03 h 30 (Céline) : chiffres de chaîne cités = ceux de la vraie L1 (≈ 2 s par preuve, 12 ancrages en ≈ 24 s), annoncés « mesurés sur notre démo » ; on dit « un seul validateur en démo, les membres du consortium en production » ; la ligne « actions irréversibles à p=0,3 » passe de la diapo Preuve à la diapo Limites.

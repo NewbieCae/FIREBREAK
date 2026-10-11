@@ -20,6 +20,7 @@ Le moteur FIREBREAK est livré (6 étapes du plan) et **l'interface finale aussi
 
 ## Journal
 
+- **11/10 04 h 00** — Messagerie : les messages d'équipe sont désormais résumés en français courant à l'affichage (plus de citation brute), et les messages envoyés doivent être courts, sans chemins, routes ni identifiants. Règle dans AGENTS.md et dans le hook `team-sync.sh`.
 - **11/10 03 h 55** — Revue de l'UI de Maria (branche `origin/Maria-UI`, `web/ui/`, commit dd0a8b9) : extraite hors dépôt et servie sur localhost:5173, API démo sur :8000. Rien de fusionné dans main.
 - **11/10 02 h 50** — Déploiement Vercel : https://firebreak-zeta.vercel.app (firebreak.vercel.app était pris). `api/index.py` enveloppe FastAPI et restaure le chemin d'origine (Vercel réécrit tout vers la fonction et perd le chemin ; il passe par `?__path=`). `vercel.json`, `.vercelignore`, `requirements.txt` exporté d'uv. Vérifié : /app/, polices, state, compromise, SSE, explain, compare, samples.
 - **11/10 02 h 25** — Interface finale terminée : preuves Avalanche (pastille, liste des ancrages, journal « ancré, bloc N », falsification simulée détectée), 12 défauts de la relecture corrigés (animation interrompue par Réinitialiser, tiroir fermé atteignable au clavier, double clic, flèche → déduite de l'état, vue partenaire sans fuite par le clavier ni les onglets d'audit, imports robustes). Mode allégé automatique si les images ralentissent. `team-sync.sh` : plus de rebase quand l'amont est déjà dans HEAD (la fusion Avalanche était aplatie en conflits et bloquait tous les pushs).
