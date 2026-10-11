@@ -55,6 +55,7 @@ export const S = {
   lastAction: null,
   ai: null,
   companyName: {},
+  reports: [],
 };
 
 export function companyName(id) { return S.companyName[id] || id; }

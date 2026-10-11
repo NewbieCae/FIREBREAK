@@ -201,6 +201,7 @@ function auditLine(e) {
   const icoMap = {
     declaration: 'declaration', declaration_withdrawn: 'falseAlarm', alert_sent: 'alert', alert_received: 'alert',
     quarantine: 'quarantine', remediation: 'remediate', release: 'release', document_confirmed: 'file', epcis_import: 'upload',
+    lot_suspect: 'lot', lot_suspect_withdrawn: 'release', quality_report_sent: 'alert', quality_report_received: 'alert', quality_report_decided: 'check',
   };
   let detail = '';
   if (rec) detail = `« ${F.esc(rec.label)} »`;
@@ -275,6 +276,42 @@ export async function openAudit(company) {
       : `<li><div class="ci">${icon('audit', 's16')}</div><div class="cd" style="padding-top:6px">Journal vide : aucun événement depuis la réinitialisation.</div></li>`;
   } catch (e) {
     if (token === drawerToken) fail(e, () => openAudit(company));
+  }
+}
+
+// =====================================================================
+// Rappel qualité : remonter d'un produit en cause à ses causes possibles
+// =====================================================================
+
+export async function openRecall({ company, ref, lot, reason }) {
+  const token = openDrawer('recall', `
+    ${head({ ico: 'lot', title: `Analyse de rappel · ${F.esc(ref)}`, sub: `<span>${F.esc(companyName(company))} remonte la généalogie : quelles entrées ont pu causer le défaut, et ce qu'un rappel toucherait.</span>` })}
+    <div class="drawer-body">
+      <section><h3 class="sec-title">${icon('lot', 's16')}Causes possibles<span class="aside" id="rcCount"></span></h3>
+        <div class="cands" id="rcList"><div class="sk block"></div><div class="sk block"></div><div class="sk block"></div></div></section>
+      <div class="explain-foot">${icon('verified', 's16')}<span>Lecture seule : rien n'est bloqué tant qu'un humain n'isole pas un lot.</span></div>
+    </div>`, ref);
+  try {
+    const rc = await api('GET', `/api/recall?company=${encodeURIComponent(company)}&ref=${encodeURIComponent(ref)}`);
+    if (token !== drawerToken) return;
+    $('#rcCount').textContent = `${rc.candidates.length} entrée${rc.candidates.length > 1 ? 's' : ''} · cible ${rc.target?.label || ref}`;
+    $('#rcList').innerHTML = rc.candidates.map((c) => {
+      const hit = lot && c.lot === lot;
+      const what = c.lot || c.record;
+      const partners = (c.impact_partners || []).map((x) => F.ROLE_SHORT[x] || companyName(x)).join(', ');
+      return `<div class="cand surface ${hit ? 'hit' : ''}">
+        <div class="c-t">${icon(F.kindIcon(c.kind), 's16')}<span>${F.esc(c.label)}</span>${hit ? '<span class="badge q">cause probable</span>' : ''}</div>
+        <div class="c-m">${c.lot ? `<span class="mono">${F.esc(c.lot)}</span>` : ''}<span>${c.received ? `reçu de ${F.esc(companyName(c.origin))}` : 'interne'}</span>
+          <span>un rappel toucherait <b>${F.n(c.impact_records)}</b> opérations, dont ${F.n(c.impact_gates)} irréversibles${partners ? ` · ${F.esc(partners)}` : ''}</span></div>
+        <button class="btn ${hit ? 'primary' : ''}" data-isolate="${F.esc(what)}">${icon('quarantine', 's16')}<span>Isoler</span></button>
+      </div>`;
+    }).join('') || '<div class="surface explain">Aucune entrée en amont trouvée pour cette référence.</div>';
+    $('#drawer').querySelectorAll('[data-isolate]').forEach((b) => b.addEventListener('click', () => {
+      closeDrawer();
+      emit('isolate-lot', { company, lot: b.dataset.isolate, reason });
+    }));
+  } catch (e) {
+    if (token === drawerToken) fail(e, () => openRecall({ company, ref, lot, reason }));
   }
 }
 

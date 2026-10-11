@@ -68,15 +68,11 @@ export const COMPANY_ICON = {
   client: 'customer',
 };
 
-// Logo : une ligne de points liés, interrompue par une barre (le pare-feu).
+// Logo : une grille de points (la forêt, les opérations) coupée par une barre
+// verticale (le pare-feu). À gauche, ce qui brûle ; à droite, ce qui est protégé.
 export function logo(cls = '') {
-  return `<svg class="logo ${cls}" viewBox="0 0 34 34" aria-hidden="true">
-    <path class="l-link k1" d="M5 17h7"/>
-    <path class="l-link k2" d="M12 17h5"/>
-    <path class="l-link" d="M23 17h6" opacity=".55"/>
-    <circle class="l-dot d1" cx="5" cy="17" r="2.6"/>
-    <circle class="l-dot d2" cx="12" cy="17" r="2.6"/>
-    <line class="l-bar" x1="19.5" y1="7" x2="19.5" y2="27"/>
-    <circle class="l-dot" cx="29" cy="17" r="2.6" opacity=".55"/>
-  </svg>`;
+  const near = [4, 10].flatMap((x, i) => [5, 12, 19].map((y, j) =>
+    `<circle class="l-dot near" cx="${x}" cy="${y}" r="2.2" style="animation-delay:${(i * 3 + j) * 0.07}s"/>`)).join('');
+  const far = [5, 12, 19].map((y) => `<circle class="l-dot far" cx="23" cy="${y}" r="2.2"/>`).join('');
+  return `<svg class="logo ${cls}" viewBox="0 0 27 24" aria-hidden="true">${near}<rect class="l-bar" x="15.4" y="1.5" width="2.2" height="21" rx="1.1"/>${far}</svg>`;
 }

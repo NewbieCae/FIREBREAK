@@ -50,7 +50,8 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 - [x] Fusion Avalanche dans `main` (Yann, 02 h 30). Reste à Mika : bug `read_audit_anchor` (statut `unreadable`, 3 tentatives) et mesures réelles dans `docs/avalanche/pitch.md`, directement sur `main`.
 - [x] Déploiement Vercel de l'interface et de l'API (Yann) : https://firebreak-zeta.vercel.app, `vercel deploy --prod` depuis la racine.
 - [x] Scénarios qualité dans les deux sens (Mika) : lot suspect sans blacklister le fournisseur, analyse de rappel depuis un produit fini, signalement qualité signé vers l'amont avec décision au cas par cas ; scénarios `lot` et `recall`, API (`docs/api.md`), panneau de debug, ancrage Avalanche. Validé sur la vraie L1 (25 preuves, 0 échec). 295 tests verts.
-- [ ] Afficher le parcours qualité (`lot`, `recall`) dans l'interface finale `/app/`, ou décider de le montrer depuis le panneau de debug (Yann ?).
+- [x] Afficher le parcours qualité (`lot`, `recall`) dans l'interface finale `/app/` (Yann) : gestes guidés dans le dock (« Étape 2/6 · Distributeur »), tiroir d'analyse de rappel, levée du lot ; « Avec vs sans » masqué sur ces scénarios (pas de déclaration à comparer).
+- [x] Refonte visuelle de `/app/` en registre keynote (Yann) : noir, horizon granuleux, sans boîtes, Geist, nouveau logo ; `design.md` réécrit.
 - [ ] Envoi des ancrages en parallèle par entreprise pour vider la file plus vite sur la vraie L1 (Mika, pc2).
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
@@ -58,6 +59,7 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 
 ## Décisions
 
+- 11/10 04 h 50 (Yann) : nouveau design de l'interface, à reprendre dans les slides : fond noir `#050506`, le sain en blanc neutre, corail = bloqué, ambre = reprise, bleu `#6e95ff` = preuve ; police Geist ; logo = grille de points coupée par une barre. Tout est dans `design.md`.
 - 11/10 03 h 45 (Mika) : on ne blackliste pas un fournisseur pour un problème qualité : on isole le lot en cause, au cas par cas, sur décision humaine ; les alertes vont dans les deux sens (vers l'aval : alertes signées ; vers l'amont : signalements qualité signés).
 
 - 11/10 04 h 00 (Yann) : messagerie lisible. À l'affichage, l'agent résume chaque message en 1 à 3 phrases simples. À l'envoi, message court et humain, en phrases construites ; les termes techniques sont permis s'ils restent synthétiques, mais pas d'inventaire de chemins, routes ou identifiants (les détails vont dans docs/). Voir AGENTS.md, section Messagerie.

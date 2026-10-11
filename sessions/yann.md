@@ -8,10 +8,11 @@ Le moteur FIREBREAK est livré (6 étapes du plan) et **l'interface finale aussi
 
 ## En cours
 
-- Répétition de la démo sur l'interface finale.
+- Refonte visuelle de l'interface faite (registre keynote : noir, horizon granuleux, sans boîtes, Geist, nouveau logo) et parcours qualité de Mika intégré au dock. Reste : redéployer sur Vercel et répéter la démo.
 
 ## Prochaine étape
 
+- Redéployer Vercel (`vercel deploy --prod`), vérifier en 1920×1080.
 - Gel à 10 h (tag `demo-freeze`), puis répétition jusqu'à 12 h.
 
 ## Besoin des autres
@@ -20,6 +21,7 @@ Le moteur FIREBREAK est livré (6 étapes du plan) et **l'interface finale aussi
 
 ## Journal
 
+- **11/10 04 h 50** — Refonte de l'interface `/app/` (demande de Yann : « plus sleek, keynote 2026, moins néon ») : fond noir avec horizon bleu granuleux qui vire au corail pendant un incident, plus aucun cadre de verre (colonnes, chiffres et fil flottent, séparés par des filets), icônes sans cadre, le sain en blanc neutre (seul l'anormal est coloré), police Geist / Geist Mono auto-hébergée (gros chiffres en 300), contrôles en pilules, dock d'action flottant avec bouton primaire blanc, nouveau logo (grille de points coupée par une barre). Animations de causalité inchangées. Scénarios qualité de Mika dans le dock : `lot` en 3 gestes, `recall` en 6 (client signale, distributeur confirme et remonte, fabricant analyse l'origine dans un tiroir « Analyse de rappel » puis isole COIL-103, signale au fournisseur qui confirme), puis « Lever le lot ». Testé dans Chrome sur mixed et recall de bout en bout. design.md réécrit, step archivé dans `steps/06-refonte-keynote/`. 317 tests verts.
 - **11/10 04 h 05** — Règle messagerie précisée : termes techniques permis s'ils sont synthétiques et dans une phrase construite ; seul l'inventaire brut (listes de chemins, routes, identifiants) est banni.
 - **11/10 04 h 00** — Messagerie : les messages d'équipe sont désormais résumés en français courant à l'affichage (plus de citation brute), et les messages envoyés doivent être courts, sans chemins, routes ni identifiants. Règle dans AGENTS.md et dans le hook `team-sync.sh`.
 - **11/10 03 h 55** — Revue de l'UI de Maria (branche `origin/Maria-UI`, `web/ui/`, commit dd0a8b9) : extraite hors dépôt et servie sur localhost:5173, API démo sur :8000. Rien de fusionné dans main.

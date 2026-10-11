@@ -73,6 +73,7 @@ export const RULE_LABEL = {
   source_compromise: 'source compromise',
   alerte_verifiee: 'alerte vérifiée',
   dependance: 'dépendance',
+  lot_suspect: 'lot suspect',
 };
 
 const nf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
@@ -122,6 +123,11 @@ export const STEP_META = {
   withdrawal: { icon: 'falseAlarm', tone: 'ok', label: 'Fausse alerte' },
   document_confirmed: { icon: 'file', tone: 'a', label: 'Document' },
   epcis_import: { icon: 'upload', tone: 'a', label: 'Import EPCIS' },
+  lot_suspect: { icon: 'lot', tone: 'q', label: 'Lot suspect' },
+  lot_suspect_withdrawn: { icon: 'release', tone: 'ok', label: 'Lot levé' },
+  report_sent: { icon: 'alert', tone: 'a', label: 'Signalement émis' },
+  report_received: { icon: 'alert', tone: 'a', label: 'Signalement reçu' },
+  report_decided: { icon: 'check', tone: 'a', label: 'Décision' },
 };
 
 export const AUDIT_EVENT = {
@@ -134,6 +140,11 @@ export const AUDIT_EVENT = {
   release: 'Sortie de quarantaine',
   document_confirmed: 'Document confirmé',
   epcis_import: 'Import EPCIS',
+  lot_suspect: 'Lot déclaré suspect',
+  lot_suspect_withdrawn: 'Lot suspect levé',
+  quality_report_sent: 'Signalement qualité émis',
+  quality_report_received: 'Signalement qualité reçu',
+  quality_report_decided: 'Signalement qualité décidé',
 };
 
 export const ACTION_ICON = { revalidate: 'verified', human_approval: 'human', trusted_source: 'source' };

@@ -8,7 +8,7 @@ import {
   snapshotBefore, takeSnapshot,
 } from './scene.js';
 import {
-  closeDrawer, closeVersus, drawerIs, drawerOpen, openAudit, openChain, openIngest, openProof, openVersus,
+  closeDrawer, closeVersus, drawerIs, drawerOpen, openAudit, openChain, openIngest, openProof, openRecall, openVersus,
   setAi, setSnapshotFn, versusOpen,
 } from './panels.js';
 
@@ -32,6 +32,7 @@ async function boot() {
     ]);
     S.scenarios = scenarios;
     applyState(state, { render: true });
+    await loadReports();
     $('#app').classList.remove('boot');
     renderScenario();
     renderMenus();
@@ -58,14 +59,18 @@ function renderScenario() {
   const sc = S.state.scenario || {};
   $('#scTitle').textContent = sc.label || 'Scénario';
   $('#scDesc').innerHTML = `<span title="${F.esc(sc.description || '')}">${F.esc(sc.description || '')}</span>`;
-  const inc = S.compromised.size > 0;
+  const blocked = [...S.status.values()].includes('quarantined');
+  const inc = S.compromised.size > 0 || blocked;
   const st = $('#sceneState');
   st.className = `s-state ${S.playing ? (S.healing ? 'healing' : 'incident') : inc ? 'incident' : ''}`;
+  document.body.classList.toggle('incident', S.playing ? !S.healing : inc);
   st.querySelector('span:last-child').textContent = S.playing
     ? (S.healing ? 'Levée en cascade…' : 'Propagation en cours…')
-    : inc
-      ? 'Incident en cours · confinement ciblé'
-      : 'La chaîne tourne';
+    : incident()
+      ? (blocked ? 'Incident qualité · lot isolé' : S.reports.length ? 'Signalement qualité en cours' : 'La chaîne tourne')
+      : inc
+        ? 'Incident en cours · confinement ciblé'
+        : 'La chaîne tourne';
 }
 
 function menu(btn, list, items, onPick) {
@@ -209,16 +214,31 @@ function declareLabel() {
 function renderActionbar() {
   const bar = $('#actionbar');
   const inc = S.compromised.size > 0;
-  if (!inc) {
-    bar.innerHTML = `<button class="btn declare" id="declareBtn">${icon('declaration')}<span>${F.esc(declareLabel())}</span></button>
-      <span class="hint"><span class="kbd">→</span>geste suivant</span>`;
+  const q = [...S.status.values()].filter((s) => s === 'quarantined').length;
+  const proofHint = `<span class="hint">${q ? `${icon('arrow', 's16')}Cliquez sur une opération rouge : chemin, explication, reprise` : `${icon('check', 's16')}Plus aucune opération bloquée`}</span>`;
+  if (incident()) {
+    const steps = qualitySteps();
+    const i = steps.findIndex((x) => !x.done());
+    if (i >= 0) {
+      const st = steps[i];
+      bar.innerHTML = `<div class="dock"><span class="step">Étape <b>${i + 1}</b>/${steps.length} · ${F.esc(F.ROLE_SHORT[st.who] || st.who)}</span>
+        <button class="btn declare" id="qualityBtn">${i === 0 ? '<span class="rec"></span>' : ''}<span>${F.esc(st.label)}</span>${i ? icon('arrow', 's18') : ''}</button>
+        <span class="hint"><span class="kbd">→</span>geste suivant</span></div>`;
+      $('#qualityBtn').addEventListener('click', () => st.go());
+    } else {
+      bar.innerHTML = `<div class="dock"><span class="step"><b>Incident traité</b> · fournisseur non blacklisté</span>
+        ${isolated(qualityLot()) ? `<button class="btn" id="liftBtn">${icon('release')}<span>Lever le lot ${F.esc(qualityLot())}</span></button>` : ''}
+        <span class="sep"></span>${proofHint}</div>`;
+      $('#liftBtn')?.addEventListener('click', liftLot);
+    }
+  } else if (!inc) {
+    bar.innerHTML = `<div class="dock"><button class="btn declare" id="declareBtn"><span class="rec"></span><span>${F.esc(declareLabel())}</span></button>
+      <span class="hint"><span class="kbd">→</span>geste suivant</span></div>`;
     $('#declareBtn').addEventListener('click', declare);
   } else {
-    const q = [...S.status.values()].filter((s) => s === 'quarantined').length;
-    bar.innerHTML = `<button class="btn compare" id="compareBtn">${icon('compare')}<span>Avec vs sans Firebreak</span></button>
+    bar.innerHTML = `<div class="dock"><button class="btn compare" id="compareBtn">${icon('compare')}<span>Avec vs sans Firebreak</span></button>
       <button class="btn" id="withdrawBtn">${icon('falseAlarm')}<span>Fausse alerte</span></button>
-      <span class="sep"></span>
-      <span class="hint">${q ? `${icon('arrow', 's16')}Cliquez sur une opération rouge : chemin, explication, reprise` : `${icon('check', 's16')}Plus aucune opération bloquée`}</span>`;
+      <span class="sep"></span>${proofHint}</div>`;
     $('#compareBtn').addEventListener('click', openVersus);
     $('#withdrawBtn').addEventListener('click', withdraw);
   }
@@ -229,7 +249,8 @@ function renderActionbar() {
 }
 
 on('playing', () => renderActionbar());
-on('settled', () => {
+on('settled', async () => {
+  await loadReports();
   renderActionbar(); renderMenus(); refreshHeads(); applyView();
   // Les ancrages partent en arrière-plan : on relit l'état de la chaîne un peu après.
   probeChain(); setTimeout(probeChain, 2500);
@@ -302,6 +323,7 @@ async function resetTo(scenario, { quiet = false } = {}) {
     clearFx();
     S.snapshot = null;
     S.lastAction = null;
+    S.reports = [];
     demo = 0;
     applyState(st, { render: true });
     feedReset();
@@ -317,6 +339,7 @@ async function resetTo(scenario, { quiet = false } = {}) {
 on('open-proof', (id) => { closeVersus(); openProof(id); });
 on('open-audit', (co) => openAudit(co));
 on('remediate', ({ id, action }) => remediate(id, action));
+on('isolate-lot', ({ company, lot, reason }) => isolateLot(company, lot, reason));
 on('highlight', (id) => highlight(id));
 on('ingested', async ({ state, snapshot, title }) => {
   S.lastAction = title;
@@ -330,6 +353,88 @@ on('ingested', async ({ state, snapshot, title }) => {
     renderActionbar();
   }
 });
+
+// =====================================================================
+// Incident qualité (scénarios « lot » et « recall ») : pas de compromission,
+// une suite de décisions humaines guidée dans le dock. Le fournisseur n'est
+// jamais blacklisté : seul le lot en cause et ce qui en dérive est isolé.
+// =====================================================================
+
+function incident() { return S.state?.scenario?.incident || null; }
+function qualityLot() { const inc = incident(); return inc?.lot || inc?.suspect_lot; }
+
+async function loadReports() {
+  if (!incident()) { S.reports = []; return; }
+  try { S.reports = await api('GET', '/api/reports'); } catch { S.reports = S.reports || []; }
+}
+
+// Le lot est isolé quand une opération qui le porte est bloquée.
+function isolated(lot) {
+  return !!lot && S.state.records.some((r) => r.payload?.lot === lot && r.status === 'quarantined');
+}
+
+// Réception du produit en cause dans un registre (là où le défaut est constaté).
+function receiptOf(company, ref) {
+  const r = S.state.records.find((x) => x.company === company && x.kind === 'goods_receipt'
+    && (x.payload?.lot === ref || (x.label || '').includes(ref)));
+  return r?.id || ref;
+}
+
+function qualitySteps() {
+  const inc = incident();
+  if (!inc) return [];
+  const reports = S.reports || [];
+  const sent = (from) => reports.filter((r) => r.from === from);
+  const decided = (from) => sent(from).some((r) => r.status !== 'pending');
+  const fab = inc.company;
+  if (inc.type === 'lot') {
+    return [
+      { who: fab, label: `Isoler le lot ${inc.lot}`, done: () => isolated(inc.lot), go: () => isolateLot(fab, inc.lot, inc.reason) },
+      { who: fab, label: 'Signaler au fournisseur', done: () => sent(fab).length > 0, go: () => report(fab, inc.lot, inc.reason) },
+      { who: 'fournisseur', label: 'Le fournisseur confirme', done: () => decided(fab), go: () => decide(fab) },
+    ];
+  }
+  const tgt = inc.target, lot = inc.suspect_lot;
+  return [
+    { who: 'client', label: `Signaler une casse sur ${tgt}`, done: () => sent('client').length > 0,
+      go: () => report('client', receiptOf('client', tgt), 'Casse sur chantier : produit fini défectueux') },
+    { who: 'distributeur', label: 'Confirmer le signalement', done: () => decided('client'), go: () => decide('client') },
+    { who: 'distributeur', label: 'Remonter au fabricant', done: () => sent('distributeur').length > 0,
+      go: () => report('distributeur', receiptOf('distributeur', tgt), 'Signalement client confirmé, remonté au fabricant') },
+    { who: fab, label: `Analyser l'origine de ${tgt}`, done: () => isolated(lot),
+      go: () => openRecall({ company: fab, ref: sent('distributeur')[0]?.records?.[0] || tgt, lot, reason: inc.reason }) },
+    { who: fab, label: 'Signaler au fournisseur', done: () => sent(fab).length > 0, go: () => report(fab, lot, inc.reason) },
+    { who: 'fournisseur', label: 'Le fournisseur confirme', done: () => decided(fab), go: () => decide(fab) },
+  ];
+}
+
+function isolateLot(company, lot, reason) {
+  return run(`Lot ${lot} isolé · ${F.ROLE_SHORT[company] || companyName(company)}`,
+    () => api('POST', '/api/lots/suspect', { company, lot, reason }), { source: company });
+}
+
+function report(company, ref, reason) {
+  return run(`Signalement qualité · ${F.ROLE_SHORT[company] || companyName(company)}`, async () => {
+    await api('POST', '/api/reports', { company, ref, reason });
+    S.reports = await api('GET', '/api/reports');
+    return api('GET', '/api/state');
+  }, { source: company });
+}
+
+function decide(from) {
+  const r = (S.reports || []).find((x) => x.from === from && x.status === 'pending');
+  if (!r) return;
+  return run(`Signalement confirmé · ${F.ROLE_SHORT[r.to] || companyName(r.to)}`, async () => {
+    await api('POST', `/api/reports/${encodeURIComponent(r.id)}/decision`, { company: r.to, decision: 'confirm' });
+    S.reports = await api('GET', '/api/reports');
+    return api('GET', '/api/state');
+  }, { source: r.to });
+}
+
+function liftLot() {
+  const inc = incident();
+  return run(`Lot ${qualityLot()} levé`, () => api('POST', '/api/lots/suspect/withdraw', { company: inc.company, lot: qualityLot() }), { source: inc.company });
+}
 
 // =====================================================================
 // Clavier : Échap ferme, → enchaîne les cinq gestes de la démo
@@ -352,9 +457,17 @@ function healTarget() {
 async function nextGesture() {
   if (S.playing || busy) return;
   closeMenus();
+  if (incident()) {
+    // Incident qualité : l'étape suivante se déduit des signalements et des statuts.
+    const inc = incident();
+    if (drawerIs('recall')) { closeDrawer(); return isolateLot(inc.company, qualityLot(), inc.reason); }
+    const step = qualitySteps().find((x) => !x.done());
+    if (step) return step.go();
+    closeDrawer(); closeVersus(); return refreshHeads(true);
+  }
   // Le geste se déduit de l'état : un clic à la souris ou un rechargement ne décale rien.
-  const incident = S.compromised.size > 0;
-  if (!incident) {
+  const declared = S.compromised.size > 0;
+  if (!declared) {
     // Après une remédiation puis un retrait, des records restent « released » :
     // on repart d'une scène propre pour que les chiffres soient ceux du pitch.
     if ([...S.status.values()].some((s) => s !== 'ok')) await resetTo(S.state.scenario?.id, { quiet: true });

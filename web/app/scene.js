@@ -4,10 +4,11 @@ import { S, $, $$, api, el, emit, showTip, hideTip, companyName, REDUCED, EASE, 
 import { icon, COMPANY_ICON } from './icons.js';
 import * as F from './format.js';
 
-const OK = '92, 225, 178';
-const Q = '255, 107, 95';
-const R = '246, 181, 76';
-const A = '61, 220, 255';
+// Le sain est neutre (blanc) : seul l'anormal porte une couleur (design.md).
+const OK = '244, 244, 245';
+const Q = '255, 85, 69';
+const R = '255, 176, 46';
+const A = '110, 149, 255';
 const SPEED = 0.6; // s entre deux étapes SSE (brief : 0,3 à 0,8 s)
 
 const dots = new Map();      // id → bouton .dot
@@ -275,7 +276,7 @@ function frame(t) {
       ctx.moveTo(f.pts[0].x, f.pts[0].y);
       for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i].x, f.pts[i].y);
       ctx.lineWidth = cut ? 1.4 : 1;
-      ctx.strokeStyle = cut ? `rgba(${Q}, ${mine ? 0.55 : 0.12})` : `rgba(255, 255, 255, ${mine ? 0.07 : 0.025})`;
+      ctx.strokeStyle = cut ? `rgba(${Q}, ${mine ? 0.6 : 0.12})` : `rgba(255, 255, 255, ${mine ? 0.08 : 0.025})`;
       ctx.stroke();
       if (cut || REDUCED || !mine) continue;
       const amber = ss === 'released' || (flashing.get(f.s) || 0) > now || (flashing.get(f.t) || 0) > now;
@@ -284,10 +285,10 @@ function frame(t) {
       for (let k = 0; k < f.ph.length; k++) {
         f.ph[k] = (f.ph[k] + (dt * 46) / f.len) % 1;
         const p = at(f.pts, f.ph[k]);
-        ctx.fillStyle = `rgba(${col}, 0.13)`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, 6.283); ctx.fill();
-        ctx.fillStyle = `rgba(${col}, 0.95)`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, 6.283); ctx.fill();
+        ctx.fillStyle = `rgba(${col}, 0.07)`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, 6.283); ctx.fill();
+        ctx.fillStyle = `rgba(${col}, 0.9)`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.4, 0, 6.283); ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
     }
@@ -410,13 +411,17 @@ function crossMark(id) {
 function envelope(a, b, rgb, dur = 520) {
   const f = flowFor(a, b) || (pos.get(a) && pos.get(b) ? { pts: bezierPts(pos.get(a), pos.get(b)) } : null);
   if (!f) return wait(0);
+  return envelopeAlong(f.pts, rgb, dur);
+}
+
+function envelopeAlong(pts, rgb, dur) {
+  const f = { pts };
   const g = svg('g', { class: 'env' });
   g.innerHTML = `<g transform="translate(-9 -7)" stroke="rgb(${rgb})">
       <rect x="0" y="0" width="18" height="13" rx="2.5"/>
       <path d="M1 1.5 9 7.5l8-6" fill="none"/>
     </g>
     <circle cx="8" cy="6" r="3.4" stroke="rgb(${A})"/>`;
-  g.style.filter = `drop-shadow(0 0 6px rgba(${rgb}, .6))`;
   if (REDUCED) {
     const p = f.pts[f.pts.length - 1];
     g.setAttribute('transform', `translate(${p.x} ${p.y})`);
@@ -435,6 +440,20 @@ function envelope(a, b, rgb, dur = 520) {
     };
     requestAnimationFrame(step);
   });
+}
+
+// Signalement qualité : enveloppe d'un registre à l'autre (vers l'amont).
+function panelEnvelope(from, to, rgb = A, dur = 700) {
+  const a = panels.get(from), b = panels.get(to);
+  if (!a || !b) return wait(0);
+  const mr = $('#map').getBoundingClientRect();
+  const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+  const y = (r) => r.top - mr.top + 34;
+  const left = ra.left > rb.left;
+  const p0 = { x: (left ? ra.left : ra.right) - mr.left, y: y(ra) };
+  const p1 = { x: (left ? rb.right : rb.left) - mr.left, y: y(rb) };
+  const pts = bezierPts(p0, p1).map((p, i, all) => ({ x: p.x, y: p.y - Math.sin((i / (all.length - 1)) * Math.PI) * 26 }));
+  return envelopeAlong(pts, rgb, dur);
 }
 
 // =====================================================================
@@ -482,6 +501,8 @@ export function setKpis(c, { animate = true, total } = {}) {
   tween($('#kpiBlocked [data-flow]'), tot - c.quarantined, F.n, animate);
   tween($('#kpiFraud [data-v]'), c.amount_blocked || 0, F.n, animate);
   tween($('#kpiFraud [data-gates]'), c.gates_blocked || 0, F.n, animate);
+  const quality = !!S.state.scenario?.incident;
+  $('#kpiFraud .k-label span').textContent = quality ? 'Paiements retenus' : 'Paiement frauduleux bloqué';
   $('#kpiFraud [data-gates-l]').textContent = (c.gates_blocked || 0) > 1 ? 'actions irréversibles bloquées' : 'action irréversible bloquée';
   tween($('#kpiFlowing [data-v]'), c.amount_flowing || 0, F.n, animate);
   $('#kpiBlocked').classList.toggle('hot', c.quarantined > 0);
@@ -543,7 +564,9 @@ function feedEmpty() {
   const st = S.state;
   const box = el('div', 'feed-empty surface');
   box.innerHTML = st
-    ? `<b>Aucun incident.</b>${F.n(st.records.length)} opérations circulent entre ${st.companies.length} entreprises. Déclarez une compromission : FIREBREAK isole uniquement ce qui est contaminé.`
+    ? `<b>Aucun incident.</b>${F.n(st.records.length)} opérations circulent entre ${st.companies.length} entreprises. ${st.scenario?.incident
+      ? 'Un défaut qualité va être signalé : Firebreak isole le lot en cause et ce qui en dérive, sans couper le fournisseur.'
+      : 'Déclarez une compromission : Firebreak isole uniquement ce qui est contaminé.'}`
     : '<span class="sk line"></span><span class="sk line"></span>';
   feed().append(box);
 }
@@ -677,7 +700,7 @@ export async function play({ final = null, title, snapshot = null, source = null
     const { steps } = await api('GET', '/api/timeline', undefined, { signal: ctrl.signal });
     if (!steps.length) { applyState(target); return; }
     // Séquence de guérison (remédiation, retrait) : aucune nouvelle contamination.
-    S.healing = steps.some((s) => s.type === 'release' || s.type === 'remediation' || s.type === 'withdrawal')
+    S.healing = steps.some((s) => s.type === 'release' || s.type === 'remediation' || s.type === 'withdrawal' || s.type === 'lot_suspect_withdrawn')
       && !steps.some((s) => s.type === 'seed' || s.type === 'quarantine' || s.type === 'gate_blocked');
     emit('playing', true);
     // Nouveaux records (ingestion) : on pose la nouvelle carte, puis l'état d'avant.
@@ -776,6 +799,23 @@ async function onStep(group, step, source, signal) {
       pulse(id);
       const p = pos.get(id);
       if (p) ripple(p.x, p.y, R, { r: 46, dur: 1200 });
+      break;
+    }
+    case 'lot_suspect':
+      companyWave(step.company, Q);
+      break;
+    case 'lot_suspect_withdrawn':
+      companyWave(step.company, OK);
+      break;
+    case 'report_sent': {
+      const rep = [...(S.reports || [])].reverse().find((r) => r.from === step.company);
+      if (rep) await panelEnvelope(rep.from, rep.to);
+      break;
+    }
+    case 'report_received':
+    case 'report_decided': {
+      const c = panelCenter(step.company);
+      if (c) ripple(c.x, c.y, A, { r: Math.max(c.w, c.h) * 0.55, dur: 1300 });
       break;
     }
     case 'document_confirmed':
