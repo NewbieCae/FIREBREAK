@@ -601,6 +601,9 @@ svg.i.s20 { width: 20px; height: 20px; }
   .brand .tag { display: none; }
 }
 
+/* Mode allégé (posé par scene.js si les images ralentissent) */
+.lite .company, .lite .feed, .lite .kpis { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(18, 27, 46, 0.9); }
+
 /* ---------- Fenêtre étroite (< 1180 px) : la page défile verticalement ---------- */
 @media (max-width: 1180px) {
   body { overflow-y: auto; }

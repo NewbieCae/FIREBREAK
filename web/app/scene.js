@@ -243,9 +243,26 @@ function flowFor(a, b) {
   return flows.find((f) => f.s === a && f.t === b);
 }
 
+// Garde-fou de fluidité : si les images ralentissent nettement (machine de
+// projection modeste), les panneaux de la carte passent en verre opaque, sans flou.
+let slowFrames = 0, sampled = 0;
+function watchFps(raw) {
+  if (document.body.classList.contains('lite') || document.hidden) return;
+  if (raw > 0 && raw < 250) { sampled++; if (raw > 28) slowFrames++; }
+  if (sampled >= 180) {
+    if (slowFrames / sampled > 0.5) {
+      document.body.classList.add('lite');
+      console.info('[firebreak] images lentes : verre de la carte sans flou');
+    }
+    sampled = 0; slowFrames = 0;
+  }
+}
+
 function frame(t) {
-  const dt = Math.min(0.05, (t - (last || t)) / 1000);
+  const raw = t - (last || t);
+  const dt = Math.min(0.05, raw / 1000);
   last = t;
+  watchFps(raw);
   if (ctx) {
     ctx.clearRect(0, 0, cw, ch);
     const now = performance.now();
