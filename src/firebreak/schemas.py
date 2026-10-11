@@ -69,10 +69,12 @@ class CountersBlock(BaseModel):
     model_config = {"populate_by_name": True, "serialize_by_alias": True}
 
 
-AlertType = Literal["taint", "release"]
+AlertType = Literal["taint", "release", "report"]
 AuditEvent = Literal[
     "declaration", "declaration_withdrawn", "alert_sent", "alert_received",
     "quarantine", "remediation", "release", "document_confirmed", "epcis_import",
+    "lot_suspect", "lot_suspect_withdrawn", "quality_report_sent",
+    "quality_report_received", "quality_report_decided",
 ]
 
 
@@ -124,7 +126,8 @@ class StateOut(BaseModel):
 StepType = Literal[
     "declaration", "withdrawal", "seed", "quarantine", "gate_blocked",
     "release", "remediation", "alert_sent", "alert_received",
-    "document_confirmed", "epcis_import",
+    "document_confirmed", "epcis_import", "lot_suspect", "lot_suspect_withdrawn",
+    "report_sent", "report_received", "report_decided",
 ]
 
 

@@ -264,7 +264,7 @@ Reconstruit un scénario (aucune déclaration, aucune alerte, journaux d'audit v
 curl -X POST localhost:8000/api/reset -H 'Content-Type: application/json' -d '{"scenario": "cert"}'
 ```
 
-Sans corps : `mixed` (193 records). Réponse : l'état complet, avec `scenario`. Un identifiant inconnu donne 422 `{"detail": "requête invalide — scenario: Input should be 'mixed', 'rib', 'cert' or 'asn'"}`.
+Sans corps : `mixed` (193 records). Réponse : l'état complet, avec `scenario`. Un identifiant inconnu donne 422 `{"detail": "requête invalide — scenario: Input should be 'mixed', 'rib', 'cert', 'asn', 'lot' or 'recall'"}`.
 
 ### `GET /api/scenarios`
 
@@ -274,7 +274,9 @@ Sans corps : `mixed` (193 records). Réponse : l'état complet, avec `scenario`.
    "compromise": {"company": "fournisseur", "since": "2026-10-10T14:00:00"}},
   {"id": "rib", "label": "Fraude au RIB", …},
   {"id": "cert", "label": "Faux certificat qualité", …},
-  {"id": "asn", "label": "Faux avis d'expédition", …}
+  {"id": "asn", "label": "Faux avis d'expédition", …},
+  {"id": "lot", "label": "Lot défectueux", …, "incident": {"type": "lot", "company": "fabricant", "lot": "COIL-104", "reason": "…"}},
+  {"id": "recall", "label": "Rappel depuis un produit fini", …, "incident": {"type": "recall", "company": "fabricant", "target": "LOT-503", "suspect_lot": "COIL-103", "reason": "…"}}
 ]
 ```
 
@@ -613,6 +615,20 @@ Si un ancrage confirmé existe mais que la lecture on-chain échoue après 3 nou
 
 Corps `{"company": "fabricant", "drop_event": "alert_received"}`. Supprime la première entrée de ce type du journal et **recalcule tous les hash** : `/api/audit/verify` renvoie `ok: true` (la chaîne locale est cohérente) mais `onchain_ok: false` (le journal ne correspond plus à l'ancrage). 400 si aucune entrée de ce type.
 
+## Qualité : lot suspect, rappel, signalement amont
+
+Incident qualité = pas de compromission : on isole un lot sur décision humaine, le fournisseur n'est pas déclaré compromis (ses autres lots, factures et paiements continuent). Scénarios `lot` et `recall` (clé `incident` dans `scenario`). Toutes les routes renvoient 404 (entreprise ou référence inconnue) ou 400 (état invalide) avec `{"detail": …}`.
+
+| Route | Corps / paramètres | Réponse |
+|---|---|---|
+| `POST /api/lots/suspect` | `{"company", "lot", "reason"}` : `lot` = numéro de lot ou id de record | l'état complet ; le lot et ses dépendants passent en quarantaine, alertes signées vers les clients |
+| `POST /api/lots/suspect/withdraw` | `{"company", "lot"}` | l'état complet ; levée en cascade (400 si le lot n'est pas suspect) |
+| `GET /api/recall?company=&ref=` | `ref` = lot ou record du produit en cause | lecture seule : `{"company", "target", "candidates": [{"record", "label", "kind", "lot", "origin", "received", "impact_records", "impact_gates", "impact_partners"}]}` |
+| `POST /api/reports` | `{"company", "ref", "reason"}` | liste de signalements signés (un par partenaire amont) `{"id", "from", "to", "reason", "tokens_count", "records", "verified", "status", "issued_at"}` ; ne bloque rien |
+| `GET /api/reports?company=` | sans `company` : tous | signalements envoyés ou reçus |
+| `POST /api/reports/{id}/decision` | `{"company": destinataire, "decision": "confirm"\|"reject"}` | le signalement mis à jour (`status` `confirmed`/`rejected`) ; `confirm` isole les records mis en cause et alerte leurs clients |
+
+Événements d'audit ajoutés : `lot_suspect`, `lot_suspect_withdrawn`, `quality_report_sent`, `quality_report_received`, `quality_report_decided`. Types d'étape de timeline : `lot_suspect`, `lot_suspect_withdrawn`, `report_sent`, `report_received`, `report_decided`. Type d'alerte `report` ajouté.
 ## IA : Bedrock et repli mock
 
 L'IA **ne décide jamais d'un blocage**. Elle explique (`/explain`), propose un plan de reprise et extrait les données des documents. Toute donnée extraite n'entre dans le registre qu'après confirmation humaine, puis passe par les règles du graphe.

@@ -128,6 +128,28 @@ class WithdrawBody(BaseModel):
     company: str = Field(examples=["fournisseur"])
 
 
+class LotSuspectBody(BaseModel):
+    company: str = Field(examples=["fabricant"])
+    lot: str = Field(description="Numéro de lot ou id de record.", examples=["COIL-104"])
+    reason: str = Field(default="", examples=["Défaut de coulée"])
+
+
+class LotWithdrawBody(BaseModel):
+    company: str = Field(examples=["fabricant"])
+    lot: str = Field(examples=["COIL-104"])
+
+
+class ReportBody(BaseModel):
+    company: str = Field(description="Entreprise qui signale.", examples=["client"])
+    ref: str = Field(description="Lot ou id de record concerné.", examples=["c-gr-03"])
+    reason: str = Field(default="", examples=["Casse sur chantier"])
+
+
+class ReportDecisionBody(BaseModel):
+    company: str = Field(description="Destinataire du signalement.", examples=["fournisseur"])
+    decision: str = Field(description="« confirm » ou « reject ».", examples=["confirm"])
+
+
 class RemediateBody(BaseModel):
     action: str = Field(
         description="Action de reprise.",
@@ -226,6 +248,69 @@ def post_withdraw(body: WithdrawBody) -> dict:
             raise HTTPException(400, str(exc)) from exc
         anchorer.after_action(sim, "withdraw")
         return sim.state()
+
+
+def _quality_call(company: str, fn, *args):
+    if company not in sim.ledgers:
+        raise HTTPException(404, f"entreprise inconnue: {company}")
+    try:
+        return fn(company, *args)
+    except KeyError as exc:
+        raise HTTPException(404, f"inconnu: {exc.args[0]}") from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.post("/api/lots/suspect", summary="Déclarer un lot suspect (sans blacklister le fournisseur)",
+          response_model=StateOut, responses=ERRORS)
+def post_lot_suspect(body: LotSuspectBody) -> dict:
+    with _lock:
+        _quality_call(body.company, sim.declare_lot_suspect, body.lot, body.reason)
+        anchorer.after_action(sim, "lot_suspect")
+        return sim.state()
+
+
+@app.post("/api/lots/suspect/withdraw", summary="Lever la suspicion d'un lot",
+          response_model=StateOut, responses=ERRORS)
+def post_lot_withdraw(body: LotWithdrawBody) -> dict:
+    with _lock:
+        _quality_call(body.company, sim.withdraw_lot_suspect, body.lot)
+        anchorer.after_action(sim, "lot_suspect_withdrawn")
+        return sim.state()
+
+
+@app.get("/api/recall", summary="Analyse de rappel : causes possibles d'un défaut produit",
+         responses=ERRORS)
+def get_recall(company: str = Query(examples=["fabricant"]),
+               ref: str = Query(examples=["LOT-503"])) -> dict:
+    with _lock:
+        return _quality_call(company, sim.recall_analysis, ref)
+
+
+@app.post("/api/reports", summary="Signaler un défaut qualité vers l'amont",
+          responses=ERRORS)
+def post_report(body: ReportBody) -> list[dict]:
+    with _lock:
+        out = _quality_call(body.company, sim.report_upstream, body.ref, body.reason)
+        anchorer.after_action(sim, "quality_report")
+        return out
+
+
+@app.get("/api/reports", summary="Signalements qualité envoyés et reçus", responses=ERRORS)
+def get_reports(company: str | None = None) -> list[dict]:
+    with _lock:
+        if company is not None and company not in sim.ledgers:
+            raise HTTPException(404, f"entreprise inconnue: {company}")
+        return sim.reports(company)
+
+
+@app.post("/api/reports/{report_id}/decision", summary="Confirmer ou rejeter un signalement reçu",
+          responses=ERRORS)
+def post_report_decision(report_id: str, body: ReportDecisionBody) -> dict:
+    with _lock:
+        out = _quality_call(body.company, sim.decide_report, report_id, body.decision)
+        anchorer.after_action(sim, "quality_report_decision")
+        return out
 
 
 @app.get("/api/audit", summary="Journal d'audit d'une entreprise",
