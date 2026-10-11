@@ -150,6 +150,20 @@ class ReportDecisionBody(BaseModel):
     decision: str = Field(description="« confirm » ou « reject ».", examples=["confirm"])
 
 
+class InboundScreenBody(BaseModel):
+    company: str = Field(description="Entreprise qui réceptionne.", examples=["fabricant"])
+    receipt_id: str | None = Field(
+        default=None,
+        description="Réception à contrôler ; sans valeur : toutes les réceptions de la journée.",
+        examples=["m-gr-X"])
+
+
+class InboundDecisionBody(BaseModel):
+    company: str = Field(examples=["fabricant"])
+    decision: str = Field(description="« accept » ou « reject ».", examples=["reject"])
+    reason: str = Field(default="", examples=["Commande inconnue, certificat hors séquence"])
+
+
 class RemediateBody(BaseModel):
     action: str = Field(
         description="Action de reprise.",
@@ -310,6 +324,37 @@ def post_report_decision(report_id: str, body: ReportDecisionBody) -> dict:
     with _lock:
         out = _quality_call(body.company, sim.decide_report, report_id, body.decision)
         anchorer.after_action(sim, "quality_report_decision")
+        return out
+
+
+@app.get("/api/inbound/{receipt_id}/check",
+         summary="Note de confiance d'une réception (lecture seule)", responses=ERRORS)
+def get_inbound_check(receipt_id: str,
+                      company: str = Query(examples=["fabricant"])) -> dict:
+    with _lock:
+        return _quality_call(company, sim.inbound_check, receipt_id)
+
+
+@app.post("/api/inbound/screen",
+          summary="Contrôler les réceptions et mettre en attente les lots douteux",
+          responses=ERRORS)
+def post_inbound_screen(body: InboundScreenBody) -> list[dict]:
+    with _lock:
+        if body.receipt_id is None:
+            out = _quality_call(body.company, sim.inbound_screen_all)
+        else:
+            out = [_quality_call(body.company, sim.inbound_screen, body.receipt_id)]
+        anchorer.after_action(sim, "inbound_screen")
+        return out
+
+
+@app.post("/api/inbound/{receipt_id}/decision",
+          summary="Accepter ou refuser une réception mise en attente", responses=ERRORS)
+def post_inbound_decision(receipt_id: str, body: InboundDecisionBody) -> dict:
+    with _lock:
+        out = _quality_call(body.company, sim.inbound_decide, receipt_id,
+                            body.decision, body.reason)
+        anchorer.after_action(sim, "inbound_decision")
         return out
 
 

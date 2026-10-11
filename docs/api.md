@@ -629,6 +629,18 @@ Incident qualité = pas de compromission : on isole un lot sur décision humaine
 | `POST /api/reports/{id}/decision` | `{"company": destinataire, "decision": "confirm"\|"reject"}` | le signalement mis à jour (`status` `confirmed`/`rejected`) ; `confirm` isole les records mis en cause et alerte leurs clients |
 
 Événements d'audit ajoutés : `lot_suspect`, `lot_suspect_withdrawn`, `quality_report_sent`, `quality_report_received`, `quality_report_decided`. Types d'étape de timeline : `lot_suspect`, `lot_suspect_withdrawn`, `report_sent`, `report_received`, `report_decided`. Type d'alerte `report` ajouté.
+
+## Contrôle des entrées en stock
+
+À la réception d'une livraison, une **note de confiance /100** croise le référentiel de l'entreprise (fiches fournisseurs, pièces et nomenclatures, commandes ouvertes) avec ce qui arrive (avis d'expédition, certificat, factures reçues, alertes). Contrôles déterministes, chacun expliqué ; la note part de 100 et chaque contrôle en échec retire sa pénalité. Bandes : `confiance` (≥ 80), `doute` (60–79), `suspect` (< 60). **Sous 80 : mise en attente** de la réception et de tout ce qui en dépend, jusqu'à la décision d'un humain. Référentiel de démo : celui du fabricant (commandes BC-1001…1010, sauf BC-9999 inconnue).
+
+| Route | Corps / paramètres | Réponse |
+|---|---|---|
+| `GET /api/inbound/{receipt_id}/check?company=` | — | lecture seule : `{"receipt", "label", "supplier", "lot", "order", "score", "band", "hold", "status", "checks": [{"id", "label", "ok", "penalty", "detail"}], "explanation"}` |
+| `POST /api/inbound/screen` | `{"company", "receipt_id"?}` (sans `receipt_id` : toutes les réceptions venues d'un partenaire) | liste de ces mêmes objets ; les réceptions sous le seuil passent `status: "en_attente"` (quarantaine de la réception et de ses dépendants) |
+| `POST /api/inbound/{receipt_id}/decision` | `{"company", "decision": "accept"\|"reject", "reason"}` | `{"receipt", "decision", "status", "reports"}` ; `accept` lève l'attente et rend la réception fiable (`verified`), `reject` la garde isolée et envoie un signalement qualité signé au fournisseur (`reports`) ; 400 si déjà traitée |
+
+`checks[].id` : `order` (commande), `part` (référence et nomenclature), `qty`, `date`, `cert` (certificat présent, lot et nuance), `cert_no` (séquence), `lot` (format, doublon), `rib` (fiche fournisseur), `alerts`. `status` : `non_controle`, `en_attente`, `accepte`, `refuse`. Événements d'audit : `inbound_hold`, `inbound_accepted`, `inbound_rejected` (mêmes noms en types d'étape). Ancrage Avalanche : mise en attente et refus → `declareIncident`, acceptation → `withdrawIncident` (empreinte `sha256("inbound:" + entreprise + "|" + réception)`).
 ## IA : Bedrock et repli mock
 
 L'IA **ne décide jamais d'un blocage**. Elle explique (`/explain`), propose un plan de reprise et extrait les données des documents. Toute donnée extraite n'entre dans le registre qu'après confirmation humaine, puis passe par les règles du graphe.

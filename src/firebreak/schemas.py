@@ -75,6 +75,7 @@ AuditEvent = Literal[
     "quarantine", "remediation", "release", "document_confirmed", "epcis_import",
     "lot_suspect", "lot_suspect_withdrawn", "quality_report_sent",
     "quality_report_received", "quality_report_decided",
+    "inbound_hold", "inbound_accepted", "inbound_rejected",
 ]
 
 
@@ -128,6 +129,7 @@ StepType = Literal[
     "release", "remediation", "alert_sent", "alert_received",
     "document_confirmed", "epcis_import", "lot_suspect", "lot_suspect_withdrawn",
     "report_sent", "report_received", "report_decided",
+    "inbound_hold", "inbound_accepted", "inbound_rejected",
 ]
 
 

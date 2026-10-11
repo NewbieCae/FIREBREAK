@@ -118,6 +118,17 @@ class Anchorer:
                         args = (self.run_id, company_id(cid), h)
                         method = "withdrawIncident"
                     out.append(self.client.submit(ChainOp("incident", cid, method, args, hex32(h))))
+                elif ev in ("inbound_hold", "inbound_rejected", "inbound_accepted"):
+                    # Contrôle d'entrée en stock : mise en attente ou refus = incident
+                    # ciblé sur la réception ; acceptation = levée de l'incident.
+                    h = hashlib.sha256(f"inbound:{cid}|{d['receipt']}".encode()).digest()
+                    if ev == "inbound_accepted":
+                        args = (self.run_id, company_id(cid), h)
+                        method = "withdrawIncident"
+                    else:
+                        args = (self.run_id, company_id(cid), _epoch(e["ts"]), h)
+                        method = "declareIncident"
+                    out.append(self.client.submit(ChainOp("incident", cid, method, args, hex32(h))))
                 elif ev == "quality_report_sent":
                     h = self._report_id(sim, d["id"])
                     if h is not None:
