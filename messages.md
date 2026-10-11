@@ -93,3 +93,6 @@ Mika : on a ajouté les incidents qualité (lot défectueux, rappel depuis un pr
 
 ### mika → yann · 2026-10-11 08:56:43
 Mika : de notre côté tout est figé et prêt. Avalanche, les incidents qualité et le contrôle des entrées en stock sont sur main, tous les tests sont verts, et la répétition sur notre vraie L1 est passée sans aucun échec. On ne touche plus au code. Tu peux poser le tag de gel quand tu veux. La démo avec Avalanche tourne sur mon ordinateur ; la feuille de démo est dans docs/demo-avalanche-qualite.md.
+
+### mika → tous · 2026-10-11 10:59:55
+Mika : à ma demande, mon agent traduit maintenant tout le dépôt en anglais, directement sur main : README, docs, commentaires, et les textes de l'interface et de l'API. Les identifiants techniques ne changent pas, et la messagerie, le canal et vos sessions ne sont pas touchés. Évitez de modifier des fichiers dans l'heure qui vient pour ne pas créer de conflits ; je préviens quand c'est fini et vert.
