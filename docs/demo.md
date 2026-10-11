@@ -89,7 +89,7 @@ Sur la vraie L1 : `FIREBREAK_CHAIN=l1` après `scripts/chain_smoke.py` au vert
 
 | Clic | Ce qu'on voit | Ce qu'on dit |
 |---|---|---|
-| Ouvrir le panneau « Avalanche » (colonne de droite) | point vert, chainId, contrat, file d'ancrages | « Chaque alerte et chaque journal sont ancrés sur notre L1 Avalanche : un témoin horodaté que ni le fournisseur, ni le client, ni nous ne pouvons réécrire. » |
+| Ouvrir le panneau « Avalanche » (colonne de droite) | point vert, chainId, contrat, file d'ancrages | « Chaque alerte et chaque journal sont ancrés sur notre L1 Avalanche : un témoin horodaté, hors de portée de celui qui tient le journal. » (Si on demande : en démo, un seul validateur ; en production, les membres du consortium.) |
 | Étape « compromission » de la démo | des ancrages `alert`, `ack`, `incident`, `audit` passent à *confirmé* avec un numéro de bloc | « Seuls les membres de la chaîne peuvent écrire : une entreprise extérieure ne peut pas déclarer un faux incident pour paralyser un concurrent. » |
 | « Vérifier sur Avalanche » | pour chaque entreprise : local ✓, Avalanche ✓ | « Aucune donnée commerciale sur la chaîne : uniquement des empreintes. » |
 | « Simuler une réécriture du journal » | local ✓, **Avalanche ✗** sur le fabricant | « Ici quelqu'un réécrit le journal du fabricant pour effacer qu'il a été prévenu, et recalcule tous les hash. La vérification locale ne voit rien. Avalanche, si. » |

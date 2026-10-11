@@ -38,7 +38,8 @@ Quatre politiques comparées sur le même monde : A alerte seule, B blocage du f
 | Rappel à p = 0 / 0,1 / 0,2 / 0,3 | 0 % | 98,5 % (quel que soit p) | 100 / 98,0 / 95,7 / 93,4 % | 100 / 99,4 / 98,6 / 97,9 % |
 | Rappel à p = 0,3 : 5e centile / pire cas | — | 91,2 / 72,9 % | 79,2 / 66,0 % | 90,0 / 78,6 % |
 
-Temps de détection / de réponse : non mesuré (le déclencheur est une alerte reçue).
+Temps de détection : non mesuré (le déclencheur est une déclaration ou une alerte reçue, nous ne détectons pas).
+Temps de réponse, mesuré sur notre démo (scénario `mixed`, pas un chiffre du banc) : mise en quarantaine des 17 opérations en environ 20 ms par l'API HTTP (2 ms en médiane hors réseau, chaîne éteinte, 20 essais) ; ancrage de chaque preuve sur notre L1 Avalanche en environ 2 s, en arrière-plan, sans retarder la quarantaine (12 ancrages en environ 24 s, 0 échec sur deux démos).
 
 ## Limites connues (à dire avant que le jury les trouve)
 - Tout est simulé ; les chiffres viennent de notre modèle, pas d'une entreprise réelle.

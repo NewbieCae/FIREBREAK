@@ -55,6 +55,8 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 
 ## Décisions
 
+- 11/10 03 h 30 (Céline) : chiffres de chaîne cités = ceux de la vraie L1 (≈ 2 s par preuve, 12 ancrages en ≈ 24 s), annoncés « mesurés sur notre démo » ; on dit « un seul validateur en démo, les membres du consortium en production » ; la ligne « actions irréversibles à p=0,3 » passe de la diapo Preuve à la diapo Limites.
+
 - 11/10 02 h 50 (Céline) : le pitch assume la blockchain. `docs/pitch-firebreak.md` (question 8, diapos 4 et 7, déroulé de la démo aligné sur les 5 gestes de `/app/` et sur 193 opérations), `docs/firebreak.md`, `docs/benchmark-firebreak.md`, `docs/api.md` (limite du journal → ancrage Avalanche), README : « les règles décident, l'IA explique, la blockchain prouve ». TradeLens : arrêt annoncé fin 2022, fermeture début 2023.
 
 - 11/10 02 h 50 (Yann) : interface + API déployées sur Vercel : **https://firebreak-zeta.vercel.app** (fonction Python unique `api/index.py`, IA simulée, chaîne off). Plan de secours de la démo si le portable lâche. État en mémoire par instance : faire « Réinitialiser » avant la démo.
