@@ -600,9 +600,12 @@ function inRender() {
   box.innerHTML = inResults.map(r => {
     const failed = r.checks.filter(c => !c.ok);
     const col = IN_BAND[r.band] || '#888';
-    const actions = r.status === 'en_attente' || (r.hold && r.status === 'non_controle')
-      ? ` <button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="accept">Accepter</button>` +
-        `<button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="reject">Refuser</button>` : '';
+    const canReject = r.status === 'en_attente' || (r.hold && r.status === 'non_controle');
+    const actions =
+      (r.status === 'en_attente'
+        ? ` <button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="accept">Accepter</button>` : '') +
+      (canReject
+        ? `<button class="secondary in-dec" data-id="${esc(r.receipt)}" data-d="reject">Refuser</button>` : '');
     return `<div class="alert" style="border-left:4px solid ${col}">` +
       `<b style="color:${col}">${r.score}/100</b> · ${esc(r.band)} · <b>${esc(IN_STATUS[r.status] || r.status)}</b><br>` +
       `${esc(r.label)} <span class="muted">(${esc(r.receipt)}, ${esc(r.supplier)}${r.lot ? ', ' + esc(r.lot) : ''})</span><br>` +
