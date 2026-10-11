@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": { "api/index.py": { "maxDuration": 60 } },
+  "redirects": [ { "source": "/", "destination": "/app/", "permanent": false } ],
+  "rewrites": [ { "source": "/(.*)", "destination": "/api/index?__path=/$1" } ]
+}

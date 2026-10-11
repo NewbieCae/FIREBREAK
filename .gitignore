@@ -17,3 +17,5 @@ steps/
 .venv/
 __pycache__/
 .pytest_cache/
+.vercel/
+.vercel
