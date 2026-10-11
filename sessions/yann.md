@@ -4,22 +4,23 @@
 
 ## Où j'en suis
 
-Le moteur FIREBREAK est livré : graphe, propagation, fédération signée, journal d'audit, 4 scénarios, import EPCIS, IA Bedrock avec repli simulé. 147 tests verts. Les 6 étapes du plan sont faites. Démo pilotable au clic : `bash scripts/demo.sh`.
+Le moteur FIREBREAK est livré (6 étapes du plan). **L'interface finale est en route** : `web/app/` (HTML/CSS/JS natif, sans build), servie par l'API sur `http://localhost:8000/app/`. Déjà branchés et testés dans Chrome en 1440×900 : carte vivante (particules, points par famille), propagation SSE animée, chiffres animés, fil d'événements, preuve (chemin, explication, plan de reprise), remédiation en cascade, fausse alerte, avec vs sans, journal d'audit, import de documents et EPCIS, vue partenaire floutée, gestes de démo au clavier (→). `design.md` rempli. 222 tests verts.
 
 ## En cours
 
-- Répétition de la démo ; gel à 10 h.
+- Interface finale : finitions (1920×1080, clavier, mouvement réduit, scénarios rib/cert/asn), puis bascule de `/` vers la nouvelle interface.
 
 ## Prochaine étape
 
-- Gel à 10 h (tag `demo-freeze`), puis répétition jusqu'à 12 h.
+- Finitions de l'interface, archive `steps/05-interface-finale/step.md`, répétition de la démo, gel à 10 h (tag `demo-freeze`).
 
 ## Besoin des autres
 
-- La collègue qui fait l'interface : se brancher sur `docs/api.md` et dire ce qui manque dans l'API.
+- Maria : slides du pitch dans le langage visuel de `design.md`, et test de l'interface sur Windows en 1920×1080 (retours via `messages.md`).
 
 ## Journal
 
+- **11/10 02 h 05** — Interface finale `web/app/` : salle de contrôle verre/aurore, logo animé, 40 icônes custom, carte + particules, propagation SSE, preuve, cascade de levée, avec vs sans, audit, import, vue partenaire. API 1.3.0 (ajouts seulement) : `truth.ids` dans `/api/compare`, `/app/` et `/samples/` servis. Dark Reader neutralisé (`darkreader-lock`).
 - **11/10 00 h 40** — Brief de l'interface finale : `docs/brief-ui.md` (direction artistique verre/sombre, logo, icônes custom, mouvement, 8 écrans, intégration API, démo en 5 gestes).
 - **11/10 01 h 00** — `team-sync.sh` ne commite ni ne pousse plus un conflit non résolu (demande de Céline après les marqueurs poussés dans README.md, commit d8054d9) : fichiers « unmerged » vérifiés avant `git add`, marqueurs `<<<<<<<` / `>>>>>>>` en tête de ligne refusés, contrôle aussi avant push et au début de chaque tour. 43 assertions vertes sur dépôts jetables.
 - **11/10 00 h 30** — « Avec vs sans Firebreak » : `/api/compare` (même définition que le banc de Céline), écran coupé en deux, étape 3 de la démo. Scénario enrichi d'un après-midi réaliste au fabricant (40 opérations saines) : sans Firebreak 54 bloquées dont 42 saines + 5 fuites ; avec, 17 / 0 / 0.

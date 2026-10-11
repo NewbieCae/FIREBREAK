@@ -30,6 +30,7 @@ export function applyState(st, { render = false } = {}) {
   else syncDots();
   for (const c of st.companies) setCompromised(c.id, S.compromised.has(c.id));
   refreshCounts();
+  filterFeed();
   setKpis(currentCounters(), { animate: !render });
 }
 
@@ -149,8 +150,20 @@ export function refreshCounts() {
   }
 }
 
+// En vue partenaire, un registre ne sait qu'une source est compromise que
+// s'il a lui-même enregistré la déclaration (sinon il ne reçoit que des jetons).
+function knowsCompromise(cid) {
+  if (S.view === 'all' || cid === S.view) return true;
+  return (S.state.declarations || []).some((d) => d.ledger === S.view && d.source === cid);
+}
+
 function setCompromised(cid, on) {
-  panels.get(cid)?.classList.toggle('compromised', on);
+  panels.get(cid)?.classList.toggle('compromised', on && knowsCompromise(cid));
+}
+
+// En vue partenaire, le fil ne montre que les événements du registre choisi.
+function filterFeed() {
+  for (const row of $$('#feed .ev')) row.hidden = S.view !== 'all' && row.dataset.co !== S.view;
 }
 
 // Positions des points dans le repère de la carte (canvas et calque SVG).
@@ -461,6 +474,8 @@ export function setKpis(c, { animate = true, total } = {}) {
 // =====================================================================
 
 export function applyView() {
+  filterFeed();
+  for (const cid of panels.keys()) setCompromised(cid, S.compromised.has(cid));
   for (const [cid, p] of panels) {
     const masked = S.view !== 'all' && cid !== S.view;
     p.classList.toggle('masked', masked);
@@ -511,7 +526,8 @@ function feedEmpty() {
 }
 
 function updateFeedCount() {
-  $('#feedCount').textContent = feedSteps ? `${feedSteps} étape${feedSteps > 1 ? 's' : ''}` : '';
+  $('#feedCount').textContent = feedSteps ? String(feedSteps) : '';
+  $('#feedCount').title = `${feedSteps} étape${feedSteps > 1 ? 's' : ''}`;
 }
 
 function feedGroup(title) {
@@ -537,6 +553,8 @@ function feedAdd(group, step, animate) {
   const row = el(step.record ? 'button' : 'div', `ev t-${tone}`);
   if (!animate) row.style.animation = 'none';
   if (step.record) row.dataset.record = step.record;
+  row.dataset.co = step.company || '';
+  if (S.view !== 'all' && step.company !== S.view) row.hidden = true;
   const label = step.type.startsWith('alert') ? `${meta.label}${isRelease ? ' · levée' : ''}` : meta.label;
   row.innerHTML = `<span class="ev-ico">${icon(bad ? 'alertBad' : meta.icon, 's16')}</span>
     <span><span class="ev-meta"><span class="mono">${F.hm(step.ts)}</span><span>${label}</span><span>· ${F.esc(F.ROLE_SHORT[step.company] || step.company || '')}</span></span>

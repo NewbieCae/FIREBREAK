@@ -18,7 +18,7 @@ une démo de 3 minutes qui montre qu'en cas de compromission d'un partenaire, on
 |---|---|---|---|
 | Yann | Sc4rville | `sessions/yann.md` | Produit : moteur, API, IA |
 | Céline | NewbieCae | `sessions/celine.md` | Banc d'essai : preuve chiffrée de l'efficacité (`synth.py`, `scripts/bench.py`) |
-| Maria | magraku | `sessions/maria.md` | à préciser |
+| Maria | magraku | `sessions/maria.md` | à préciser (proposé : slides du pitch selon `design.md` + test de l'interface en 1920×1080) |
 | Mika | mncodol | `sessions/mika.md` | à préciser |
 
 L'interface finale est faite par une collègue de l'équipe, à partir de `docs/api.md` et du brief `docs/brief-ui.md`. Elle indique son nom dans ce tableau.
@@ -42,7 +42,7 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 ## Prochaines actions
 
 - [x] Étape 4 : timeline et flux SSE (`/api/timeline`, `/api/events`, bouton « Rejouer »).
-- [ ] Interface finale branchée sur l'API (`docs/api.md`), selon le brief `docs/brief-ui.md`. (Yann — en cours, `web/app/`)
+- [ ] Interface finale branchée sur l'API (`docs/api.md`), selon le brief `docs/brief-ui.md`. (Yann — en cours, `web/app/` servie sur `/app/` : tous les écrans du brief branchés, finitions en cours)
 - [x] Étape 6 : mode démo (`FIREBREAK_DEMO=1`, `/api/demo/step`, flèche droite), script `docs/demo.md`, test de bout en bout.
 - [x] Banc d'essai : balayages de sensibilité (taille 5/8/12 entreprises à 60 opérations chacune, bruit hors fédération 0/10/30 %) avant de figer les chiffres (Céline) — section « Sensibilité » de `docs/bench-results.md`, données dans `bench/sensitivity.csv`. **Les 4 conclusions de la fiche de défense tiennent** (C < B en collatéraux à toutes les tailles, ratio 4,5× à 9×, qui augmente avec la taille ; rappel C 100 % à p=0 ; à p=0,3, C sous B en rappel ; D rattrape des fuites quel que soit le bruit, mais 7 sains bloqués par fuite rattrapée à 30 % de bruit). Chiffres principaux et `bench/results.csv` inchangés à l'octet.
 - [x] Banc d'essai v2 : gates fuités, pire cas / 5e centile, ventilation par entreprise compromise, politique D « Firebreak + prudence », limites écrites par le script (Céline). **⚠️ Chiffres publiés changés le 11/10** (toutes les entreprises tirées + 10 % de réceptions hors fédération) : p=0 → Firebreak 9,6 sains bloqués contre 43,2 pour B (4,5× moins), rappel 100 % contre 98,5 %, 0 action irréversible fuitée ; p=0,3 → rappel C 93,4 %, D 97,9 %. `docs/bench-results.md`, `docs/fiche-defense.md`, l'exemple de `docs/api.md` et `tests/test_compare.py` sont à jour ; `/api/compare` lit le CSV.
@@ -53,6 +53,7 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 
 ## Décisions
 
+- 11/10 (Yann) : interface finale en HTML/CSS/JS natif dans `web/app/`, servie par l'API sur `/app/` (pas de Node, pas de build, polices auto-hébergées). Contrat API 1.3.0 : ajout de `truth.ids` à `/api/compare`.
 - 11/10 (Céline) : banc v2 — l'entreprise compromise est tirée parmi toutes (client final compris) ; politique D = C + signal « provenance manquante » lu dans l'état du moteur seulement, présentée comme borne haute ; 10 % de réceptions légitimes hors fédération ajoutées comme bruit.
 
 - Track 3 annoncé aux organisateurs, le 10 octobre.
