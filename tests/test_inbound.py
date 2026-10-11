@@ -121,3 +121,32 @@ def test_errors():
         sim.inbound_check("inconnue", "m-gr-01")
     with pytest.raises(ValueError):
         sim.inbound_decide("fabricant", "m-gr-X", "peut-être")
+
+
+def test_cannot_accept_a_receipt_that_was_never_held():
+    """Relecture pc2 : accepter sans contrôle préalable court-circuitait la mise en attente."""
+    sim = build_simulation("mixed")
+    with pytest.raises(ValueError):
+        sim.inbound_decide("fabricant", "m-gr-X", "accept")
+    assert sim.find_record("m-gr-X").verified is False
+    with pytest.raises(ValueError):  # réception de confiance : jamais en attente
+        sim.inbound_decide("fabricant", "m-gr-01", "accept")
+
+
+def test_accept_does_not_erase_an_independent_lot_suspicion():
+    """Relecture pc2 : accepter la réception effaçait un lot déclaré suspect par la qualité."""
+    sim = build_simulation("lot")
+    sim.declare_lot_suspect("fabricant", "COIL-104", "défaut de coulée")
+    with pytest.raises(ValueError):
+        sim.inbound_decide("fabricant", "m-gr-04", "accept")
+    assert sim.find_record("m-gr-04").status == "quarantined"
+    assert sim.ledgers["fabricant"].suspects["m-gr-04"] == "défaut de coulée"
+
+
+def test_screen_does_not_overwrite_an_existing_suspicion():
+    sim = build_simulation("mixed")
+    sim.declare_lot_suspect("fabricant", "m-gr-X", "alerte qualité préalable")
+    sim.inbound_screen("fabricant", "m-gr-X")
+    assert sim.ledgers["fabricant"].suspects["m-gr-X"] == "alerte qualité préalable"
+    with pytest.raises(ValueError):
+        sim.inbound_decide("fabricant", "m-gr-X", "accept")

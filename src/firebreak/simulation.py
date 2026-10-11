@@ -14,6 +14,7 @@ from .genealogy import lot_of, records_of_lot
 from .model import Company, Record, payment_amount
 
 REMEDIATION_ACTIONS = {"revalidate", "human_approval", "trusted_source"}
+INBOUND_HOLD_REASON = "en attente de validation à réception"
 SCENARIO_TZ = ZoneInfo("Europe/Paris")
 
 
@@ -411,8 +412,9 @@ class Simulation:
         result = self.inbound_check(company, receipt_id)
         if result["hold"] and result["status"] == "non_controle":
             ledger = self.ledgers[company]
-            ledger.mark_suspect([receipt_id],
-                                f"en attente de validation à réception ({result['score']}/100)")
+            if receipt_id not in ledger.suspects:  # ne pas écraser une suspicion déclarée par ailleurs
+                ledger.mark_suspect([receipt_id],
+                                    f"{INBOUND_HOLD_REASON} ({result['score']}/100)")
             ledger.audit.append(self.clock, "inbound_hold", actor, {
                 "receipt": receipt_id, "score": result["score"], "band": result["band"],
                 "supplier": result["supplier"], "lot": result["lot"],
@@ -458,6 +460,13 @@ class Simulation:
         marks = self.audit_marks()
         out: dict = {"receipt": receipt_id, "decision": decision, "reports": []}
         if decision == "accept":
+            if status != "en_attente":
+                raise ValueError(f"réception {receipt_id} non mise en attente : rien à accepter "
+                                 "(la contrôler d'abord)")
+            other = ledger.suspects.get(receipt_id)
+            if other is not None and not other.startswith(INBOUND_HOLD_REASON):
+                raise ValueError(f"réception {receipt_id} déclarée suspecte par ailleurs "
+                                 f"({other}) : lever cette suspicion d'abord")
             ledger.clear_suspect([receipt_id])
             record.verified = True
             ledger.audit.append(self.clock, "inbound_accepted", actor, {
