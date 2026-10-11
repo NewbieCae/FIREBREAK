@@ -47,12 +47,14 @@ Avec vs sans : sans Firebreak (on coupe le fournisseur et ses clients directs), 
 - [x] Banc d'essai : balayages de sensibilité (taille 5/8/12 entreprises à 60 opérations chacune, bruit hors fédération 0/10/30 %) avant de figer les chiffres (Céline) — section « Sensibilité » de `docs/bench-results.md`, données dans `bench/sensitivity.csv`. **Les 4 conclusions de la fiche de défense tiennent** (C < B en collatéraux à toutes les tailles, ratio 4,5× à 9×, qui augmente avec la taille ; rappel C 100 % à p=0 ; à p=0,3, C sous B en rappel ; D rattrape des fuites quel que soit le bruit, mais 7 sains bloqués par fuite rattrapée à 30 % de bruit). Chiffres principaux et `bench/results.csv` inchangés à l'octet.
 - [x] Banc d'essai v2 : gates fuités, pire cas / 5e centile, ventilation par entreprise compromise, politique D « Firebreak + prudence », limites écrites par le script (Céline). **⚠️ Chiffres publiés changés le 11/10** (toutes les entreprises tirées + 10 % de réceptions hors fédération) : p=0 → Firebreak 9,6 sains bloqués contre 43,2 pour B (4,5× moins), rappel 100 % contre 98,5 %, 0 action irréversible fuitée ; p=0,3 → rappel C 93,4 %, D 97,9 %. `docs/bench-results.md`, `docs/fiche-defense.md`, l'exemple de `docs/api.md` et `tests/test_compare.py` sont à jour ; `/api/compare` lit le CSV.
 - [x] Effet waouh « Avec vs sans Firebreak » : écran coupé en deux (bouton « Avec vs sans » + étape 3 de la démo), `/api/compare`, banc d'essai de Céline, cas JLR et CDK sourcés (Yann).
+- [x] Fusion Avalanche dans `main` (Yann, 02 h 30). Reste à Mika : bug `read_audit_anchor` (statut `unreadable`, 3 tentatives) et mesures réelles dans `docs/avalanche/pitch.md`, directement sur `main`.
 - [ ] Gel du code à 10 h : tag `demo-freeze` (Yann).
 - [ ] Pitch et slides (s'appuyer sur `docs/benchmark-firebreak.md`).
 - [ ] Notion : inviter les 3 coéquipières et coéquipiers avec accès en modification (à faire à la main via Partager).
 
 ## Décisions
 
+- 11/10 02 h 30 (Yann) : la partie Avalanche de Mika (`mika/avalanche-l1`) est **fusionnée dans `main`** (267 tests verts). Désactivée par défaut (`FIREBREAK_CHAIN=off`), contrat déployé sur la L1 de test (`contracts/deployments/l1.json`). Contrat API 1.4.0. Les branches `mika/*` sont intégrées : on repart tous de `main`.
 - 11/10 (Yann) : interface finale en HTML/CSS/JS natif dans `web/app/`, servie par l'API sur `/app/` (pas de Node, pas de build, polices auto-hébergées). Contrat API 1.3.0 : ajout de `truth.ids` à `/api/compare`.
 - 11/10 (Céline) : banc v2 — l'entreprise compromise est tirée parmi toutes (client final compris) ; politique D = C + signal « provenance manquante » lu dans l'état du moteur seulement, présentée comme borne haute ; 10 % de réceptions légitimes hors fédération ajoutées comme bruit.
 

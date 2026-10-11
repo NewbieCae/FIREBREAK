@@ -20,6 +20,7 @@ Le moteur FIREBREAK est livré (6 étapes du plan). **L'interface finale est en 
 
 ## Journal
 
+- **11/10 02 h 30** — Fusion de `mika/avalanche-l1` dans `main` sans conflit (ancrage des alertes sur Avalanche L1, off par défaut). `uv sync`, 267 tests verts. Test flaky `test_alerts_carry_only_opaque_tokens` corrigé (jetons exclus de la recherche de fuite). `api.py` en version 1.4.0, aligné sur `docs/api.md`.
 - **11/10 02 h 05** — Interface finale `web/app/` : salle de contrôle verre/aurore, logo animé, 40 icônes custom, carte + particules, propagation SSE, preuve, cascade de levée, avec vs sans, audit, import, vue partenaire. API 1.3.0 (ajouts seulement) : `truth.ids` dans `/api/compare`, `/app/` et `/samples/` servis. Dark Reader neutralisé (`darkreader-lock`).
 - **11/10 00 h 40** — Brief de l'interface finale : `docs/brief-ui.md` (direction artistique verre/sombre, logo, icônes custom, mouvement, 8 écrans, intégration API, démo en 5 gestes).
 - **11/10 01 h 00** — `team-sync.sh` ne commite ni ne pousse plus un conflit non résolu (demande de Céline après les marqueurs poussés dans README.md, commit d8054d9) : fichiers « unmerged » vérifiés avant `git add`, marqueurs `<<<<<<<` / `>>>>>>>` en tête de ligne refusés, contrôle aussi avant push et au début de chaque tour. 43 assertions vertes sur dépôts jetables.

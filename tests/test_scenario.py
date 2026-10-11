@@ -109,7 +109,10 @@ def test_alerts_carry_only_opaque_tokens():
         assert set(payload) == {"type", "from", "to", "tokens", "reason", "issued_at"}
         for tok in payload["tokens"]:
             assert len(tok) == 64 and int(tok, 16) >= 0
-        blob = json.dumps(payload)
+        # Les jetons sont du hex aléatoire déjà validé ci-dessus : on les retire
+        # avant de chercher une fuite, sinon « 5210 » peut apparaître par hasard
+        # dans un jeton et faire échouer le test (flaky signalé par Mika).
+        blob = json.dumps({k: v for k, v in payload.items() if k != "tokens"})
         assert not any(label in blob for label in labels)
         assert "5210" not in blob and "FR76" not in blob
 

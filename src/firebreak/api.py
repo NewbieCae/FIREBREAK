@@ -71,7 +71,7 @@ DEV_ORIGINS = [
 app = FastAPI(
     title="Firebreak",
     description="Confinement ciblé des compromissions dans les supply chains.",
-    version="1.0.0",
+    version="1.4.0",
 )
 app.add_middleware(
     CORSMiddleware,
