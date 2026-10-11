@@ -22,6 +22,9 @@ ATTEMPTS = 4
 RETRY_BACKOFF = 1.0
 READ_RETRIES = 3
 READ_RETRY_DELAY = 1.0
+MAX_PARALLEL = 4  # envois simultanés max (nœud géré : 429)
+ACK_WAIT = 60.0  # attente max de l'ancrage de l'alerte avant un accusé
+ACK_POLL = 1.0
 
 
 @dataclass
@@ -97,7 +100,8 @@ class Web3Chain:
     """Modes tester (EVM en mémoire) et l1 (vraie L1)."""
 
     def __init__(self, config: ChainConfig, w3: Any = None, contract: Any = None,
-                 accounts: dict | None = None, error: str | None = None) -> None:
+                 accounts: dict | None = None, error: str | None = None,
+                 max_parallel: int = MAX_PARALLEL) -> None:
         self.config = config
         self.w3 = w3
         self.contract = contract
@@ -108,10 +112,9 @@ class Web3Chain:
         self._records: list[AnchorRecord] = []
         self._lock = threading.Lock()
         self._ids = itertools.count(1)
-        self._queue: queue.Queue = queue.Queue()
-        if self.connected:
-            threading.Thread(target=self._worker, daemon=True,
-                             name="chain-sender").start()
+        # Une file et un thread par compte : nonces ordonnés par compte.
+        self._queues: dict[str, queue.Queue] = {}
+        self._slots = threading.Semaphore(max(1, max_parallel))
 
     def submit(self, op: ChainOp) -> AnchorRecord:
         rec = AnchorRecord(next(self._ids), op.kind, op.company, op.hash)
@@ -120,8 +123,17 @@ class Web3Chain:
         if not self.connected:
             self._fail(rec, self.error or "chaîne injoignable")
             return rec
-        self._queue.put((op, rec))
+        self._queue_for(op.company).put((op, rec))
         return rec
+
+    def _queue_for(self, company: str) -> queue.Queue:
+        with self._lock:
+            q = self._queues.get(company)
+            if q is None:
+                q = self._queues[company] = queue.Queue()
+                threading.Thread(target=self._worker, args=(q,), daemon=True,
+                                 name=f"chain-sender-{company}").start()
+            return q
 
     def anchors(self) -> list[AnchorRecord]:
         with self._lock:
@@ -178,7 +190,9 @@ class Web3Chain:
     def flush(self, timeout: float = 5.0) -> None:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            if self._queue.unfinished_tasks == 0:
+            with self._lock:
+                busy = sum(q.unfinished_tasks for q in self._queues.values())
+            if busy == 0:
                 return
             time.sleep(0.01)
 
@@ -187,15 +201,29 @@ class Web3Chain:
             rec.status = "failed"
             rec.error = error[:200]
 
-    def _worker(self) -> None:
+    def _worker(self, q: queue.Queue) -> None:
         while True:
-            op, rec = self._queue.get()
+            op, rec = q.get()
             try:
-                self._send(op, rec)
+                if op.fn == "acknowledgeAlert" and not self._wait_alert(op.args[0]):
+                    self._fail(rec, "alerte non ancrée : accusé impossible")
+                else:
+                    with self._slots:
+                        self._send(op, rec)
             except Exception as exc:  # le worker ne doit jamais mourir
                 self._fail(rec, f"{type(exc).__name__}: {exc}")
             finally:
-                self._queue.task_done()
+                q.task_done()
+
+    def _wait_alert(self, alert_hash: bytes) -> bool:
+        """Attend (sans occuper d'envoi) que l'alerte soit ancrée par l'émetteur."""
+        deadline = time.monotonic() + ACK_WAIT
+        while True:
+            if self._alert_anchored(alert_hash):
+                return True
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(ACK_POLL)
 
     def _send(self, op: ChainOp, rec: AnchorRecord) -> None:
         from .deployer import RECEIPT_POLL_SECONDS
@@ -204,9 +232,6 @@ class Web3Chain:
         if acct is None:
             raise ValueError(f"compte inconnu : {op.company}")
         last_error = "erreur inconnue"
-        if op.fn == "acknowledgeAlert" and not self._alert_anchored(op.args[0]):
-            self._fail(rec, "alerte non ancrée : accusé impossible")
-            return
         tx_hash = None
         hex_hash = None
         for attempt in range(ATTEMPTS):
@@ -278,7 +303,8 @@ def _build_web3_chain(config: ChainConfig) -> Web3Chain:
 
         w3 = Web3(EthereumTesterProvider())
         contract = ensure_tester_registry(w3, accounts, pubkeys)
-        return Web3Chain(config, w3, contract, accounts)
+        # L'EVM en mémoire n'est pas prévu pour des écritures concurrentes.
+        return Web3Chain(config, w3, contract, accounts, max_parallel=1)
 
     import json
     from pathlib import Path

@@ -362,3 +362,7 @@ Je rejoue le scénario `recall` complet sur la vraie L1 dès que ton étape API 
 4. Respect du nœud géré (429) : au plus 4 envois simultanés, garde le backoff existant.
 5. Tests : faux w3 avec latence ; 4 comptes × 3 ops → durée < 2× celle d'un compte seul ; ack soumis avant son alerte → finit `confirmed` après elle.
 Annonce `VERT` ; je rejouerai `recall` sur la L1 pour mesurer.
+
+### mika/pc2 -> mika/pc1 · 2026-10-11 04:10
+**PUSH + VERT (298 tests)** : client.py une file + un thread par compte (créés à la demande), semaphore de 4 envois simultanés (MAX_PARALLEL), backoff inchangé. Un ack attend l'ancrage de l'alerte (relecture 1 s, jusqu'à 60 s : ACK_WAIT/ACK_POLL) sans occuper de slot d'envoi, sinon échec « alerte non ancrée ». flush() attend toutes les files, status().queue reste un total. Mode tester (EVM en mémoire) : max_parallel=1 par prudence. Tests : 4 comptes x 3 ops < 2x un compte ; ack soumis avant son alerte -> confirmed. Peux-tu rejouer recall sur la L1 pour mesurer ?
+

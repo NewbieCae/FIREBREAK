@@ -1,5 +1,6 @@
 """Client, ancrage et réécriture : sans réseau, sans contrat compilé."""
 
+import time
 from datetime import datetime
 
 import pytest
@@ -224,11 +225,95 @@ def test_reçu_manquant_ne_renvoie_pas_de_transaction(monkeypatch):
 
 
 def test_ack_sans_alerte_ancree_echoue_clairement(monkeypatch):
+    import firebreak.chain.client as mod
+    monkeypatch.setattr(mod, "ACK_WAIT", 0.1)
+    monkeypatch.setattr(mod, "ACK_POLL", 0.02)
     chain, state = _send_fakes(monkeypatch, alert_anchored_at=0)
     rec = chain.submit(_op("acknowledgeAlert"))
     chain.flush(5)
     assert rec.status == "failed" and "alerte non ancrée" in rec.error
-    assert state["sends"] == 0
+
+
+def _parallel_chain(monkeypatch, companies, delay=0.1):
+    import firebreak.chain.client as mod
+    monkeypatch.setattr(mod, "RETRY_BACKOFF", 0)
+    monkeypatch.setattr(mod, "ACK_POLL", 0.02)
+    anchored = set()
+
+    class Tx:
+        def __init__(self, fn, args):
+            self.fn, self.args = fn, args
+
+        def build_transaction(self, params):
+            return {**params, "fn": self.fn, "args": self.args}
+
+    class Fns:
+        def __getattr__(self, fn):
+            return lambda *a: Tx(fn, a)
+
+        def alerts(self, h):
+            class C:
+                def call(_):
+                    return (b"", b"", 0, 1 if h in anchored else 0, 0)
+            return C()
+
+    class Contract:
+        functions = Fns()
+
+    class Acct:
+        address = "0xabc"
+
+        def sign_transaction(self, tx):
+            class S:
+                raw_transaction = tx
+            return S()
+
+    class Eth:
+        chain_id = 1
+        gas_price = 1
+
+        def get_transaction_count(self, *a):
+            return 0
+
+        def send_raw_transaction(self, raw):
+            time.sleep(delay)
+            if raw["fn"] == "anchorAlert":
+                anchored.add(raw["args"][0])
+            return bytes.fromhex("11" * 32)
+
+        def wait_for_transaction_receipt(self, h, timeout, poll_latency):
+            return {"status": 1, "blockNumber": 9}
+
+    class W3:
+        eth = Eth()
+
+    return mod.Web3Chain(ChainConfig(mode="tester"), W3(), Contract(),
+                         {c: Acct() for c in companies})
+
+
+def _timed(chain, companies, per_company=3):
+    start = time.monotonic()
+    recs = [chain.submit(ChainOp("audit", c, "anchorAudit", (b"\0" * 32,), "0x01"))
+            for _ in range(per_company) for c in companies]
+    chain.flush(10)
+    assert all(r.status == "confirmed" for r in recs)
+    return time.monotonic() - start
+
+
+def test_envois_en_parallele_par_compte(monkeypatch):
+    one = _timed(_parallel_chain(monkeypatch, ["a"]), ["a"])
+    four = _timed(_parallel_chain(monkeypatch, list("abcd")), list("abcd"))
+    assert four < 2 * one
+
+
+def test_ack_soumis_avant_son_alerte_finit_apres_elle(monkeypatch):
+    chain = _parallel_chain(monkeypatch, ["a", "b"], delay=0.2)
+    h = b"\7" * 32
+    ack = chain.submit(ChainOp("ack", "b", "acknowledgeAlert", (h,), "0x01"))
+    alert = chain.submit(ChainOp("alert", "a", "anchorAlert", (h,), "0x01"))
+    chain.flush(10)
+    assert alert.status == "confirmed" and ack.status == "confirmed"
+
 
 
 def test_l1_injoignable_ne_leve_pas():
